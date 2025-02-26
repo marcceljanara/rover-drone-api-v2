@@ -13,39 +13,6 @@ dotenv.config();
 const { Pool } = pkg;
 const pool = new Pool();
 
-const addRentalPayload = ((userId) => {
-  const today = new Date();
-  const tommorow = new Date(today);
-  const threeDaysLater = new Date(today);
-
-  // Sent startDate menjadi besok
-  tommorow.setDate(today.getDate() + 1);
-
-  // Set endDate menjadi 3 hari setelah hari ini
-  threeDaysLater.setDate(today.getDate() + 3);
-
-  // Format tanggal menjadi YYYY-MM-DD
-  const formatDate = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Bulan dimulai dari 0
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  return {
-    userId, // Ganti dengan ID user dinamis
-    startDate: formatDate(tommorow),
-    endDate: formatDate(threeDaysLater),
-  };
-});
-
-const formatDate = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0'); // Bulan dimulai dari 0
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
 describe('RentalsService', () => {
   afterAll(async () => {
     await pool.end();
@@ -63,7 +30,7 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { id } = await rentalsService.addRental(addRentalPayload(user), 'user');
+      const { id } = await rentalsService.addRental(user, 6, 'user');
       const payload = {
         id,
         rentalStatus: 'active',
@@ -83,7 +50,7 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { id } = await rentalsService.addRental(addRentalPayload(user), 'user');
+      const { id } = await rentalsService.addRental(user, 6, 'user');
       const payload = {
         id,
         rentalStatus: 'completed',
@@ -103,7 +70,7 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { id } = await rentalsService.addRental(addRentalPayload(user), 'user');
+      const { id } = await rentalsService.addRental(user, 6, 'user');
       const payload = {
         id,
         rentalStatus: 'active',
@@ -137,7 +104,7 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { id } = await rentalsService.addRental(addRentalPayload(user), 'user');
+      const { id } = await rentalsService.addRental(user, 6, 'user');
 
       // Action
       await rentalsService.deleteRental(id);
@@ -163,7 +130,7 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { id } = await rentalsService.addRental(addRentalPayload(user), 'user');
+      const { id } = await rentalsService.addRental(user, 6, 'user');
       const payload = {
         id,
         rentalStatus: 'active',
@@ -183,75 +150,14 @@ describe('RentalsService', () => {
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
 
       // Action
-      const { id, cost } = await rentalsService.addRental(addRentalPayload(user), 'user');
+      const { id, cost } = await rentalsService.addRental(user, 6, 'user');
 
       // Assert
       const rental = await RentalsTableTestHelper.findRentalById(id);
       expect(rental[0]).toBeDefined();
       expect(rental[0].id).toBe(id);
-      expect(cost).toBe(300000);
+      expect(cost).toBe(17100000);
       expect(rental[0].rental_status).toBe('pending');
-    });
-
-    it('should throw error if start or end rental created before today', async () => {
-      // Arrange
-      const rentalsService = new RentalsService();
-      const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
-      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const payload = {
-        userId: user,
-        startDate: '2025-01-05',
-        endDate: '2025-01-10',
-      };
-
-      // Action and Assert
-      await expect(rentalsService.addRental(payload, 'user')).rejects.toThrow(InvariantError);
-    });
-
-    it('should throw error if start rental happen +3 days from today', async () => {
-      // Arrange
-      const today = new Date();
-
-      // Buat objek Date baru untuk startDate dan endDate
-      const startDate = new Date(today);
-      startDate.setDate(today.getDate() + 4);
-      const endDate = new Date(today);
-      endDate.setDate(today.getDate() + 8);
-
-      const rentalsService = new RentalsService();
-      const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
-      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const payload = {
-        userId: user,
-        startDate: formatDate(startDate),
-        endDate: formatDate(endDate),
-      };
-
-      // Action and Assert
-      await expect(rentalsService.addRental(payload, 'user')).rejects.toThrow(InvariantError);
-    });
-
-    it('should throw error if endDate more than startDate', async () => {
-      // Arrange
-      const today = new Date();
-
-      // Buat objek Date baru untuk startDate dan endDate
-      const startDate = new Date(today);
-      startDate.setDate(today.getDate() + 2);
-      const endDate = new Date(today);
-      endDate.setDate(today.getDate() + 1);
-
-      const rentalsService = new RentalsService();
-      const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
-      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const payload = {
-        userId: user,
-        startDate: formatDate(startDate),
-        endDate: formatDate(endDate),
-      };
-
-      // Action and Assert
-      await expect(rentalsService.addRental(payload, 'user')).rejects.toThrow(InvariantError);
     });
 
     it('should throw error when role admin adding rental', async () => {
@@ -261,16 +167,16 @@ describe('RentalsService', () => {
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
 
       // Action and Assert
-      await expect(rentalsService.addRental(addRentalPayload(user), 'admin')).rejects.toThrow(AuthorizationError);
+      await expect(rentalsService.addRental(user, 6, 'admin')).rejects.toThrow(AuthorizationError);
     });
 
-    it('should throw error when device not availabel', async () => {
+    it('should throw error when device not available', async () => {
       // Arrange
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
 
       // Action and Assert
-      await expect(rentalsService.addRental(addRentalPayload(user), 'user')).rejects.toThrow(NotFoundError);
+      await expect(rentalsService.addRental(user, 6, 'user')).rejects.toThrow(NotFoundError);
     });
   });
   describe('getAllRental function', () => {
@@ -281,8 +187,8 @@ describe('RentalsService', () => {
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      await rentalsService.addRental(addRentalPayload(user1), 'user');
-      await rentalsService.addRental(addRentalPayload(user2), 'user');
+      await rentalsService.addRental(user1, 6, 'user');
+      await rentalsService.addRental(user2, 6, 'user');
 
       // Action
       const rental = await rentalsService.getAllRental('admin', 'admin-dummy');
@@ -298,8 +204,8 @@ describe('RentalsService', () => {
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      await rentalsService.addRental(addRentalPayload(user1), 'user');
-      await rentalsService.addRental(addRentalPayload(user2), 'user');
+      await rentalsService.addRental(user1, 6, 'user');
+      await rentalsService.addRental(user2, 6, 'user');
 
       // Action
       const rental = await rentalsService.getAllRental('user', user1);
@@ -317,8 +223,8 @@ describe('RentalsService', () => {
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      const { id } = await rentalsService.addRental(addRentalPayload(user1), 'user');
-      await rentalsService.addRental(addRentalPayload(user2), 'user');
+      const { id } = await rentalsService.addRental(user1, 6, 'user');
+      await rentalsService.addRental(user2, 6, 'user');
 
       // Action
       const rental = await rentalsService.getDetailRental(id, 'admin', 'admindummy');
@@ -345,8 +251,8 @@ describe('RentalsService', () => {
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      const { id } = await rentalsService.addRental(addRentalPayload(user1), 'user');
-      await rentalsService.addRental(addRentalPayload(user2), 'user');
+      const { id } = await rentalsService.addRental(user1, 6, 'user');
+      await rentalsService.addRental(user2, 6, 'user');
 
       // Action
       const rental = await rentalsService.getDetailRental(id, 'user', user1);
@@ -363,8 +269,8 @@ describe('RentalsService', () => {
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      const { id } = await rentalsService.addRental(addRentalPayload(user1), 'user');
-      await rentalsService.addRental(addRentalPayload(user2), 'user');
+      const { id } = await rentalsService.addRental(user1, 6, 'user');
+      await rentalsService.addRental(user2, 6, 'user');
 
       // Action and Assert
       await expect(rentalsService.getDetailRental(id, 'user', user2)).rejects.toThrow(NotFoundError);
@@ -377,7 +283,7 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { id } = await rentalsService.addRental(addRentalPayload(user1), 'user');
+      const { id } = await rentalsService.addRental(user1, 6, 'user');
       const payload = {
         userId: user1,
         id,
@@ -397,7 +303,7 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { id } = await rentalsService.addRental(addRentalPayload(user1), 'user');
+      const { id } = await rentalsService.addRental(user1, 6, 'user');
       const payload = {
         userId: user1,
         id,

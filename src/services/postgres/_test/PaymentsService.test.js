@@ -14,32 +14,6 @@ dotenv.config();
 const { Pool } = pkg;
 const pool = new Pool();
 
-const addRentalPayload = ((userId) => {
-  const today = new Date();
-  const tommorow = new Date(today);
-  const threeDaysLater = new Date(today);
-
-  // Sent startDate menjadi besok
-  tommorow.setDate(today.getDate() + 1);
-
-  // Set endDate menjadi 3 hari setelah hari ini
-  threeDaysLater.setDate(today.getDate() + 3);
-
-  // Format tanggal menjadi YYYY-MM-DD
-  const formatDate = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Bulan dimulai dari 0
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  return {
-    userId, // Ganti dengan ID user dinamis
-    startDate: formatDate(tommorow),
-    endDate: formatDate(threeDaysLater),
-  };
-});
-
 describe('PaymentsService', () => {
   afterAll(async () => {
     await pool.end();
@@ -60,7 +34,7 @@ describe('PaymentsService', () => {
       const user = await UsersTableTestHelper.addUser({ id: 'user-123000', email: 'user@example.com', fullname: 'John Doe' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      const { payment_id } = await rentalsService.addRental(addRentalPayload(user), 'user');
+      const { payment_id } = await rentalsService.addRental(user, 6, 'user');
 
       // Action
       const userData = await paymentsService.getUserByPaymentId(payment_id);
@@ -91,8 +65,8 @@ describe('PaymentsService', () => {
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      await rentalsService.addRental(addRentalPayload(user1), 'user');
-      await rentalsService.addRental(addRentalPayload(user2), 'user');
+      await rentalsService.addRental(user1, 6, 'user');
+      await rentalsService.addRental(user2, 6, 'user');
 
       // Action
       const payment = await paymentsService.getAllPayments();
@@ -111,8 +85,8 @@ describe('PaymentsService', () => {
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      const { payment_id } = await rentalsService.addRental(addRentalPayload(user1), 'user');
-      await rentalsService.addRental(addRentalPayload(user2), 'user');
+      const { payment_id } = await rentalsService.addRental(user1, 6, 'user');
+      await rentalsService.addRental(user2, 6, 'user');
 
       // Action
       const payment = await paymentsService.getDetailPayment(payment_id);
@@ -139,7 +113,7 @@ describe('PaymentsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { payment_id } = await rentalsService.addRental(addRentalPayload(user), 'user');
+      const { payment_id } = await rentalsService.addRental(user, 6, 'user');
 
       const payload = {
         id: payment_id,
@@ -177,7 +151,7 @@ describe('PaymentsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { payment_id } = await rentalsService.addRental(addRentalPayload(user), 'user');
+      const { payment_id } = await rentalsService.addRental(user, 6, 'user');
 
       const payload = {
         id: payment_id,
@@ -211,7 +185,7 @@ describe('PaymentsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { payment_id } = await rentalsService.addRental(addRentalPayload(user), 'user');
+      const { payment_id } = await rentalsService.addRental(user, 6, 'user');
 
       // Action
       const result = await paymentsService.deletePayment(payment_id);
