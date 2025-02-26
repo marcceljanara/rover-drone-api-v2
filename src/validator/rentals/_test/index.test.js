@@ -64,7 +64,7 @@ describe('RentalsValidator', () => {
   describe('Post Add Rental Payload', () => {
     it('should throw error when payload did not contain needed property', () => {
       // Arrange
-      const payload = { startDate: '2025-01-12' };
+      const payload = {};
 
       // Action and Assert
       expect(() => RentalsValidator
@@ -74,8 +74,7 @@ describe('RentalsValidator', () => {
     it('should throw error when payload did not meet data type specification', () => {
       // Arrange
       const payload = {
-        startDate: '2025-01-12',
-        endDate: '2025 Januari 15',
+        interval: true,
       };
 
       // Action and Assert
@@ -86,8 +85,7 @@ describe('RentalsValidator', () => {
     it('should not throw error when payload meet criteria', () => {
       // Arrange
       const payload = {
-        startDate: '2025-01-12',
-        endDate: '2025-01-15',
+        interval: 6,
       };
 
       // Action and Assert
