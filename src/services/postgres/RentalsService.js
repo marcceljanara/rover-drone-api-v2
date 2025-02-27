@@ -158,7 +158,7 @@ class RentalsService {
         text: `
           INSERT INTO rentals (id, user_id, start_date, end_date, cost, reserved_until) 
           VALUES ($1, $2, $3, $4, $5, NOW() + INTERVAL '30 seconds') 
-          RETURNING id, cost
+          RETURNING id, cost, start_date, end_date
         `,
         values: [id, userId, start_date, end_date, cost],
       };
