@@ -132,7 +132,6 @@ describe('/payments endpoint', () => {
     it('should return response code 200 and verify payment correctly', async () => {
       // Arrange
       const requestPayload = {
-        paymentDate: new Date().toISOString(),
         paymentStatus: 'completed',
         paymentMethod: 'BRI',
         transactionDescription: 'Payment successfully verified',
@@ -157,7 +156,6 @@ describe('/payments endpoint', () => {
     it('should return response 404 if payment not found', async () => {
       // Arrange
       const requestPayload = {
-        paymentDate: new Date().toISOString(),
         paymentStatus: 'completed',
         paymentMethod: 'BRI',
         transactionDescription: 'Payment successfully verified',
@@ -177,7 +175,7 @@ describe('/payments endpoint', () => {
     });
   });
 
-  describe('DELETE /payments/:id', () => {
+  describe('PATCH /payments/:id', () => {
     it('should return response code 404 and delete payment correctly', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -188,7 +186,7 @@ describe('/payments endpoint', () => {
 
       // Action
       const response = await request(server)
-        .delete(`/payments/${paymentId}`)
+        .patch(`/payments/${paymentId}`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -202,7 +200,7 @@ describe('/payments endpoint', () => {
 
       // Action
       const response = await request(server)
-        .delete(`/payments/${paymentId}`)
+        .patch(`/payments/${paymentId}`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert

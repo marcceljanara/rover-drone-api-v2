@@ -8,7 +8,7 @@ const paymentRoutes = (handler) => {
   router.get('/payments', verifyToken, verifyAdmin, handler.getAllPaymentsHandler);
   router.get('/payments/:id', verifyToken, verifyAdmin, handler.getDetailPaymentHandler);
   router.put('/payments/:id', verifyToken, verifyAdmin, handler.putVerificationPaymentHandler);
-  router.delete('/payments/:id', verifyToken, verifyAdmin, handler.deletePaymentHandler);
+  router.patch('/payments/:id', verifyToken, verifyAdmin, handler.deletePaymentHandler);
 
   return router;
 };

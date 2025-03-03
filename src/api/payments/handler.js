@@ -44,7 +44,7 @@ class PaymentsHandler {
 
       const { id } = req.params;
       const {
-        paymentDate, paymentStatus, paymentMethod, transactionDescription,
+        paymentStatus, paymentMethod, transactionDescription,
       } = req.body;
 
       // Status rental yang akan diubah
@@ -54,7 +54,7 @@ class PaymentsHandler {
       const result = await this._paymentsService.transaction(async (transaction) => {
         // Verifikasi pembayaran
         const payment = await this._paymentsService.verificationPayment({
-          id, paymentDate, paymentStatus, paymentMethod, transactionDescription,
+          id, paymentStatus, paymentMethod, transactionDescription,
         }, transaction);
 
         // Ubah status rental
