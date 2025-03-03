@@ -32,7 +32,6 @@ describe('PaymentsValidator', () => {
 
     it('should throw error when payload did not meet data type specification', () => {
       const payload = {
-        paymentDate: 'invalid-date',
         paymentStatus: 'completed',
         paymentMethod: 12345,
         transactionDescription: null,
@@ -44,7 +43,6 @@ describe('PaymentsValidator', () => {
 
     it('should throw error when payload has invalid payment status', () => {
       const payload = {
-        paymentDate: '2025-01-12T10:00:00Z',
         paymentStatus: 'pending',
         paymentMethod: 'credit card',
         transactionDescription: 'Test payment',
@@ -56,7 +54,6 @@ describe('PaymentsValidator', () => {
 
     it('should not throw error because payload meets validation criteria', () => {
       const payload = {
-        paymentDate: '2025-01-12T10:00:00Z',
         paymentStatus: 'completed',
         paymentMethod: 'credit card',
         transactionDescription: 'Test payment',

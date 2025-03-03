@@ -5,7 +5,6 @@ const paramsPayloadSchema = Joi.object({
 });
 
 const putVerificationPaymentPayloadSchema = Joi.object({
-  paymentDate: Joi.date().iso().required(),
   paymentStatus: Joi.string().valid('completed').required(),
   paymentMethod: Joi.string().required(),
   transactionDescription: Joi.string().required(),
