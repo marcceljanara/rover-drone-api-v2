@@ -191,11 +191,11 @@ class DevicesService {
           UPDATE devices 
           SET status = $1 
           WHERE id = $2 
-          AND rental_id = (
+          AND rental_id IN (
             SELECT id FROM rentals WHERE user_id = $3 AND rental_status = 'active'
           ) 
           AND is_deleted = FALSE 
-          RETURNING id, status
+          RETURNING id, status, control_topic
         `,
         values: [status, id, userId],
       };
@@ -349,6 +349,9 @@ class DevicesService {
       };
     }
     const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new NotFoundError('Device tidak ditemukan');
+    }
     const data = result.rows;
 
     // Konversi data ke CSV

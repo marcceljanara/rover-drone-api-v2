@@ -124,9 +124,9 @@ class DevicesHandler {
       this._validator.validateParamsPayload(req.params);
       this._validator.validatePutDeviceControlPayload(req.body);
       const { id } = req.params;
-      const { command, action } = req.body;
+      const { action } = req.body;
       const response = await this._devicesService.deviceControl(userId, role, {
-        id, command, action,
+        id, action,
       });
       await this._mqttPublisher.publishMessage(response.control_topic, req.body);
       return res.status(200).json({
