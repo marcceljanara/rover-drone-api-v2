@@ -60,7 +60,7 @@ class PaymentsService {
    */
   async verificationPayment(payload, transaction = null) {
     const {
-      id, paymentDate, paymentStatus, paymentMethod, transactionDescription,
+      id, paymentStatus, paymentMethod, transactionDescription,
     } = payload;
 
     // Periksa apakah pembayaran ada
@@ -80,10 +80,10 @@ class PaymentsService {
     // Perbarui pembayaran
     const updateQuery = {
       text: `UPDATE payments
-             SET payment_date = $1, payment_status = $2, payment_method = $3, transaction_description = $4
-             WHERE id = $5
+             SET payment_date = NOW(), payment_status = $1, payment_method = $2, transaction_description = $3
+             WHERE id = $4
              RETURNING id, rental_id, payment_status`,
-      values: [paymentDate, paymentStatus, paymentMethod, transactionDescription, id],
+      values: [paymentStatus, paymentMethod, transactionDescription, id],
     };
 
     const updateResult = transaction

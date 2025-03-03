@@ -117,7 +117,6 @@ describe('PaymentsService', () => {
 
       const payload = {
         id: payment_id,
-        paymentDate: new Date().toISOString(),
         paymentStatus: 'completed',
         paymentMethod: 'BRI',
         transactionDescription: 'Payment successfully verified',
@@ -136,7 +135,6 @@ describe('PaymentsService', () => {
       const paymentsService = new PaymentsService();
       const payload = {
         id: 'notfound',
-        paymentDate: new Date().toISOString(),
         paymentStatus: 'completed',
         paymentMethod: 'BRI',
         transactionDescription: 'Payment successfully verified',
@@ -155,7 +153,6 @@ describe('PaymentsService', () => {
 
       const payload = {
         id: payment_id,
-        paymentDate: new Date().toISOString(),
         paymentStatus: 'completed',
         paymentMethod: 'BRI',
         transactionDescription: 'Payment successfully verified',
