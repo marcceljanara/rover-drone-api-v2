@@ -16,32 +16,6 @@ dotenv.config();
 const { Pool } = pkg;
 const pool = new Pool();
 
-const addRentalPayload = ((userId) => {
-  const today = new Date();
-  const tommorow = new Date(today);
-  const threeDaysLater = new Date(today);
-
-  // Sent startDate menjadi besok
-  tommorow.setDate(today.getDate() + 1);
-
-  // Set endDate menjadi 3 hari setelah hari ini
-  threeDaysLater.setDate(today.getDate() + 3);
-
-  // Format tanggal menjadi YYYY-MM-DD
-  const formatDate = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Bulan dimulai dari 0
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  return {
-    userId, // Ganti dengan ID user dinamis
-    startDate: formatDate(tommorow),
-    endDate: formatDate(threeDaysLater),
-  };
-});
-
 describe('ReportsService', () => {
   let admin;
   let mockResponse;
@@ -75,14 +49,12 @@ describe('ReportsService', () => {
     const paymentId2 = (await rentalsService.addRental(user2, 6, 'user')).payment_id;
     const payload1 = {
       id: paymentId1,
-      paymentDate: new Date().toISOString(),
       paymentStatus: 'completed',
       paymentMethod: 'BRI',
       transactionDescription: 'Payment successfully verified',
     };
     const payload2 = {
       id: paymentId2,
-      paymentDate: new Date().toISOString(),
       paymentStatus: 'completed',
       paymentMethod: 'BNI',
       transactionDescription: 'Payment successfully verified',
@@ -111,15 +83,6 @@ describe('ReportsService', () => {
 
       // Action and Assert
       await expect(reportsService.addReport(admin, '2025-02-08 00:00:00', '2025-02-05 00:00:00')).rejects.toThrow(InvariantError);
-    });
-    it('should throw invariant error when startDate and endDate more than today', async () => {
-      // Arrange
-      const reportsService = new ReportsService();
-      const payload = addRentalPayload('dummy');
-
-      // Action and Assert
-      await expect(reportsService
-        .addReport(payload.startDate, payload.endDate)).rejects.toThrow(InvariantError);
     });
   });
 

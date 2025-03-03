@@ -18,15 +18,14 @@ class ReportsService {
     // Validasi format tanggal
     const startDate = new Date(start_date);
     const endDate = new Date(end_date);
-    const today = new Date();
-
-    if (startDate > today || endDate > today) {
-      throw new InvariantError('Tanggal awal dan akhir tidak boleh lebih dari hari ini');
-    }
 
     if (startDate > endDate) {
       throw new InvariantError('Tanggal awal tidak boleh lebih besar dari tanggal akhir');
     }
+
+    // Format tanggal agar sesuai dengan PostgreSQL (YYYY-MM-DD)
+    const startDateFormatted = startDate.toISOString().split('T')[0];
+    const endDateFormatted = endDate.toISOString().split('T')[0];
 
     // Query pembayaran dalam rentang tanggal
     const paymentQuery = {
@@ -37,7 +36,7 @@ class ReportsService {
         AND payment_status = 'completed' 
         AND is_deleted = FALSE
       `,
-      values: [startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0]],
+      values: [startDateFormatted, endDateFormatted],
     };
 
     const { rows } = await this._pool.query(paymentQuery);
@@ -51,7 +50,7 @@ class ReportsService {
         VALUES ($1, $2, $3, $4, $5, $6) 
         RETURNING id
       `,
-      values: [id, userId, totalTransaction, totalAmount, startDate, endDate],
+      values: [id, userId, totalTransaction, totalAmount, startDateFormatted, endDateFormatted],
     };
 
     const result = await this._pool.query(query);
