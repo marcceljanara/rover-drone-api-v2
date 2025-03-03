@@ -17,7 +17,7 @@ let currentTopics = [];
 const loadTopics = async () => {
   const client = await dbPool.connect();
   try {
-    const result = await client.query('SELECT sensor_topic FROM devices');
+    const result = await client.query('SELECT sensor_topic FROM devices WHERE is_deleted = false');
     return result.rows.map((row) => row.sensor_topic);
   } finally {
     client.release(); // Mengembalikan koneksi ke pool
