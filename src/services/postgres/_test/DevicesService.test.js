@@ -420,5 +420,14 @@ describe('DevicesService', () => {
       // Assert
       expect(sensors).toBeDefined();
     });
+
+    it('should throw Not Found error', async () => {
+      // Arrange
+      const devicesService = new DevicesService();
+      const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
+
+      // Actions and Assert
+      await expect(devicesService.getSensorDataDownload(user1, 'user', 'notfound', '12h')).rejects.toThrow(NotFoundError);
+    });
   });
 });
