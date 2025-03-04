@@ -10,16 +10,20 @@ class ReportsHandler {
     this.deleteReportHandler = this.deleteReportHandler.bind(this);
   }
 
-  async postReportHandler(req, res) {
-    const userId = req.id;
-    this._validator.validatePostReportPayload(req.body);
-    const { startDate, endDate } = req.body;
-    const reportId = await this._reportsService.addReport(userId, startDate, endDate);
-    return res.status(200).json({
-      status: 'success',
-      message: 'laporan berhasil dibuat',
-      data: { reportId },
-    });
+  async postReportHandler(req, res, next) {
+    try {
+      const userId = req.id;
+      this._validator.validatePostReportPayload(req.body);
+      const { startDate, endDate } = req.body;
+      const reportId = await this._reportsService.addReport(userId, startDate, endDate);
+      return res.status(201).json({
+        status: 'success',
+        message: 'laporan berhasil dibuat',
+        data: { reportId },
+      });
+    } catch (error) {
+      return next(error);
+    }
   }
 
   async getAllReportHandler(req, res) {
