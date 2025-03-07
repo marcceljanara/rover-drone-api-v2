@@ -5,10 +5,10 @@ import verifyAdmin from '../../middleware/verifyAdmin.js';
 const paymentRoutes = (handler) => {
   const router = express.Router();
 
-  router.get('/payments', verifyToken, verifyAdmin, handler.getAllPaymentsHandler);
-  router.get('/payments/:id', verifyToken, verifyAdmin, handler.getDetailPaymentHandler);
-  router.put('/payments/:id', verifyToken, verifyAdmin, handler.putVerificationPaymentHandler);
-  router.patch('/payments/:id', verifyToken, verifyAdmin, handler.deletePaymentHandler);
+  router.get('/v1/payments', verifyToken, verifyAdmin, handler.getAllPaymentsHandler);
+  router.get('/v1/payments/:id', verifyToken, verifyAdmin, handler.getDetailPaymentHandler);
+  router.put('/v1/payments/:id', verifyToken, verifyAdmin, handler.putVerificationPaymentHandler);
+  router.patch('/v1/payments/:id', verifyToken, verifyAdmin, handler.deletePaymentHandler);
 
   return router;
 };
