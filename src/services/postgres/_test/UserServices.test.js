@@ -1,12 +1,10 @@
 import bcrypt from 'bcrypt';
 
-import pkg from 'pg';
 import UserService from '../UserServices.js';
 import InvariantError from '../../../exceptions/InvariantError.js';
 import AuthenticationError from '../../../exceptions/AuthenticationError.js';
 import NotFoundError from '../../../exceptions/NotFoundError.js';
-
-const { Pool } = pkg;
+import pool from '../../../config/postgres/pool.js';
 
 // Mocking pg.Pool dan bcrypt
 jest.mock('pg', () => {
@@ -19,7 +17,6 @@ jest.mock('bcrypt');
 
 describe('UserService', () => {
   let userService;
-  const pool = new Pool();
 
   beforeEach(() => {
     userService = new UserService();

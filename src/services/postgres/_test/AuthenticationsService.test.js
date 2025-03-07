@@ -1,4 +1,3 @@
-import pkg from 'pg';
 import dotenv from 'dotenv';
 import InvariantError from '../../../exceptions/InvariantError.js';
 import AuthenticationsTableTestHelper from '../../../../tests/AuthenticationTableHelper.js';
@@ -6,11 +5,9 @@ import AuthenticationsService from '../AuthenticationsService.js';
 import UsersTableTestHelper from '../../../../tests/UserTableHelper.js';
 import AuthenticationError from '../../../exceptions/AuthenticationError.js';
 import NotFoundError from '../../../exceptions/NotFoundError.js';
+import pool from '../../../config/postgres/pool.js';
 
 dotenv.config();
-
-const { Pool } = pkg;
-const pool = new Pool();
 
 describe('Authentication Service', () => {
   afterAll(async () => {

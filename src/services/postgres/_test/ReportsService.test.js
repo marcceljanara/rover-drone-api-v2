@@ -20,11 +20,11 @@ describe('ReportsService', () => {
   let admin;
   let mockResponse;
   afterAll(async () => {
+    await pool.end();
     await UsersTableTestHelper.cleanTable();
     await RentalsTableTestHelper.cleanTable();
     await DevicesTableTestHelper.cleanTable();
     await PaymentsTableTestHelper.cleanTable();
-    await pool.end();
   });
 
   afterEach(async () => {
