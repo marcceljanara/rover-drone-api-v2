@@ -2,7 +2,6 @@
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import express from 'express';
-import '../services/cron/CleanExpiredRental.js';
 
 // plugin
 import usersPlugin from '../api/users/index.js';

@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 import createServer from './http/server.js';
 import './services/mqtt/SensorsService.js';
+import './services/cron/CleanExpiredRental.js';
 
 const app = createServer();
 
