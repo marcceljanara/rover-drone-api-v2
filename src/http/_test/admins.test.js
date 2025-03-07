@@ -15,7 +15,7 @@ const registerAndLoginAdmin = async (server) => {
   };
   await UsersTableTestHelper.addAdmin(payload);
 
-  const login = await request(server).post('/authentications')
+  const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
   const { accessToken } = login.body.data;

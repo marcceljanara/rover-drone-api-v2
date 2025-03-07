@@ -75,7 +75,7 @@ describe('/v1/payments endpoint', () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ interval: 6 });
 
@@ -96,7 +96,7 @@ describe('/v1/payments endpoint', () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const { paymentId } = (await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ interval: 6 })).body.data;
 
@@ -138,7 +138,7 @@ describe('/v1/payments endpoint', () => {
       };
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const { paymentId } = (await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ interval: 6 })).body.data;
 
@@ -180,7 +180,7 @@ describe('/v1/payments endpoint', () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const { paymentId } = (await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ interval: 6 })).body.data;
 
