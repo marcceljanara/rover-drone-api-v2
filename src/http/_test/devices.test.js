@@ -17,14 +17,14 @@ const registerAndLoginAdmin = async (server) => {
   };
   await UsersTableTestHelper.addAdmin(payload);
 
-  const login = await request(server).post('/authentications')
+  const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
   const { accessToken } = login.body.data;
   return accessToken;
 };
 
-describe('/devices endpoint', () => {
+describe('/v1/devices endpoint', () => {
   let server;
   let accessTokenAdmin;
 
@@ -47,11 +47,11 @@ describe('/devices endpoint', () => {
     await pool.end();
   });
 
-  describe('POST /devices', () => {
+  describe('POST /v1/devices', () => {
     it('should respond with 201 and add new device', async () => {
       // Arrange and Actions
       const response = await request(server)
-        .post('/devices')
+        .post('/v1/devices')
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -62,14 +62,14 @@ describe('/devices endpoint', () => {
     });
   });
 
-  describe('DELETE /devices/:id', () => {
+  describe('DELETE /v1/devices/:id', () => {
     it('should respond with 200 and delete device by id', async () => {
       // Arrange
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
 
       // Action
       const response = await request(server)
-        .put(`/devices/${deviceId}`)
+        .put(`/v1/devices/${deviceId}`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -81,7 +81,7 @@ describe('/devices endpoint', () => {
     it('should response with 404 if device not found', async () => {
       // Arrange and Action
       const response = await request(server)
-        .put('/devices/notfound')
+        .put('/v1/devices/notfound')
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -91,7 +91,7 @@ describe('/devices endpoint', () => {
     });
   });
 
-  describe('PUT /devices/:id/status', () => {
+  describe('PUT /v1/devices/:id/status', () => {
     it('should respond with 200 and put status device by id', async () => {
       // Arrange
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -101,7 +101,7 @@ describe('/devices endpoint', () => {
 
       // Action
       const response = await request(server)
-        .put(`/devices/${deviceId}/status`)
+        .put(`/v1/devices/${deviceId}/status`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`)
         .send(requestPayload);
 
@@ -115,7 +115,7 @@ describe('/devices endpoint', () => {
     it('should response with 404 if device not found', async () => {
       // Arrange and Action
       const response = await request(server)
-        .put('/devices/notfound/status')
+        .put('/v1/devices/notfound/status')
         .set('Authorization', `Bearer ${accessTokenAdmin}`)
         .send({ status: 'active' });
 
@@ -126,14 +126,14 @@ describe('/devices endpoint', () => {
     });
   });
 
-  describe('PUT /devices/:id/mqttsensor', () => {
+  describe('PUT /v1/devices/:id/mqttsensor', () => {
     it('should respond with 200 and put sensor topic device by id', async () => {
       // Arrange
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
 
       // Action
       const response = await request(server)
-        .put(`/devices/${deviceId}/mqttsensor`)
+        .put(`/v1/devices/${deviceId}/mqttsensor`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -146,7 +146,7 @@ describe('/devices endpoint', () => {
     it('should response with 404 if device not found', async () => {
       // Arrange and Action
       const response = await request(server)
-        .put('/devices/notfound/mqttsensor')
+        .put('/v1/devices/notfound/mqttsensor')
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -156,14 +156,14 @@ describe('/devices endpoint', () => {
     });
   });
 
-  describe('PUT /devices/:id/mqttcontrol', () => {
+  describe('PUT /v1/devices/:id/mqttcontrol', () => {
     it('should respond with 200 and put control topic device by id', async () => {
       // Arrange
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
 
       // Action
       const response = await request(server)
-        .put(`/devices/${deviceId}/mqttcontrol`)
+        .put(`/v1/devices/${deviceId}/mqttcontrol`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -176,7 +176,7 @@ describe('/devices endpoint', () => {
     it('should response with 404 if device not found', async () => {
       // Arrange and Action
       const response = await request(server)
-        .put('/devices/notfound/mqttcontrol')
+        .put('/v1/devices/notfound/mqttcontrol')
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -186,7 +186,7 @@ describe('/devices endpoint', () => {
     });
   });
 
-  describe('GET /devices', () => {
+  describe('GET /v1/devices', () => {
     it('should response with 200 and get all device by admin', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -194,7 +194,7 @@ describe('/devices endpoint', () => {
 
       // Action
       const response = await request(server)
-        .get('/devices')
+        .get('/v1/devices')
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -205,7 +205,7 @@ describe('/devices endpoint', () => {
     });
   });
 
-  describe('GET /devices/:id', () => {
+  describe('GET /v1/devices/:id', () => {
     it('should response with 200 and get device detail by admin', async () => {
       // Arrange
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -213,7 +213,7 @@ describe('/devices endpoint', () => {
 
       // Action
       const response = await request(server)
-        .get(`/devices/${deviceId}`)
+        .get(`/v1/devices/${deviceId}`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -225,7 +225,7 @@ describe('/devices endpoint', () => {
     it('should response with 404 if device not found', async () => {
       // Arrange and Action
       const response = await request(server)
-        .get('/devices/notfound')
+        .get('/v1/devices/notfound')
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -241,7 +241,7 @@ describe('/devices endpoint', () => {
 
       // Actions
       const response = await request(server)
-        .put(`/devices/${deviceId}/control`)
+        .put(`/v1/devices/${deviceId}/control`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`)
         .send({ action: 'on', command: 'power' });
 
@@ -253,7 +253,7 @@ describe('/devices endpoint', () => {
     it('should response with 404 if device not found', async () => {
       // Arrange and Action
       const response = await request(server)
-        .get('/devices/notfound/control')
+        .get('/v1/devices/notfound/control')
         .set('Authorization', `Bearer ${accessTokenAdmin}`)
         .send({ action: 'on', command: 'power' });
 
@@ -268,7 +268,7 @@ describe('/devices endpoint', () => {
 
       // Action
       const response = await request(server)
-        .put(`/devices/${deviceId}/control`)
+        .put(`/v1/devices/${deviceId}/control`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`)
         .send({ action: 'active', command: 'power' });
 
@@ -278,7 +278,7 @@ describe('/devices endpoint', () => {
       expect(responseJson.status).toBe('fail');
     });
   });
-  describe('GET /devices/:id/sensors/intervals', () => {
+  describe('GET /v1/devices/:id/sensors/intervals', () => {
     it('should response with 200 and get sensor data based intervals', async () => {
       // Arrange
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -286,7 +286,7 @@ describe('/devices endpoint', () => {
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-000', deviceId });
       // Action
       const response = await request(server)
-        .get(`/devices/${deviceId}/sensors/intervals?interval=12h`)
+        .get(`/v1/devices/${deviceId}/sensors/intervals?interval=12h`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -302,7 +302,7 @@ describe('/devices endpoint', () => {
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-000', deviceId });
       // Action
       const response = await request(server)
-        .get(`/devices/${deviceId}/sensors/intervals`)
+        .get(`/v1/devices/${deviceId}/sensors/intervals`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -318,7 +318,7 @@ describe('/devices endpoint', () => {
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-000', deviceId });
       // Action
       const response = await request(server)
-        .get(`/devices/${deviceId}/sensors/intervals?interval=9h`)
+        .get(`/v1/devices/${deviceId}/sensors/intervals?interval=9h`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -327,7 +327,7 @@ describe('/devices endpoint', () => {
       expect(responseJson.status).toBe('fail');
     });
   });
-  describe('GET /devices/:id/sensors/limits', () => {
+  describe('GET /v1/devices/:id/sensors/limits', () => {
     it('should response with 200 and get sensor data based limit', async () => {
       // Arrange
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -340,7 +340,7 @@ describe('/devices endpoint', () => {
 
       // Action
       const response = await request(server)
-        .get(`/devices/${deviceId}/sensors/limits?limit=5`)
+        .get(`/v1/devices/${deviceId}/sensors/limits?limit=5`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -360,7 +360,7 @@ describe('/devices endpoint', () => {
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-000', deviceId });
       // Action
       const response = await request(server)
-        .get(`/devices/${deviceId}/sensors/limits`)
+        .get(`/v1/devices/${deviceId}/sensors/limits`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -376,7 +376,7 @@ describe('/devices endpoint', () => {
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-000', deviceId });
       // Action
       const response = await request(server)
-        .get(`/devices/${deviceId}/sensors/limits?limit=7`)
+        .get(`/v1/devices/${deviceId}/sensors/limits?limit=7`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -385,7 +385,7 @@ describe('/devices endpoint', () => {
       expect(responseJson.status).toBe('fail');
     });
   });
-  describe('GET /devices/:id/sensors/downloads', () => {
+  describe('GET /v1/devices/:id/sensors/downloads', () => {
     it('should response with 200 and get sensor data download csv based downloads', async () => {
       // Arrange
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -393,7 +393,7 @@ describe('/devices endpoint', () => {
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-000', deviceId });
       // Action
       const response = await request(server)
-        .get(`/devices/${deviceId}/sensors/downloads?interval=12h`)
+        .get(`/v1/devices/${deviceId}/sensors/downloads?interval=12h`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -407,7 +407,7 @@ describe('/devices endpoint', () => {
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-000', deviceId });
       // Action
       const response = await request(server)
-        .get(`/devices/${deviceId}/sensors/downloads`)
+        .get(`/v1/devices/${deviceId}/sensors/downloads`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -421,7 +421,7 @@ describe('/devices endpoint', () => {
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-000', deviceId });
       // Action
       const response = await request(server)
-        .get(`/devices/${deviceId}/sensors/downloads?interval=9h`)
+        .get(`/v1/devices/${deviceId}/sensors/downloads?interval=9h`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
