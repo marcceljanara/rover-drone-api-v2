@@ -10,7 +10,7 @@ const usersPlugin = ({
     validator,
   });
 
-  app.use('/users', userRoutes(handler));
+  app.use('/v1/users', userRoutes(handler));
 };
 
 export default usersPlugin;
