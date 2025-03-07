@@ -17,7 +17,7 @@ const registerAndLoginAdmin = async (server) => {
   };
   await UsersTableTestHelper.addAdmin(payload);
 
-  const login = await request(server).post('/authentications')
+  const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
   const { accessToken } = login.body.data;
@@ -33,14 +33,14 @@ const registerAndLoginUser = async (server) => {
   };
   await UsersTableTestHelper.addUser(payload);
 
-  const login = await request(server).post('/authentications')
+  const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
   const { accessToken } = login.body.data;
   return accessToken;
 };
 
-describe('/rentals endpoint', () => {
+describe('/v1/rentals endpoint', () => {
   let server;
   let accessTokenAdmin;
   let accessTokenUser;
@@ -65,14 +65,14 @@ describe('/rentals endpoint', () => {
     await pool.end();
   });
 
-  describe('POST /rentals', () => {
+  describe('POST /v1/rentals', () => {
     it('should return response 201 and add new rental', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
 
       // Action
       const response = await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ interval: 6 });
 
@@ -87,7 +87,7 @@ describe('/rentals endpoint', () => {
 
       // Action
       const response = await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send(
           { interval: 6 },
@@ -105,7 +105,7 @@ describe('/rentals endpoint', () => {
 
       // Action
       const response = await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenAdmin}`)
         .send({ interval: 6 });
 
@@ -117,19 +117,19 @@ describe('/rentals endpoint', () => {
     });
   });
 
-  describe('PUT /rentals/:id/status', () => {
+  describe('PUT /v1/rentals/:id/status', () => {
     it('should return response code 200 and change status rental', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const responseRental = await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ interval: 6 });
       const rentalId = responseRental.body.data.id;
 
       // Action
       const response = await request(server)
-        .put(`/rentals/${rentalId}/status`)
+        .put(`/v1/rentals/${rentalId}/status`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`)
         .send({ rentalStatus: 'active' });
 
@@ -145,7 +145,7 @@ describe('/rentals endpoint', () => {
 
       // Action
       const response = await request(server)
-        .put(`/rentals/${rentalId}/status`)
+        .put(`/v1/rentals/${rentalId}/status`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`)
         .send({ rentalStatus: 'active' });
 
@@ -157,19 +157,19 @@ describe('/rentals endpoint', () => {
     });
   });
 
-  describe('PUT /rentals/:id', () => {
+  describe('PUT /v1/rentals/:id', () => {
     it('should return response code 200 and soft delete rental', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const responseRental = await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ interval: 6 });
       const rentalId = responseRental.body.data.id;
 
       // Action
       const response = await request(server)
-        .put(`/rentals/${rentalId}`)
+        .put(`/v1/rentals/${rentalId}`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -184,7 +184,7 @@ describe('/rentals endpoint', () => {
 
       // Action
       const response = await request(server)
-        .put(`/rentals/${rentalId}`)
+        .put(`/v1/rentals/${rentalId}`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -195,18 +195,18 @@ describe('/rentals endpoint', () => {
     });
   });
 
-  describe('GET /rentals', () => {
+  describe('GET /v1/rentals', () => {
     it('should return response code 200 and return all rental data', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ interval: 6 });
 
       // Action
       const response = await request(server)
-        .get('/rentals')
+        .get('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -217,19 +217,19 @@ describe('/rentals endpoint', () => {
     });
   });
 
-  describe('GET /rentals/:id', () => {
+  describe('GET /v1/rentals/:id', () => {
     it('should return response code 200 and get detail rental', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const responseRental = await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ interval: 6 });
       const rentalId = responseRental.body.data.id;
 
       // Action
       const response = await request(server)
-        .get(`/rentals/${rentalId}`)
+        .get(`/v1/rentals/${rentalId}`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -246,7 +246,7 @@ describe('/rentals endpoint', () => {
 
       // Action
       const response = await request(server)
-        .get(`/rentals/${rentalId}`)
+        .get(`/v1/rentals/${rentalId}`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -257,19 +257,19 @@ describe('/rentals endpoint', () => {
     });
   });
 
-  describe('PUT /rentals/:id/cancel', () => {
+  describe('PUT /v1/rentals/:id/cancel', () => {
     it('should return response code 200 and cancel rental', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const responseRental = await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ interval: 6 });
       const rentalId = responseRental.body.data.id;
 
       // Action
       const response = await request(server)
-        .put(`/rentals/${rentalId}/cancel`)
+        .put(`/v1/rentals/${rentalId}/cancel`)
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ rentalStatus: 'cancelled' });
 
@@ -285,7 +285,7 @@ describe('/rentals endpoint', () => {
 
       // Action
       const response = await request(server)
-        .put(`/rentals/${rentalId}/cancel`)
+        .put(`/v1/rentals/${rentalId}/cancel`)
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ rentalStatus: 'cancelled' });
 

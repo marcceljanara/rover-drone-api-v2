@@ -6,14 +6,14 @@ const rentalRoutes = (handler) => {
   const router = express.Router();
 
   // Admin
-  router.put('/rentals/:id/status', verifyToken, verifyAdmin, handler.putStatusRentalHandler);
-  router.put('/rentals/:id', verifyToken, verifyAdmin, handler.deleteRentalHandler);
+  router.put('/v1/rentals/:id/status', verifyToken, verifyAdmin, handler.putStatusRentalHandler);
+  router.put('/v1/rentals/:id', verifyToken, verifyAdmin, handler.deleteRentalHandler);
 
   // User (same id)
-  router.post('/rentals', verifyToken, handler.postAddRentalHandler);
-  router.get('/rentals', verifyToken, handler.getAllRentalHandler);
-  router.put('/rentals/:id/cancel', verifyToken, handler.putCancelRentalHandler);
-  router.get('/rentals/:id', verifyToken, handler.getDetailRentalHandler);
+  router.post('/v1/rentals', verifyToken, handler.postAddRentalHandler);
+  router.get('/v1/rentals', verifyToken, handler.getAllRentalHandler);
+  router.put('/v1/rentals/:id/cancel', verifyToken, handler.putCancelRentalHandler);
+  router.get('/v1/rentals/:id', verifyToken, handler.getDetailRentalHandler);
 
   return router;
 };
