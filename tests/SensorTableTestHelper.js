@@ -1,8 +1,6 @@
 /* istanbul ignore file */
-import pkg from 'pg';
 
-const { Pool } = pkg;
-const pool = new Pool();
+import pool from '../src/config/postgres/pool.js';
 
 function generateRandomSensor(min = 20, max = 40) {
   return (Math.random() * (max - min) + min).toFixed(2); // 2 desimal
