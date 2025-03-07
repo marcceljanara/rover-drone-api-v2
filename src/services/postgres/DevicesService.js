@@ -1,14 +1,12 @@
 /* eslint-disable import/no-extraneous-dependencies */
-import pkg from 'pg';
 import json2csv from 'json2csv';
 import { nanoid } from 'nanoid';
 import NotFoundError from '../../exceptions/NotFoundError.js';
-
-const { Pool } = pkg;
+import pool from '../../config/postgres/pool.js';
 
 class DevicesService {
   constructor() {
-    this._pool = new Pool();
+    this._pool = pool;
   }
 
   async addDevice() {

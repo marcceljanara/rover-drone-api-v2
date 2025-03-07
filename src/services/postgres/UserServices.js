@@ -1,15 +1,13 @@
 import { nanoid } from 'nanoid';
 import bcrypt from 'bcrypt';
-import pkg from 'pg';
 import InvariantError from '../../exceptions/InvariantError.js';
 import AuthenticationError from '../../exceptions/AuthenticationError.js';
 import NotFoundError from '../../exceptions/NotFoundError.js';
-
-const { Pool } = pkg;
+import pool from '../../config/postgres/pool.js';
 
 class UserService {
   constructor() {
-    this._pool = new Pool();
+    this._pool = pool;
   }
 
   async registerUser({

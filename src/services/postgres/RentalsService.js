@@ -1,15 +1,13 @@
-import pkg from 'pg';
 import { nanoid } from 'nanoid';
 import NotFoundError from '../../exceptions/NotFoundError.js';
 import AuthorizationError from '../../exceptions/AuthorizationError.js';
 import InvariantError from '../../exceptions/InvariantError.js';
 import calculateRentalCost from '../../utils/calculatorUtils.js';
-
-const { Pool } = pkg;
+import pool from '../../config/postgres/pool.js';
 
 class RentalsService {
   constructor() {
-    this._pool = new Pool();
+    this._pool = pool;
   }
 
   async changeStatusRental(id, rentalStatus) {
