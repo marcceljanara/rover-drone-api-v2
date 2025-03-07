@@ -15,13 +15,13 @@ const registerAndLoginAdmin = async (server) => {
   };
   await UsersTableTestHelper.addAdmin(payload);
 
-  const login = await request(server).post('/authentications')
+  const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
   const { accessToken } = login.body.data;
   return accessToken;
 };
-describe('/admin/management endpoint', () => {
+describe('/v1/admin endpoint', () => {
   let server;
   let accessToken;
 
@@ -54,7 +54,7 @@ describe('/admin/management endpoint', () => {
     return user;
   };
 
-  describe('POST /admin/management', () => {
+  describe('POST /v1/admin', () => {
     it('should respond with 201 and register user', async () => {
       const requestPayload = {
         username: 'userdummy',
@@ -64,7 +64,7 @@ describe('/admin/management endpoint', () => {
       };
 
       const response = await request(server)
-        .post('/admin/management')
+        .post('/v1/admin')
         .set('Authorization', `Bearer ${accessToken}`)
         .send(requestPayload);
 
@@ -84,7 +84,7 @@ describe('/admin/management endpoint', () => {
       await UsersTableTestHelper.addUser({ email: 'userdummy@gmail.com', username: 'userdummy' });
 
       const response = await request(server)
-        .post('/admin/management')
+        .post('/v1/admin')
         .set('Authorization', `Bearer ${accessToken}`)
         .send(requestPayload);
 
@@ -95,7 +95,7 @@ describe('/admin/management endpoint', () => {
     });
   });
 
-  describe('GET /admin/management', () => {
+  describe('GET /v1/admin', () => {
     beforeEach(async () => {
       // Menambahkan data user dan admin untuk pengujian
       await addUser({ id: 'user-b', username: 'userB', email: 'userb@gmail.com' });
@@ -106,7 +106,7 @@ describe('/admin/management endpoint', () => {
 
     it('should respond with 200 and get all users and admins with default limit and page', async () => {
       const response = await request(server)
-        .get('/admin/management')
+        .get('/v1/admin')
         .set('Authorization', `Bearer ${accessToken}`);
 
       const responseJson = response.body;
@@ -119,7 +119,7 @@ describe('/admin/management endpoint', () => {
 
     it('should respond with 200 and paginated users when page and limit are provided', async () => {
       const response = await request(server)
-        .get('/admin/management?page=1&limit=2') // Testing pagination
+        .get('/v1/admin?page=1&limit=2') // Testing pagination
         .set('Authorization', `Bearer ${accessToken}`);
 
       const responseJson = response.body;
@@ -133,7 +133,7 @@ describe('/admin/management endpoint', () => {
 
     it('should respond with 200 and filtered users when search query is provided', async () => {
       const response = await request(server)
-        .get('/admin/management?search=admin') // Testing search feature
+        .get('/v1/admin?search=admin') // Testing search feature
         .set('Authorization', `Bearer ${accessToken}`);
 
       const responseJson = response.body;
@@ -146,7 +146,7 @@ describe('/admin/management endpoint', () => {
 
     it('should respond with 200 and empty users when search query does not match any user', async () => {
       const response = await request(server)
-        .get('/admin/management?search=nonexistent') // Search for non-existent data
+        .get('/v1/admin?search=nonexistent') // Search for non-existent data
         .set('Authorization', `Bearer ${accessToken}`);
 
       const responseJson = response.body;
@@ -158,12 +158,12 @@ describe('/admin/management endpoint', () => {
     });
   });
 
-  describe('GET /admin/management/:id', () => {
+  describe('GET /v1/admin/:id', () => {
     it('should respond with 200 and get user details', async () => {
       const userId = await addUser();
 
       const response = await request(server)
-        .get(`/admin/management/${userId}`)
+        .get(`/v1/admin/${userId}`)
         .set('Authorization', `Bearer ${accessToken}`);
 
       const responseJson = response.body;
@@ -174,7 +174,7 @@ describe('/admin/management endpoint', () => {
 
     it('should respond with 404 if user not found', async () => {
       const response = await request(server)
-        .get('/admin/management/notfound')
+        .get('/v1/admin/notfound')
         .set('Authorization', `Bearer ${accessToken}`);
 
       const responseJson = response.body;
@@ -184,12 +184,12 @@ describe('/admin/management endpoint', () => {
     });
   });
 
-  describe('DELETE /admin/management/:id', () => {
+  describe('DELETE /v1/admin/:id', () => {
     it('should respond with 200 and delete user by id', async () => {
       const userId = await addUser();
 
       const response = await request(server)
-        .delete(`/admin/management/${userId}`)
+        .delete(`/v1/admin/${userId}`)
         .set('Authorization', `Bearer ${accessToken}`);
 
       const responseJson = response.body;
@@ -199,7 +199,7 @@ describe('/admin/management endpoint', () => {
 
     it('should respond with 404 if user not found', async () => {
       const response = await request(server)
-        .delete('/admin/management/notfound')
+        .delete('/v1/admin/notfound')
         .set('Authorization', `Bearer ${accessToken}`);
 
       const responseJson = response.body;
@@ -209,7 +209,7 @@ describe('/admin/management endpoint', () => {
     });
   });
 
-  describe('PUT /admin/management/:id', () => {
+  describe('PUT /v1/admin/:id', () => {
     it('should respond with 200 and update user password', async () => {
       const userId = await addUser();
       const requestPayload = {
@@ -218,7 +218,7 @@ describe('/admin/management endpoint', () => {
       };
 
       const response = await request(server)
-        .put(`/admin/management/${userId}`)
+        .put(`/v1/admin/${userId}`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send(requestPayload);
 
@@ -235,7 +235,7 @@ describe('/admin/management endpoint', () => {
       };
 
       const response = await request(server)
-        .put(`/admin/management/${userId}`)
+        .put(`/v1/admin/${userId}`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send(requestPayload);
 

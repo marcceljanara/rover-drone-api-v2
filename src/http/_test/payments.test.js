@@ -21,7 +21,7 @@ const registerAndLoginAdmin = async (server) => {
   };
   await UsersTableTestHelper.addAdmin(payload);
 
-  const login = await request(server).post('/authentications')
+  const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
   const { accessToken } = login.body.data;
@@ -37,14 +37,14 @@ const registerAndLoginUser = async (server) => {
   };
   await UsersTableTestHelper.addUser(payload);
 
-  const login = await request(server).post('/authentications')
+  const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
   const { accessToken } = login.body.data;
   return accessToken;
 };
 
-describe('/payments endpoint', () => {
+describe('/v1/payments endpoint', () => {
   let server;
   let accessTokenAdmin;
   let accessTokenUser;
@@ -70,18 +70,18 @@ describe('/payments endpoint', () => {
     await pool.end();
   });
 
-  describe('GET /payments', () => {
+  describe('GET /v1/payments', () => {
     it('should return response code 200 and return all payment data', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ interval: 6 });
 
       // Action
       const response = await request(server)
-        .get('/payments')
+        .get('/v1/payments')
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -91,18 +91,18 @@ describe('/payments endpoint', () => {
       expect(responseJson.data.payments).toHaveLength(1);
     });
   });
-  describe('GET /payments/:id', () => {
+  describe('GET /v1/payments/:id', () => {
     it('should return response code 200 and get detail payment', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const { paymentId } = (await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ interval: 6 })).body.data;
 
       // Action
       const response = await request(server)
-        .get(`/payments/${paymentId}`)
+        .get(`/v1/payments/${paymentId}`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -117,7 +117,7 @@ describe('/payments endpoint', () => {
 
       // Action
       const response = await request(server)
-        .get(`/payments/${paymentId}`)
+        .get(`/v1/payments/${paymentId}`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -128,7 +128,7 @@ describe('/payments endpoint', () => {
     });
   });
 
-  describe('PUT /payments/:id', () => {
+  describe('PUT /v1/payments/:id', () => {
     it('should return response code 200 and verify payment correctly', async () => {
       // Arrange
       const requestPayload = {
@@ -138,13 +138,13 @@ describe('/payments endpoint', () => {
       };
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const { paymentId } = (await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ interval: 6 })).body.data;
 
       // Action
       const response = await request(server)
-        .put(`/payments/${paymentId}`)
+        .put(`/v1/payments/${paymentId}`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`)
         .send(requestPayload);
 
@@ -164,7 +164,7 @@ describe('/payments endpoint', () => {
 
       // Action
       const response = await request(server)
-        .put(`/payments/${paymentId}`)
+        .put(`/v1/payments/${paymentId}`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`)
         .send(requestPayload);
 
@@ -175,18 +175,18 @@ describe('/payments endpoint', () => {
     });
   });
 
-  describe('PATCH /payments/:id', () => {
+  describe('PATCH /v1/payments/:id', () => {
     it('should return response code 404 and delete payment correctly', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const { paymentId } = (await request(server)
-        .post('/rentals')
+        .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ interval: 6 })).body.data;
 
       // Action
       const response = await request(server)
-        .patch(`/payments/${paymentId}`)
+        .patch(`/v1/payments/${paymentId}`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert
@@ -200,7 +200,7 @@ describe('/payments endpoint', () => {
 
       // Action
       const response = await request(server)
-        .patch(`/payments/${paymentId}`)
+        .patch(`/v1/payments/${paymentId}`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
       // Assert

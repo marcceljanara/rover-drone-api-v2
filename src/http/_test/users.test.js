@@ -6,7 +6,7 @@ import pool from '../../config/postgres/pool.js';
 
 dotenv.config();
 
-describe('/users endpoints', () => {
+describe('/v1/users endpoints', () => {
   let server;
 
   beforeAll(async () => {
@@ -20,7 +20,7 @@ describe('/users endpoints', () => {
     await UsersTableTestHelper.cleanTable();
   });
 
-  describe('POST /users/register', () => {
+  describe('POST /v1/users/register', () => {
     it('should response 201 and register new user', async () => {
       // Arrange
       const requestPayload = {
@@ -32,7 +32,7 @@ describe('/users endpoints', () => {
 
       // Action
       const response = await request(server)
-        .post('/users/register')
+        .post('/v1/users/register')
         .send(requestPayload);
 
       // Assert
@@ -56,7 +56,7 @@ describe('/users endpoints', () => {
 
       // Action
       const response = await request(server)
-        .post('/users/register')
+        .post('/v1/users/register')
         .send(requestPayload);
 
       // Assert
@@ -66,7 +66,7 @@ describe('/users endpoints', () => {
     });
   });
 
-  describe('POST /users/verify-otp', () => {
+  describe('POST /v1/users/verify-otp', () => {
     it('should return response 200 and verify otp', async () => {
       // Arrange
       const requestPayload = {
@@ -77,14 +77,14 @@ describe('/users endpoints', () => {
       };
 
       const responseRegister = await request(server)
-        .post('/users/register')
+        .post('/v1/users/register')
         .send(requestPayload);
 
       const otpCode = await UsersTableTestHelper.findOtpUserById(responseRegister.body.data.userId);
 
       // Action
       const response = await request(server)
-        .post('/users/verify-otp')
+        .post('/v1/users/verify-otp')
         .send({ email: requestPayload.email, otp: otpCode });
 
       // Assert
@@ -96,7 +96,7 @@ describe('/users endpoints', () => {
     it('should return response 404 if email notfound', async () => {
       // Arrange and Action
       const response = await request(server)
-        .post('/users/verify-otp')
+        .post('/v1/users/verify-otp')
         .send({ email: 'notfound@gmail.com', otp: '123456' });
 
       // Assert
@@ -115,12 +115,12 @@ describe('/users endpoints', () => {
       };
 
       await request(server)
-        .post('/users/register')
+        .post('/v1/users/register')
         .send(requestPayload);
 
       // Action
       const response = await request(server)
-        .post('/users/verify-otp')
+        .post('/v1/users/verify-otp')
         .send({ email: requestPayload.email, otp: '123456' });
 
       // Assert
@@ -129,7 +129,7 @@ describe('/users endpoints', () => {
       expect(responseJson.status).toBe('fail');
     });
   });
-  describe('POST /users/resend-otp', () => {
+  describe('POST /v1/users/resend-otp', () => {
     it('should return response 200 and resend new otp code', async () => {
       // Arrange
       const requestPayload = {
@@ -140,12 +140,12 @@ describe('/users endpoints', () => {
       };
 
       await request(server)
-        .post('/users/register')
+        .post('/v1/users/register')
         .send(requestPayload);
 
       // Action
       const response = await request(server)
-        .post('/users/resend-otp')
+        .post('/v1/users/resend-otp')
         .send({ email: requestPayload.email });
 
       // Assert
@@ -156,7 +156,7 @@ describe('/users endpoints', () => {
     it('should return response 404 if email notfound', async () => {
       // Arrange and Action
       const response = await request(server)
-        .post('/users/resend-otp')
+        .post('/v1/users/resend-otp')
         .send({ email: 'notfound@gmail.com' });
 
       // Assert

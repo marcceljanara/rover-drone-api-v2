@@ -7,7 +7,7 @@ import pool from '../../config/postgres/pool.js';
 
 dotenv.config();
 
-describe('/authentications endpoint', () => {
+describe('/v1/authentications endpoint', () => {
   afterAll(async () => {
     await pool.end();
   });
@@ -17,7 +17,7 @@ describe('/authentications endpoint', () => {
     await AuthenticationsTableTestHelper.cleanTable();
   });
 
-  describe('POST /authentications', () => {
+  describe('POST /v1/authentications', () => {
     it('should response 201 and new authentication', async () => {
       // Arrange
       const requestPayload = {
@@ -28,7 +28,7 @@ describe('/authentications endpoint', () => {
       await UsersTableTestHelper.addUser('user-12345');
 
       // Action
-      const response = await request(server).post('/authentications').send(requestPayload);
+      const response = await request(server).post('/v1/authentications').send(requestPayload);
 
       // Assert
       const responseJson = response.body;
@@ -48,7 +48,7 @@ describe('/authentications endpoint', () => {
       await UsersTableTestHelper.addUser('user-12345');
 
       // Action
-      const response = await request(server).post('/authentications').send(requestPayload);
+      const response = await request(server).post('/v1/authentications').send(requestPayload);
 
       // Assert
       const responseJson = response.body;
@@ -67,7 +67,7 @@ describe('/authentications endpoint', () => {
       await UsersTableTestHelper.addUser('user-12345');
 
       // Action
-      const response = await request(server).post('/authentications').send(requestPayload);
+      const response = await request(server).post('/v1/authentications').send(requestPayload);
 
       // Assert
       const responseJson = response.body;
@@ -85,7 +85,7 @@ describe('/authentications endpoint', () => {
       await UsersTableTestHelper.addUser('user-12345');
 
       // Action
-      const response = await request(server).post('/authentications').send(requestPayload);
+      const response = await request(server).post('/v1/authentications').send(requestPayload);
 
       // Assert
       const responseJson = response.body;
@@ -94,7 +94,7 @@ describe('/authentications endpoint', () => {
       expect(responseJson.message).toEqual('"password" must be a string');
     });
   });
-  describe('PUT /authentications', () => {
+  describe('PUT /v1/authentications', () => {
     it('should return 200 and new access token', async () => {
       // Arrange
       const requestLoginPayload = {
@@ -103,11 +103,11 @@ describe('/authentications endpoint', () => {
       };
       const server = createServer();
       await UsersTableTestHelper.addUser('user-12345');
-      const loginResponse = await request(server).post('/authentications').send(requestLoginPayload);
+      const loginResponse = await request(server).post('/v1/authentications').send(requestLoginPayload);
       const { refreshToken } = loginResponse.body.data;
 
       // Action
-      const response = await request(server).put('/authentications').send({ refreshToken });
+      const response = await request(server).put('/v1/authentications').send({ refreshToken });
 
       // Assert
       const responseJson = response.body;
@@ -120,7 +120,7 @@ describe('/authentications endpoint', () => {
       const server = createServer();
 
       // Actions
-      const response = await request(server).put('/authentications').send({});
+      const response = await request(server).put('/v1/authentications').send({});
 
       // Assert
       const responseJson = response.body;
@@ -129,7 +129,7 @@ describe('/authentications endpoint', () => {
       expect(responseJson.message).toEqual('"refreshToken" is required');
     });
   });
-  describe('DELETE /authentications', () => {
+  describe('DELETE /v1/authentications', () => {
     it('should response 200 if refresh token valid', async () => {
       // Arrange
       const server = createServer();
@@ -137,7 +137,7 @@ describe('/authentications endpoint', () => {
       await AuthenticationsTableTestHelper.addToken(refreshToken);
 
       // Action
-      const response = (await request(server).delete('/authentications').send({ refreshToken }));
+      const response = (await request(server).delete('/v1/authentications').send({ refreshToken }));
 
       // Assert
       const responseJson = response.body;
@@ -149,7 +149,7 @@ describe('/authentications endpoint', () => {
       const server = createServer();
 
       // Actions
-      const response = await request(server).delete('/authentications').send({});
+      const response = await request(server).delete('/v1/authentications').send({});
 
       // Assert
       const responseJson = response.body;
