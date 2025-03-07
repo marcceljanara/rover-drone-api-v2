@@ -1,6 +1,7 @@
-import express from 'express';
+/* eslint-disable import/no-extraneous-dependencies */
+import helmet from 'helmet';
 import dotenv from 'dotenv';
-import '../services/cron/CleanExpiredRental.js';
+import express from 'express';
 
 // plugin
 import usersPlugin from '../api/users/index.js';
@@ -43,6 +44,8 @@ dotenv.config();
 function createServer() {
   const app = express();
   app.use(express.json());
+  app.use(helmet.hidePoweredBy());
+  app.use(helmet.noSniff()); // Mencegah MIME-sniffing
 
   // Dependency Injection
   const userService = new UserService();

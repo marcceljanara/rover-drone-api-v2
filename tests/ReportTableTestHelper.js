@@ -1,8 +1,5 @@
 /* istanbul ignore file */
-import pkg from 'pg';
-
-const { Pool } = pkg;
-const pool = new Pool();
+import pool from '../src/config/postgres/pool.js';
 
 const ReportsTableTestHelper = {
   async findReportById(id) {

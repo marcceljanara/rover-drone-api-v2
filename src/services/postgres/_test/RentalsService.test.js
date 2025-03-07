@@ -1,4 +1,3 @@
-import pkg from 'pg';
 import dotenv from 'dotenv';
 import RentalsService from '../RentalsService.js';
 import NotFoundError from '../../../exceptions/NotFoundError.js';
@@ -7,11 +6,9 @@ import DevicesTableTestHelper from '../../../../tests/DevicesTableTestHelper.js'
 import UsersTableTestHelper from '../../../../tests/UserTableHelper.js';
 import InvariantError from '../../../exceptions/InvariantError.js';
 import AuthorizationError from '../../../exceptions/AuthorizationError.js';
+import pool from '../../../config/postgres/pool.js';
 
 dotenv.config();
-
-const { Pool } = pkg;
-const pool = new Pool();
 
 describe('RentalsService', () => {
   afterAll(async () => {

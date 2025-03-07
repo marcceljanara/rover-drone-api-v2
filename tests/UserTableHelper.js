@@ -1,9 +1,7 @@
 /* istanbul ignore file */
-import pkg from 'pg';
-import bcrypt from 'bcrypt';
 
-const { Pool } = pkg;
-const pool = new Pool();
+import bcrypt from 'bcrypt';
+import pool from '../src/config/postgres/pool.js';
 
 const UsersTableTestHelper = {
 

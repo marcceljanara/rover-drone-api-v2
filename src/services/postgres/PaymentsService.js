@@ -1,12 +1,10 @@
-import pkg from 'pg';
 import InvariantError from '../../exceptions/InvariantError.js';
 import NotFoundError from '../../exceptions/NotFoundError.js';
-
-const { Pool } = pkg;
+import pool from '../../config/postgres/pool.js';
 
 class PaymentsService {
   constructor() {
-    this._pool = new Pool();
+    this._pool = pool;
   }
 
   async getAllPayments() {

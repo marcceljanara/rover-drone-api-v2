@@ -1,4 +1,3 @@
-import pkg from 'pg';
 import dotenv from 'dotenv';
 import DevicesService from '../DevicesService.js';
 import RentalsService from '../RentalsService.js';
@@ -7,11 +6,9 @@ import UsersTableTestHelper from '../../../../tests/UserTableHelper.js';
 import SensorTableTestHelper from '../../../../tests/SensorTableTestHelper.js';
 import DevicesTableTestHelper from '../../../../tests/DevicesTableTestHelper.js';
 import RentalsTableTestHelper from '../../../../tests/RentalsTableTestHelper.js';
+import pool from '../../../config/postgres/pool.js';
 
 dotenv.config();
-
-const { Pool } = pkg;
-const pool = new Pool();
 
 describe('DevicesService', () => {
   afterAll(async () => {

@@ -1,15 +1,13 @@
 /* eslint-disable import/no-extraneous-dependencies */
-import pkg from 'pg';
 import { nanoid } from 'nanoid';
 import PDFDocument from 'pdfkit';
 import NotFoundError from '../../exceptions/NotFoundError.js';
 import InvariantError from '../../exceptions/InvariantError.js';
-
-const { Pool } = pkg;
+import pool from '../../config/postgres/pool.js';
 
 class ReportsService {
   constructor() {
-    this._pool = new Pool();
+    this._pool = pool;
   }
 
   async addReport(userId, start_date, end_date) {

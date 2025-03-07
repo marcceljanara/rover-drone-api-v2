@@ -1,14 +1,12 @@
-import pkg from 'pg';
 import bcrypt from 'bcrypt';
 import InvariantError from '../../exceptions/InvariantError.js';
 import NotFoundError from '../../exceptions/NotFoundError.js';
 import AuthenticationError from '../../exceptions/AuthenticationError.js';
-
-const { Pool } = pkg;
+import pool from '../../config/postgres/pool.js';
 
 class AuthenticationsService {
   constructor() {
-    this._pool = new Pool();
+    this._pool = pool;
   }
 
   async addRefreshToken(token) {
