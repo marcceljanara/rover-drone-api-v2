@@ -21,7 +21,6 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: mysecretpassword
           POSTGRES_DB: roverdrone
-          POSTGRES_INITDB_ARGS: "--max-connections=200"
 
         options: >-
           --health-cmd pg_isready
