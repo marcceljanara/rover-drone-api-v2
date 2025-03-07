@@ -49,6 +49,10 @@ describe('/payments endpoint', () => {
   let accessTokenAdmin;
   let accessTokenUser;
 
+  afterAll(async () => {
+    await pool.end();
+  });
+
   beforeAll(async () => {
     server = createServer();
   });
@@ -64,10 +68,6 @@ describe('/payments endpoint', () => {
     await RentalsTableTestHelper.cleanTable();
     await DevicesTableTestHelper.cleanTable();
     await PaymentsTableTestHelper.cleanTable();
-  });
-
-  afterAll(async () => {
-    await pool.end();
   });
 
   describe('GET /payments', () => {

@@ -28,6 +28,10 @@ describe('/admin/management endpoint', () => {
   let server;
   let accessToken;
 
+  afterAll(async () => {
+    await pool.end();
+  });
+
   beforeAll(async () => {
     server = createServer();
   });
@@ -39,10 +43,6 @@ describe('/admin/management endpoint', () => {
   afterEach(async () => {
     await UsersTableTestHelper.cleanTable();
     await AuthenticationsTableTestHelper.cleanTable();
-  });
-
-  afterAll(async () => {
-    await pool.end();
   });
 
   const addUser = async (userData = {}) => {
