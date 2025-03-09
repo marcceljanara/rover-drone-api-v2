@@ -6,6 +6,12 @@ const rentalRoutes = (handler) => {
   const router = express.Router();
 
   // Admin
+  /**
+   * @swagger
+   * tags:
+   *   name: Rentals
+   *   description: API untuk mengelola penyewaan/rentals
+   */
   router.put('/v1/rentals/:id/status', verifyToken, verifyAdmin, handler.putStatusRentalHandler);
   router.put('/v1/rentals/:id', verifyToken, verifyAdmin, handler.deleteRentalHandler);
 
