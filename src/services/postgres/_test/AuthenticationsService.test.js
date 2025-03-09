@@ -6,6 +6,7 @@ import UsersTableTestHelper from '../../../../tests/UserTableHelper.js';
 import AuthenticationError from '../../../exceptions/AuthenticationError.js';
 import NotFoundError from '../../../exceptions/NotFoundError.js';
 import pool from '../../../config/postgres/pool.js';
+import AuthorizationError from '../../../exceptions/AuthorizationError.js';
 
 dotenv.config();
 
@@ -129,7 +130,7 @@ describe('Authentication Service', () => {
 
       // Action and Assert
       await expect(authenticationsService.checkStatusAccount(email))
-        .rejects.toThrow(AuthenticationError);
+        .rejects.toThrow(AuthorizationError);
     });
     it('should pass verification if email verified', async () => {
       // Arrange

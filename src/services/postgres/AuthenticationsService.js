@@ -3,6 +3,7 @@ import InvariantError from '../../exceptions/InvariantError.js';
 import NotFoundError from '../../exceptions/NotFoundError.js';
 import AuthenticationError from '../../exceptions/AuthenticationError.js';
 import pool from '../../config/postgres/pool.js';
+import AuthorizationError from '../../exceptions/AuthorizationError.js';
 
 class AuthenticationsService {
   constructor() {
@@ -80,7 +81,7 @@ class AuthenticationsService {
 
     // Jika is_verified adalah false, maka lemparkan error
     if (!is_verified) {
-      throw new AuthenticationError('Anda belum melakukan verifikasi email, silahkan lakukan verifikasi terlebih dahulu');
+      throw new AuthorizationError('Anda belum melakukan verifikasi email, silahkan lakukan verifikasi terlebih dahulu');
     }
   }
 }
