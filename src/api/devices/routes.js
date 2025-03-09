@@ -20,6 +20,8 @@ const deviceRoutes = (handler) => {
    *   post:
    *     summary: (Admin) Menambahkan perangkat baru
    *     tags: [Devices]
+   *     security:
+   *       - bearerAuth: []
    *     responses:
    *       201:
    *         description: Pengguna berhasil didaftarkan
@@ -410,6 +412,9 @@ const deviceRoutes = (handler) => {
  *                 enum: [on, off]
  *                 description: "Aksi untuk mengontrol perangkat, 'on' untuk mengaktifkan dan 'off' untuk menonaktifkan."
  *                 example: "on"
+ *               command:
+ *                 type: string
+ *                 example: "power"
  *     responses:
  *       200:
  *         description: "Perangkat berhasil dikontrol"
