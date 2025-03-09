@@ -126,14 +126,6 @@ function createServer() {
     });
   });
 
-  // Middleware jika rute tidak ditemukan (404)
-  app.use((req, res) => {
-    res.status(404).json({
-      status: 'fail',
-      message: 'Rute tidak ditemukan',
-    });
-  });
-
   return app;
 }
 
