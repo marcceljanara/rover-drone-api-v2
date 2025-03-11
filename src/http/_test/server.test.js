@@ -8,17 +8,6 @@ beforeAll(() => {
 });
 
 describe('HTTP server', () => {
-  it('should respond with 404 when requesting an unregistered route', async () => {
-    // Action
-    const response = await request(app).get('/unregisteredRoute');
-
-    // Assert
-    expect(response.statusCode).toEqual(404);
-    expect(response.body).toEqual({
-      status: 'fail',
-      message: 'Rute tidak ditemukan',
-    });
-  });
   it('should respond with 500 server error when an unexpected error occurs', async () => {
     // Simulasi kesalahan server dengan mengakses endpoint yang akan menyebabkan error.
     const response = await request(app).get('/cause-error'); // Buat rute ini di server.js

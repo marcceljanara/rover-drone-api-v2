@@ -253,7 +253,7 @@ describe('/v1/devices endpoint', () => {
     it('should response with 404 if device not found', async () => {
       // Arrange and Action
       const response = await request(server)
-        .get('/v1/devices/notfound/control')
+        .put('/v1/devices/notfound/control')
         .set('Authorization', `Bearer ${accessTokenAdmin}`)
         .send({ action: 'on', command: 'power' });
 
