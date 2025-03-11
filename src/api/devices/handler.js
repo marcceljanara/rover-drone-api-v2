@@ -91,10 +91,19 @@ class DevicesHandler {
   async getAllDeviceHandler(req, res) {
     const userId = req.id;
     const { role } = req;
-    const devices = await this._devicesService.getAllDevice(userId, role);
+    const { scope } = req.query;
+
+    let devices;
+
+    if (scope === 'available') {
+      devices = await this._devicesService.getAvailableDevices();
+    } else {
+      devices = await this._devicesService.getAllDevice(userId, role);
+    }
+
     return res.status(200).json({
       status: 'success',
-      message: 'data device berhasil diperoleh',
+      message: 'Data device berhasil diperoleh',
       data: { devices },
     });
   }

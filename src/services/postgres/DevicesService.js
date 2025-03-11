@@ -120,6 +120,27 @@ class DevicesService {
     return result.rows;
   }
 
+  async getAvailableDevices() {
+    const query = {
+      text: `
+          SELECT 
+            id, 
+            rental_id, 
+            status, 
+            last_reported_issue, 
+            TO_CHAR(
+              make_interval(secs => last_active), 
+              'DD "Hari" HH24:MI:SS'
+            ) AS last_active
+          FROM devices
+          WHERE rental_id IS NULL 
+            AND is_deleted = FALSE
+        `,
+    };
+    const result = await this._pool.query(query);
+    return result.rows;
+  }
+
   async getDevice(userId, role, deviceId) {
     // Default query untuk user biasa
     let query = {

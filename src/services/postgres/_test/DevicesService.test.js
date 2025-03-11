@@ -231,6 +231,48 @@ describe('DevicesService', () => {
     });
   });
 
+  describe('getAvailableDevices function', () => {
+    it('should return available devices correctly', async () => {
+      // Arrange
+      const devicesService = new DevicesService();
+
+      // Menambahkan perangkat yang tersedia (tidak memiliki rental_id dan tidak dihapus)
+      await devicesService.addDevice();
+      await devicesService.addDevice();
+
+      // Menambahkan perangkat yang sedang disewa (memiliki rental_id)
+      const rentalsService = new RentalsService();
+      const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await devicesService.addDevice();
+      const { id: rentalId } = await rentalsService.addRental(user1, 6, 'user');
+      await rentalsService.changeStatusRental(rentalId, 'active');
+
+      // // Mengupdate perangkat sewa dengan rental_id
+      // const queryUpdate = {
+      //   text: 'UPDATE devices SET rental_id = $1 WHERE id = $2',
+      //   values: [rentalId, rentedDevice],
+      // };
+      // await pool.query(queryUpdate);
+
+      // Action
+      const availableDevices = await devicesService.getAvailableDevices();
+
+      // Assert
+      expect(availableDevices).toHaveLength(2);
+    });
+
+    it('should return empty array if no available devices', async () => {
+      // Arrange
+      const devicesService = new DevicesService();
+
+      // Action
+      const availableDevices = await devicesService.getAvailableDevices();
+
+      // Assert
+      expect(availableDevices).toHaveLength(0);
+    });
+  });
+
   describe('deviceControl function', () => {
     it('should control device on correctly by admin', async () => {
       // Arrange
