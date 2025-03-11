@@ -28,8 +28,12 @@ const options = {
     ],
     tags: [
       { name: 'Users', description: 'API untuk mengelola pengguna' },
+      { name: 'Admins', description: 'API untuk mengelola users oleh admin' },
       { name: 'Authentications', description: 'API untuk mengelola autentikasi' },
       { name: 'Devices', description: 'API untuk mengelola device' },
+      { name: 'Rentals', description: 'API untuk mengelola rental' },
+      { name: 'Payments', description: 'API untuk mengelola pembayaran' },
+      { name: 'Reports', description: 'API untuk mengelola laporan' },
     ],
     components: {
       securitySchemes: {
