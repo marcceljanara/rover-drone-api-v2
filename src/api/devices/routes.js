@@ -458,9 +458,345 @@ const deviceRoutes = (handler) => {
  */
 
   router.put('/v1/devices/:id/control', verifyToken, handler.putDeviceControlHandler);
+  /**
+ * @swagger
+ * /v1/devices/{id}/sensors/intervals:
+ *   get:
+ *     summary: Mendapatkan data sensor dari perangkat dalam interval waktu tertentu
+ *     description: |
+ *       Mengambil data sensor (suhu, kelembaban, dan intensitas cahaya) dari suatu perangkat dalam rentang waktu tertentu.
+ *       - **Admin** dapat mengakses semua data perangkat.
+ *       - **Pengguna biasa** hanya dapat mengakses data dari perangkat yang mereka sewa.
+ *     tags:
+ *       - Devices
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID dari perangkat.
+ *       - in: query
+ *         name: interval
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [15m, 1h, 6h, 12h, 24h, 7d, 30d, 60d, 90d]
+ *           default: 12h
+ *         description: |
+ *           Rentang waktu untuk mengambil data sensor. Default adalah `12h`.
+ *           Pilihan interval:
+ *           - `15m` (15 menit)
+ *           - `1h` (1 jam)
+ *           - `6h` (6 jam)
+ *           - `12h` (12 jam)
+ *           - `24h` (1 hari)
+ *           - `7d` (7 hari)
+ *           - `30d` (30 hari)
+ *           - `60d` (60 hari)
+ *           - `90d` (90 hari)
+ *     responses:
+ *       200:
+ *         description: Berhasil mendapatkan data sensor.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     sensors:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             example: "EvswF36suuZp36LV"
+ *                           device_id:
+ *                             type: string
+ *                             example: "device-XcJPMk"
+ *                           timestamp:
+ *                             type: string
+ *                             format: date-time
+ *                             example: "2025-03-10T22:58:32.386Z"
+ *                           temperature:
+ *                             type: number
+ *                             format: float
+ *                             example: 29.49
+ *                           humidity:
+ *                             type: number
+ *                             format: float
+ *                             example: 53.16
+ *                           light_intensity:
+ *                             type: number
+ *                             example: 62608
+ *       400:
+ *         description: Parameter permintaan tidak valid.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: "Parameter query tidak valid"
+ *       401:
+ *         description: Tidak diizinkan, token hilang atau tidak valid.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: "Akses tidak sah"
+ *       403:
+ *         description: Dilarang, pengguna tidak memiliki akses ke perangkat ini.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: "Anda tidak memiliki izin untuk mengakses perangkat ini"
+ *       404:
+ *         description: Perangkat tidak ditemukan.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: "Perangkat tidak ditemukan"
+ *       500:
+ *         description: Kesalahan server internal.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Kesalahan Server Internal"
+ */
 
   router.get('/v1/devices/:id/sensors/intervals', verifyToken, handler.getSensorDataHandler);
+  /**
+ * @swagger
+ * /v1/devices/{id}/sensors/limits:
+ *   get:
+ *     summary: Mendapatkan data sensor terbaru dengan batas tertentu
+ *     description: |
+ *       Mengambil sejumlah data sensor terbaru dari perangkat berdasarkan jumlah limit yang ditentukan.
+ *       - **Admin** dapat mengakses semua data perangkat.
+ *       - **Pengguna biasa** hanya dapat mengakses data dari perangkat yang mereka sewa.
+ *     tags:
+ *       - Devices
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID dari perangkat.
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Jumlah maksimum data sensor yang diambil. Default adalah `10`.
+ *     responses:
+ *       200:
+ *         description: Berhasil mendapatkan data sensor.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     sensors:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             example: "L_sblmgESZyhstEV"
+ *                           device_id:
+ *                             type: string
+ *                             example: "device-XcJPMk"
+ *                           timestamp:
+ *                             type: string
+ *                             format: date-time
+ *                             example: "2025-03-10T23:04:12.392Z"
+ *                           temperature:
+ *                             type: number
+ *                             format: float
+ *                             example: 30.07
+ *                           humidity:
+ *                             type: number
+ *                             format: float
+ *                             example: 70.78
+ *                           light_intensity:
+ *                             type: number
+ *                             example: 22355
+ *       400:
+ *         description: Parameter permintaan tidak valid.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: "Parameter query tidak valid"
+ *       401:
+ *         description: Tidak diizinkan, token hilang atau tidak valid.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: "Akses tidak sah"
+ *       403:
+ *         description: Dilarang, pengguna tidak memiliki akses ke perangkat ini.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: "Anda tidak memiliki izin untuk mengakses perangkat ini"
+ *       404:
+ *         description: Perangkat tidak ditemukan.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: "Perangkat tidak ditemukan"
+ *       500:
+ *         description: Kesalahan server internal.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Kesalahan Server Internal"
+ */
   router.get('/v1/devices/:id/sensors/limits', verifyToken, handler.getSensorDataLimitHandler);
+  /**
+ * @swagger
+ * /v1/devices/{id}/sensors/downloads:
+ *   get:
+ *     summary: Unduh data sensor dalam format CSV
+ *     description: Mengunduh data sensor berdasarkan perangkat tertentu dalam format CSV dengan rentang waktu yang ditentukan.
+ *     tags:
+ *       - Devices
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: ID perangkat IoT
+ *         schema:
+ *           type: string
+ *       - name: interval
+ *         in: query
+ *         required: false
+ *         description: "Rentang waktu data sensor yang akan diunduh (default: 12h)"
+ *         schema:
+ *           type: string
+ *           enum: [1h, 6h, 12h, 1d, 7d, 30d, 60d, 90d, 180d, 365d]
+ *     responses:
+ *       200:
+ *         description: Berhasil mengunduh data sensor dalam format CSV.
+ *         content:
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *         headers:
+ *           Content-Disposition:
+ *             description: "attachment; filename=sensor_data.csv"
+ *             schema:
+ *               type: string
+ *         examples:
+ *           text/csv:
+ *             value: |
+ *               "id","device_id","timestamp","temperature","humidity","light_intensity"
+ *               "xkXbcfq6VJIuOSRH","device-XcJPMk","2025-03-10T23:07:12.394Z",38.55,95.36,13427
+ *               "4Nv_yqQGUdrgA2Un","device-XcJPMk","2025-03-10T23:06:52.394Z",36.9,82.53,17969
+ *       404:
+ *         description: Perangkat tidak ditemukan.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: "Perangkat tidak ditemukan"
+ */
+
   router.get('/v1/devices/:id/sensors/downloads', verifyToken, handler.getSensorDataDownloadHandler);
 
   return router;
