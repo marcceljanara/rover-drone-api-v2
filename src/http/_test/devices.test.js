@@ -204,6 +204,24 @@ describe('/v1/devices endpoint', () => {
       expect(responseJson.data.devices).toHaveLength(2);
     });
   });
+  describe('GET /v1/devices?scope=available', () => {
+    it('should response with 200 and get all device by admin', async () => {
+      // Arrange
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-456' });
+
+      // Action
+      const response = await request(server)
+        .get('/v1/devices?scope=available')
+        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(200);
+      expect(responseJson.status).toBe('success');
+      expect(responseJson.data.devices).toHaveLength(2);
+    });
+  });
 
   describe('GET /v1/devices/:id', () => {
     it('should response with 200 and get device detail by admin', async () => {
