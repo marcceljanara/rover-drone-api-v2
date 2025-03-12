@@ -16,7 +16,7 @@ exports.up = (pgm) => {
     },
     user_id: {
       type: 'VARCHAR(22)',
-      notNull: true,
+      notNull: false,
       references: '"users"',
       onDelete: 'SET NULL',
     },
