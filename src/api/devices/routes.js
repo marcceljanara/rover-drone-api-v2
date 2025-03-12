@@ -247,12 +247,27 @@ const deviceRoutes = (handler) => {
  * @swagger
  * /v1/devices:
  *   get:
- *     summary: "Mendapatkan seluruh perangkat (auth: role user atau admin)"
- *     description: "Mendapatkan seluruh perangkat yang terdaftar dalam sistem. Hanya dapat diakses oleh pengguna dengan peran user atau admin."
+ *     summary: "Mendapatkan daftar perangkat (auth: user atau admin)"
+ *     description: |
+ *       Mendapatkan daftar perangkat yang terdaftar dalam sistem. Akses berdasarkan role:
+ *       - **Admin**: Dapat melihat semua perangkat.
+ *       - **User**: Hanya dapat melihat perangkat yang sedang disewa oleh mereka.
+ *       - **Tanpa scope**: Mengembalikan daftar perangkat sesuai dengan hak akses pengguna.
+ *       - **Dengan scope `available`**: Mengembalikan hanya perangkat yang belum disewa (rental_id `NULL`).
  *     tags:
  *       - Devices
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: scope
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [available]
+ *         description: |
+ *           - Jika `available`, hanya mengembalikan perangkat yang belum disewa.
+ *           - Jika kosong, akan mengembalikan semua perangkat sesuai hak akses pengguna.
  *     responses:
  *       200:
  *         description: "Berhasil mendapatkan daftar perangkat"
@@ -292,6 +307,45 @@ const deviceRoutes = (handler) => {
  *                           last_active:
  *                             type: string
  *                             example: "00 Hari 00:00:00"
+ *       401:
+ *         description: "Tidak diizinkan, token hilang atau tidak valid."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "fail"
+ *                 message:
+ *                   type: string
+ *                   example: "Akses tidak sah"
+ *       403:
+ *         description: "Dilarang, pengguna tidak memiliki izin untuk melihat perangkat ini."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "fail"
+ *                 message:
+ *                   type: string
+ *                   example: "Anda tidak memiliki izin untuk melihat perangkat ini"
+ *       500:
+ *         description: "Kesalahan server internal."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "error"
+ *                 message:
+ *                   type: string
+ *                   example: "Kesalahan Server Internal"
  */
 
   router.get('/v1/devices', verifyToken, handler.getAllDeviceHandler);
