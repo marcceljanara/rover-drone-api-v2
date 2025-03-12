@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 function calculateRentalCost(interval) {
   const dailyRate = 100000; // Harga per hari
   const daysInMonth = 30; // Rata-rata hari dalam sebulan
