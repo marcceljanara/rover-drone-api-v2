@@ -1,4 +1,3 @@
-import pkg from 'pg';
 import request from 'supertest';
 import dotenv from 'dotenv';
 import UsersTableTestHelper from '../../../tests/UserTableHelper.js';
@@ -7,11 +6,9 @@ import RentalsTableTestHelper from '../../../tests/RentalsTableTestHelper';
 import DevicesTableTestHelper from '../../../tests/DevicesTableTestHelper';
 import PaymentsTableTestHelper from '../../../tests/PaymentTableTestHelper.js';
 import createServer from '../server.js';
+import pool from '../../config/postgres/pool.js';
 
 dotenv.config();
-
-const { Pool } = pkg;
-const pool = new Pool();
 
 const registerAndLoginAdmin = async (server) => {
   const payload = {
