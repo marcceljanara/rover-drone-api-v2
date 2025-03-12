@@ -118,6 +118,7 @@ class ReportsService {
     const doc = new PDFDocument({ margin: 30 });
 
     // Set response header agar browser mengunduh file
+    res.status(200);
     res.setHeader('Content-Disposition', `attachment; filename="report_${id}.pdf"`);
     res.setHeader('Content-Type', 'application/pdf');
 
