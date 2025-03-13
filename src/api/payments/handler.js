@@ -66,6 +66,7 @@ class PaymentsHandler {
           userId: user.user_id,
           email: user.email,
           fullname: user.fullname,
+          paymentId: payment.id,
         };
         await this._rabbitmqService.sendMessage('payment:success', JSON.stringify(message));
 
