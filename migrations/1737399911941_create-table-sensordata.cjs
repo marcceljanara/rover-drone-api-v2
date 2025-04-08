@@ -8,7 +8,7 @@ exports.up = (pgm) => {
       primaryKey: true, // Menetapkan id sebagai primary key
     },
     device_id: {
-      type: 'VARCHAR(16)',
+      type: 'VARCHAR(23)',
       notNull: true, // device_id harus diisi
       references: '"devices"', // Mengacu pada tabel device
       onDelete: 'CASCADE', // Jika device dihapus, data sensor terkait ikut dihapus

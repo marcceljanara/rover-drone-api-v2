@@ -24,9 +24,26 @@ const registerAndLoginAdmin = async (server) => {
   return accessToken;
 };
 
+const registerAndLoginUser = async (server) => {
+  const payload = {
+    id: 'user-12345',
+    username: 'userkeren',
+    email: 'userkeren@gmail.com',
+    password: 'superuser',
+  };
+  await UsersTableTestHelper.addUser(payload);
+
+  const login = await request(server).post('/v1/authentications')
+    .send({ email: payload.email, password: payload.password });
+
+  const { accessToken } = login.body.data;
+  return accessToken;
+};
+
 describe('/v1/devices endpoint', () => {
   let server;
   let accessTokenAdmin;
+  let accessTokenUser;
 
   beforeAll(async () => {
     server = createServer();
@@ -34,6 +51,7 @@ describe('/v1/devices endpoint', () => {
 
   beforeEach(async () => {
     accessTokenAdmin = await registerAndLoginAdmin(server);
+    accessTokenUser = await registerAndLoginUser(server);
   });
 
   afterEach(async () => {
@@ -186,7 +204,7 @@ describe('/v1/devices endpoint', () => {
     });
   });
 
-  describe('GET /v1/devices', () => {
+  describe('(Admin) GET /v1/devices', () => {
     it('should response with 200 and get all device by admin', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -223,7 +241,7 @@ describe('/v1/devices endpoint', () => {
     });
   });
 
-  describe('GET /v1/devices/:id', () => {
+  describe('(Admin) GET /v1/devices', () => {
     it('should response with 200 and get device detail by admin', async () => {
       // Arrange
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -252,6 +270,75 @@ describe('/v1/devices endpoint', () => {
       expect(responseJson.status).toBe('fail');
     });
   });
+  // user
+  describe('(User) GET /v1/devices', () => {
+    it('should return response code 200 and return all device ownership data', async () => {
+      // Arrange
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-456' });
+      const responseRental = await request(server)
+        .post('/v1/rentals')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send({ interval: 6 });
+      const rentalId = responseRental.body.data.id;
+
+      await request(server)
+        .put(`/v1/rentals/${rentalId}/status`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .send({ rentalStatus: 'active' });
+
+      // Action
+      const response = await request(server)
+        .get('/v1/devices')
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(200);
+      expect(responseJson.status).toBe('success');
+      expect(responseJson.data.devices).toHaveLength(1);
+    });
+  });
+  describe('(User) GET /v1/devices/:id', () => {
+    it('should return response code 200 and return detail device ownership data', async () => {
+      // Arrange
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-456' });
+      const responseRental = await request(server)
+        .post('/v1/rentals')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send({ interval: 6 });
+      const rentalId = responseRental.body.data.id;
+
+      await request(server)
+        .put(`/v1/rentals/${rentalId}/status`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .send({ rentalStatus: 'active' });
+
+      // Action
+      const response = await request(server)
+        .get(`/v1/devices/${deviceId}`)
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(200);
+      expect(responseJson.status).toBe('success');
+      expect(responseJson.data.device.id).toBe(deviceId);
+    });
+    it('should response with 404 if device not found', async () => {
+      // Arrange and Action
+      const response = await request(server)
+        .get('/v1/devices/notfound')
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(404);
+      expect(responseJson.status).toBe('fail');
+    });
+  });
+
   describe('PUT /device/:id/control', () => {
     it('should response with 200 and put device status to active', async () => {
       // Arrange
