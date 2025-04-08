@@ -17,7 +17,7 @@ describe('/v1/authentications endpoint', () => {
     await AuthenticationsTableTestHelper.cleanTable();
   });
 
-  describe('POST /v1/authentications', () => {
+  describe('(User) POST /v1/authentications', () => {
     it('should response 201 and new authentication', async () => {
       // Arrange
       const requestPayload = {
@@ -26,6 +26,88 @@ describe('/v1/authentications endpoint', () => {
       };
       const server = createServer();
       await UsersTableTestHelper.addUser('user-12345');
+
+      // Action
+      const response = await request(server).post('/v1/authentications').send(requestPayload);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toEqual(201);
+      expect(responseJson.status).toEqual('success');
+      expect(responseJson.data.accessToken).toBeDefined();
+      expect(responseJson.data.refreshToken).toBeDefined();
+    });
+
+    it('should response 404 if email not found', async () => {
+      // Arrange
+      const requestPayload = {
+        email: 'notfound@gmail.com',
+        password: 'superpassword',
+      };
+      const server = createServer();
+      await UsersTableTestHelper.addUser('user-12345');
+
+      // Action
+      const response = await request(server).post('/v1/authentications').send(requestPayload);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(404);
+      expect(responseJson.status).toEqual('fail');
+      expect(responseJson.message).toEqual('Email tidak ditemukan');
+    });
+
+    it('should response 401 if password is wrong', async () => {
+      // Arrange
+      const requestPayload = {
+        email: 'email@gmail.com',
+        password: 'passwordsalah',
+      };
+      const server = createServer();
+      await UsersTableTestHelper.addUser('user-12345');
+
+      // Action
+      const response = await request(server).post('/v1/authentications').send(requestPayload);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(401);
+      expect(responseJson.status).toEqual('fail');
+      expect(responseJson.message).toEqual('Kredensial yang Anda berikan salah');
+    });
+    it('should response 400 if password not string', async () => {
+      // Arrange
+      const requestPayload = {
+        email: 'email@gmail.com',
+        password: 123,
+      };
+      const server = createServer();
+      await UsersTableTestHelper.addUser('user-12345');
+
+      // Action
+      const response = await request(server).post('/v1/authentications').send(requestPayload);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(400);
+      expect(responseJson.status).toEqual('fail');
+      expect(responseJson.message).toEqual('"password" must be a string');
+    });
+  });
+  describe('(Admin) POST /v1/authentications', () => {
+    it('should response 201 and new authentication', async () => {
+      // Arrange
+      const payload = {
+        id: 'admin-12345',
+        email: 'adminkeren@gmail.com',
+        password: 'superadmin',
+      };
+      const server = createServer();
+      await UsersTableTestHelper.addAdmin(payload);
+      const requestPayload = {
+        email: payload.email,
+        password: payload.password,
+      };
 
       // Action
       const response = await request(server).post('/v1/authentications').send(requestPayload);
