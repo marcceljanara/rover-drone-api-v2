@@ -2,6 +2,7 @@
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import express from 'express';
+import cors from 'cors';
 
 // plugin
 import usersPlugin from '../api/users/index.js';
@@ -46,6 +47,9 @@ function createServer() {
   app.use(express.json());
   app.use(helmet.hidePoweredBy());
   app.use(helmet.noSniff()); // Mencegah MIME-sniffing
+  app.use(cors({
+    origin: '*',
+  }));
 
   // Dependency Injection
   const userService = new UserService();
