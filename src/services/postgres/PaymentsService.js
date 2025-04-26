@@ -18,7 +18,7 @@ class PaymentsService {
 
   async getDetailPayment(id) {
     const query = {
-      text: 'SELECT *, created_at AT TIME ZONE \'UTC\' AT TIME ZONE \'Asia/Jakarta\' AS created_at  from payments WHERE id = $1 AND is_deleted = FALSE',
+      text: 'SELECT * from payments WHERE id = $1 AND is_deleted = FALSE',
       values: [id],
     };
     const result = await this._pool.query(query);
