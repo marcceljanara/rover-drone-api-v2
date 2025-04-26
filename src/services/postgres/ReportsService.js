@@ -58,10 +58,10 @@ class ReportsService {
   async getAllReport() {
     const query = {
       text: `SELECT id,
-      report_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS report_date, 
+      report_date, 
       total_transactions, 
-      start_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS start_date, 
-      end_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS end_date
+      start_date, 
+      end_date
       FROM reports`,
       values: [],
     };
@@ -72,7 +72,7 @@ class ReportsService {
   async getReport(id) {
     const query = {
       text: `SELECT *,
-      report_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS report_date 
+      report_date
       FROM reports WHERE id = $1`,
       values: [id],
     };
@@ -90,7 +90,7 @@ class ReportsService {
       text: `SELECT id,
        rental_id,
         amount,
-        payment_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS payment_date,
+        payment_date,
         payment_status, 
         payment_method 
         FROM payments 

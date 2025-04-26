@@ -146,7 +146,7 @@ class RentalsService {
 
       // Reservasi perangkat dengan TTL 30 detik
       const reserveDeviceQuery = {
-        text: 'UPDATE devices SET reserved_until = NOW() + INTERVAL \'30 seconds\' WHERE id = $1',
+        text: 'UPDATE devices SET reserved_until = NOW() + INTERVAL \'1 day\' WHERE id = $1',
         values: [deviceId],
       };
       await client.query(reserveDeviceQuery);
@@ -155,7 +155,7 @@ class RentalsService {
       const rentalQuery = {
         text: `
           INSERT INTO rentals (id, user_id, start_date, end_date, cost, reserved_until) 
-          VALUES ($1, $2, $3, $4, $5, NOW() + INTERVAL '30 seconds') 
+          VALUES ($1, $2, $3, $4, $5, NOW() + INTERVAL '1 day') 
           RETURNING id, cost, start_date, end_date
         `,
         values: [id, userId, start_date, end_date, cost],
@@ -184,22 +184,19 @@ class RentalsService {
   async getAllRental(role, userId) {
     if (role === 'admin') {
       const query = {
-        text: `SELECT id, 
-        start_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS start_date,
-        end_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS end_date, 
-        rental_status, 
-        cost FROM rentals WHERE is_deleted = FALSE`,
+        text: `SELECT id, start_date, end_date, rental_status, cost 
+               FROM rentals 
+               WHERE is_deleted = FALSE`,
         values: [],
       };
       const result = await this._pool.query(query);
       return result.rows;
     }
+
     const query = {
-      text: `SELECT id, 
-      start_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS start_date,
-      end_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS end_date, 
-      rental_status, 
-      cost FROM rentals WHERE user_id = $1 AND is_deleted = FALSE`,
+      text: `SELECT id, start_date, end_date, rental_status, cost 
+             FROM rentals 
+             WHERE user_id = $1 AND is_deleted = FALSE`,
       values: [userId],
     };
     const result = await this._pool.query(query);
@@ -209,13 +206,9 @@ class RentalsService {
   async getDetailRental(id, role, userId) {
     if (role === 'admin') {
       const query = {
-        text: `SELECT *,
-        start_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS start_date,
-        end_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS end_date, 
-        reserved_until AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS reserved_until,
-        created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS created_at,
-        updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS updated_at
-        FROM rentals WHERE id = $1 AND is_deleted = FALSE`,
+        text: `SELECT *, start_date, end_date, reserved_until, created_at, updated_at 
+               FROM rentals 
+               WHERE id = $1 AND is_deleted = FALSE`,
         values: [id],
       };
       const result = await this._pool.query(query);
@@ -224,14 +217,11 @@ class RentalsService {
       }
       return result.rows[0];
     }
+
     const query = {
-      text: `SELECT *,
-      start_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS start_date,
-      end_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS end_date,
-      reserved_until AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS reserved_until,
-      created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS created_at,
-      updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS updated_at
-      FROM rentals WHERE id = $1 AND user_id = $2 AND is_deleted = FALSE`,
+      text: `SELECT *, start_date, end_date, reserved_until, created_at, updated_at 
+             FROM rentals 
+             WHERE id = $1 AND user_id = $2 AND is_deleted = FALSE`,
       values: [id, userId],
     };
     const result = await this._pool.query(query);
