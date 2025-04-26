@@ -25,13 +25,20 @@ class DevicesService {
 
   async deleteDevice(id) {
     const query = {
-      text: 'UPDATE devices SET is_deleted = TRUE WHERE id = $1 RETURNING id',
+      text: `
+        UPDATE devices 
+        SET is_deleted = TRUE 
+        WHERE id = $1 
+          AND rental_id IS NULL 
+          AND status != 'active'
+        RETURNING id
+      `,
       values: [id],
     };
 
     const result = await this._pool.query(query);
     if (result.rowCount === 0) {
-      throw new NotFoundError('device tidak ditemukan');
+      throw new NotFoundError('device tidak ditemukan, masih terkait rental, atau masih aktif');
     }
     return result.rows[0];
   }
