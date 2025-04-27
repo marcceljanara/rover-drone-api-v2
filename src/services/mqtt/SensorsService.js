@@ -34,6 +34,14 @@ const saveSensorDataAndUpdateTime = async (deviceId, data) => {
   try {
     await client.query('BEGIN'); // Mulai transaksi
 
+    // Membulatkan nilai ke 2 angka di belakang koma
+    const roundedTemperature = temperature !== undefined
+      ? parseFloat(temperature.toFixed(2)) : null;
+    const roundedHumidity = humidity !== undefined
+      ? parseFloat(humidity.toFixed(2)) : null;
+    const roundedLightIntensity = light_intensity !== undefined
+      ? parseFloat(light_intensity.toFixed(2)) : null;
+
     // Simpan data sensor
     const insertQuery = `
       INSERT INTO sensordata (id, device_id, timestamp, temperature, humidity, light_intensity)
@@ -43,9 +51,9 @@ const saveSensorDataAndUpdateTime = async (deviceId, data) => {
       `${nanoid(16)}`,
       deviceId,
       new Date(timestamp),
-      temperature || null,
-      humidity || null,
-      light_intensity || null,
+      roundedTemperature,
+      roundedHumidity,
+      roundedLightIntensity,
     ];
     await client.query(insertQuery, insertValues);
 
