@@ -90,7 +90,29 @@ class RentalsService {
         throw new InvariantError('Tidak dapat menghapus rental dengan status active');
       }
 
-      // Hapus rental jika status bukan 'active'
+      // Hapus reservasi dari devices jika ada
+      const clearDeviceReservationQuery = {
+        text: `
+          UPDATE devices
+          SET reserved_until = NULL, reserved_rental_id = NULL
+          WHERE reserved_rental_id = $1 AND is_deleted = FALSE
+        `,
+        values: [id],
+      };
+      await client.query(clearDeviceReservationQuery);
+
+      // Update payments: jika masih pending, ubah menjadi failed
+      const updatePaymentStatusQuery = {
+        text: `
+          UPDATE payments
+          SET payment_status = 'failed'
+          WHERE rental_id = $1 AND payment_status = 'pending'
+        `,
+        values: [id],
+      };
+      await client.query(updatePaymentStatusQuery);
+
+      // Tandai rental sebagai terhapus
       const deleteRentalQuery = {
         text: 'UPDATE rentals SET is_deleted = TRUE WHERE id = $1 RETURNING id',
         values: [id],
