@@ -36,7 +36,7 @@ class RentalsService {
               LIMIT 1
             )
             UPDATE devices
-            SET rental_id = $1
+            SET rental_id = $1, reserved_until = NULL, reserved_rental_id = NULL
             FROM cte
             WHERE devices.id = cte.id AND is_deleted = FALSE
             RETURNING devices.id, devices.rental_id;
@@ -50,10 +50,11 @@ class RentalsService {
         }
       }
 
-      // Jika status diubah menjadi 'completed', hapus rental_id pada devices
+      // Jika status diubah menjadi 'completed', hapus rental_id
+      // pada devices dan set reserved fields ke NULL
       if (rentalStatus === 'completed') {
         const updateDeviceQuery = {
-          text: 'UPDATE devices SET rental_id = NULL WHERE rental_id = $1 AND is_deleted = FALSE',
+          text: 'UPDATE devices SET rental_id = NULL, reserved_until = NULL, reserved_rental_id = NULL WHERE rental_id = $1 AND is_deleted = FALSE',
           values: [id],
         };
         await client.query(updateDeviceQuery);
@@ -144,10 +145,14 @@ class RentalsService {
 
       const deviceId = availableDeviceResult.rows[0].id;
 
-      // Reservasi perangkat dengan TTL 30 detik
+      // Reservasi perangkat dengan TTL 1 hari
       const reserveDeviceQuery = {
-        text: 'UPDATE devices SET reserved_until = NOW() + INTERVAL \'1 day\' WHERE id = $1',
-        values: [deviceId],
+        text: `
+          UPDATE devices 
+          SET reserved_until = NOW() + INTERVAL '1 day', reserved_rental_id = $2 
+          WHERE id = $1
+        `,
+        values: [deviceId, id],
       };
       await client.query(reserveDeviceQuery);
 
@@ -235,15 +240,41 @@ class RentalsService {
     if (role === 'admin') {
       throw new AuthorizationError('admin tidak bisa membatalkan pengajuan rental');
     }
-    const query = {
-      text: 'UPDATE rentals SET rental_status = $1 WHERE id = $2 AND user_id = $3 AND is_deleted = FALSE RETURNING rental_status, id',
-      values: [rentalStatus, id, userId],
-    };
-    const result = await this._pool.query(query);
-    if (!result.rowCount) {
-      throw new NotFoundError('rental tidak ditemukan');
+
+    const client = await this._pool.connect();
+    try {
+      await client.query('BEGIN'); // Mulai transaksi
+
+      // Update status rental
+      const query = {
+        text: 'UPDATE rentals SET rental_status = $1 WHERE id = $2 AND user_id = $3 AND is_deleted = FALSE RETURNING rental_status, id',
+        values: [rentalStatus, id, userId],
+      };
+      const result = await client.query(query);
+
+      if (!result.rowCount) {
+        throw new NotFoundError('rental tidak ditemukan');
+      }
+
+      // Hapus reservasi pada devices jika rental dibatalkan
+      const clearDeviceReservationQuery = {
+        text: `
+          UPDATE devices 
+          SET reserved_until = NULL, reserved_rental_id = NULL 
+          WHERE reserved_rental_id = $1 AND is_deleted = FALSE
+        `,
+        values: [id],
+      };
+      await client.query(clearDeviceReservationQuery);
+
+      await client.query('COMMIT'); // Komit transaksi jika berhasil
+      return result.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK'); // Rollback jika terjadi kesalahan
+      throw error;
+    } finally {
+      client.release(); // Lepaskan koneksi client
     }
-    return result.rows[0];
   }
 }
 
