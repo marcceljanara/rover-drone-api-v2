@@ -132,7 +132,7 @@ class ReportsService {
     doc.text(`Periode: ${report.report_interval}`);
     doc.text(`Total Transaksi: ${report.total_transactions}`);
     doc.text(`Total Jumlah: Rp${report.total_amount.toLocaleString('id-ID')}`);
-    doc.text(`Tanggal Laporan: ${report.report_date}`);
+    doc.text(`Tanggal Laporan: ${new Date(report.report_date).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}`);
     doc.moveDown();
 
     // Tambahkan Daftar Pembayaran
@@ -142,7 +142,7 @@ class ReportsService {
       doc.text(`   Amount: Rp${payment.amount.toLocaleString('id-ID')}`);
       doc.text(`   Status: ${payment.payment_status}`);
       doc.text(`   Metode: ${payment.payment_method}`);
-      doc.text(`   Tanggal: ${payment.payment_date}`);
+      doc.text(`   Tanggal: ${new Date(payment.payment_date).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}`);
       doc.moveDown();
     });
 
