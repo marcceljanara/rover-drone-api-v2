@@ -7,7 +7,7 @@ const { Pool } = pkg;
 const pool = new Pool();
 
 // Jadwalkan tugas cron untuk membersihkan reservasi perangkat dan memperbarui status rental
-cron.schedule('* * * * * *', async () => {
+cron.schedule('*/10 * * * * *', async () => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN'); // Mulai transaksi
