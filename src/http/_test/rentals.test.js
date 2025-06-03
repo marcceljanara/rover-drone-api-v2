@@ -214,7 +214,7 @@ describe('/v1/rentals endpoint', () => {
       const response = await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 });
+        .send({ interval: 6, sensors: ['humidity'] });
 
       // Assert
       const responseJson = response.body;
@@ -321,6 +321,20 @@ describe('/v1/rentals endpoint', () => {
       expect(response.statusCode).toBe(200);
       expect(responseJson.status).toBe('success');
       expect(responseJson.data.rentals).toHaveLength(1);
+    });
+  });
+  describe('GET /v1/sensors/available', () => {
+    it('should return response code 200 and return all sensor id', async () => {
+      // Action
+      const response = await request(server)
+        .get('/v1/sensors/available')
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(200);
+      expect(responseJson.status).toBe('success');
+      expect(responseJson.data.rentals).toHaveLength(3);
     });
   });
   describe('(User) GET /v1/rentals/:id', () => {
