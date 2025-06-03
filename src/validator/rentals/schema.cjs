@@ -11,6 +11,7 @@ const putStatusRentalPayloadSchema = Joi.object({
 // Need Update based rental interval 6,12,24,36 month
 const postAddRentalPayloadSchema = Joi.object({
   interval: Joi.number().valid(6, 12, 24, 36).required(),
+  sensors: Joi.array(),
 });
 
 const putCancelRentalPayloadSchema = Joi.object({

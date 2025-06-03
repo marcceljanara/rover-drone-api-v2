@@ -86,6 +86,7 @@ describe('RentalsValidator', () => {
       // Arrange
       const payload = {
         interval: 6,
+        sensors: ['temperature', 'humidity'],
       };
 
       // Action and Assert
