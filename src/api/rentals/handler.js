@@ -87,10 +87,10 @@ class RentalsHandler {
   }
 
   async getAllSensorsHandler(req, res) {
-    const rentals = await this._rentalsService.getAllSensors();
+    const sensors = await this._rentalsService.getAllSensors();
     return res.status(200).json({
       status: 'success',
-      data: { rentals },
+      data: { sensors },
     });
   }
 

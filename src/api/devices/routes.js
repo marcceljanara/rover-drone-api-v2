@@ -853,6 +853,8 @@ const deviceRoutes = (handler) => {
 
   router.get('/v1/devices/:id/sensors/downloads', verifyToken, handler.getSensorDataDownloadHandler);
 
+  router.get('/v1/devices/:id/daily', handler.getDailyUsedHoursHandler);
+
   return router;
 };
 
