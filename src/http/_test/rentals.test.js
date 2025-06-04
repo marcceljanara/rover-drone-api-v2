@@ -334,7 +334,7 @@ describe('/v1/rentals endpoint', () => {
       const responseJson = response.body;
       expect(response.statusCode).toBe(200);
       expect(responseJson.status).toBe('success');
-      expect(responseJson.data.rentals).toHaveLength(3);
+      expect(responseJson.data.sensors).toHaveLength(3);
     });
   });
   describe('(User) GET /v1/rentals/:id', () => {
