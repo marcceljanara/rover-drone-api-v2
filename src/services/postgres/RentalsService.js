@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import { nanoid } from 'nanoid';
 import NotFoundError from '../../exceptions/NotFoundError.js';
 import AuthorizationError from '../../exceptions/AuthorizationError.js';
@@ -129,7 +130,7 @@ class RentalsService {
     }
   }
 
-  async addRental(userId, interval, role) {
+  async addRental(userId, interval, role, sensorIds = []) {
     const client = await this._pool.connect(); // Dapatkan client dari pool untuk transaksi
     try {
       const id = `rental-${nanoid(6)}`;
@@ -143,9 +144,6 @@ class RentalsService {
       if (role === 'admin') {
         throw new AuthorizationError('Admin tidak bisa melakukan aksi mengajukan rental');
       }
-
-      // Hitung durasi biaya rental
-      const cost = calculateRentalCost(interval).finalCost;
 
       await client.query('BEGIN'); // Mulai transaksi
 
@@ -178,6 +176,21 @@ class RentalsService {
       };
       await client.query(reserveDeviceQuery);
 
+      // Hitung durasi biaya rental
+      const baseCost = calculateRentalCost(interval).finalCost;
+
+      let sensorCost = 0;
+      if (sensorIds.length > 0) {
+        const sensorQuery = `
+        SELECT cost FROM sensors
+        WHERE id = ANY($1::text[])
+      `;
+        const sensorResult = await client.query(sensorQuery, [sensorIds]);
+        sensorCost = sensorResult.rows.reduce((acc, { cost }) => acc + Number(cost), 0);
+      }
+
+      const totalCost = baseCost + sensorCost;
+
       // Tambahkan rental
       const rentalQuery = {
         text: `
@@ -185,15 +198,22 @@ class RentalsService {
           VALUES ($1, $2, $3, $4, $5, NOW() + INTERVAL '1 day') 
           RETURNING id, cost, start_date, end_date
         `,
-        values: [id, userId, start_date, end_date, cost],
+        values: [id, userId, start_date, end_date, totalCost],
       };
       const rentalResult = await client.query(rentalQuery);
+
+      const sensorInsertPromises = sensorIds.map((sensorId) => client.query(
+        'INSERT INTO rental_sensors (rental_id, sensor_id) VALUES ($1, $2)',
+        [id, sensorId],
+      ));
+
+      await Promise.all(sensorInsertPromises);
 
       // Tambahkan pembayaran terkait rental
       const paymentId = `payment-${nanoid(16)}`;
       const paymentQuery = {
         text: 'INSERT INTO payments (id, rental_id, amount) VALUES ($1, $2, $3)',
-        values: [paymentId, rentalResult.rows[0].id, cost],
+        values: [paymentId, rentalResult.rows[0].id, totalCost],
       };
       await client.query(paymentQuery);
 
@@ -298,6 +318,85 @@ class RentalsService {
       client.release(); // Lepaskan koneksi client
     }
   }
+
+  async getAllSensors() {
+    const query = {
+      text: `SELECT id, cost 
+               FROM sensors`,
+      values: [],
+    };
+    const result = await this._pool.query(query);
+    return result.rows;
+  }
+
+  // async upgradeRentalSensors(rentalId, newSensorIds) {
+  //   const client = await this._pool.connect();
+  //   try {
+  //     await client.query('BEGIN');
+
+  //     // Pastikan rental ada dan masih aktif
+  //     const rentalCheck = await client.query(
+  //       'SELECT id, cost FROM rentals WHERE id = $1 AND is_deleted = FALSE AND rental_status = $2',
+  //       [rentalId, 'active'],
+  //     );
+
+  //     if (rentalCheck.rowCount === 0) {
+  //       throw new NotFoundError('Rental tidak ditemukan atau sudah tidak aktif');
+  //     }
+
+  //     const existingSensorRows = await client.query(
+  //       'SELECT sensor_id FROM rental_sensors WHERE rental_id = $1',
+  //       [rentalId],
+  //     );
+
+  //     const existingSensorIds = existingSensorRows.rows.map((row) => row.sensor_id);
+  //     const uniqueNewSensorIds = newSensorIds.filter((id) => !existingSensorIds.includes(id));
+
+  //     if (uniqueNewSensorIds.length === 0) {
+  //       throw new InvariantError('Sensor yang diajukan sudah terdaftar sebelumnya');
+  //     }
+
+  //     // Ambil biaya sensor baru dari tabel sensors
+  //     const costResult = await client.query(
+  //       'SELECT id, cost FROM sensors WHERE id = ANY($1::text[])',
+  //       [uniqueNewSensorIds],
+  //     );
+
+  //     if (costResult.rowCount !== uniqueNewSensorIds.length) {
+  //       throw new NotFoundError('Beberapa sensor tidak ditemukan');
+  //     }
+
+  //     const totalAdditionalCost = costResult.rows.reduce((sum, row) => sum + Number(row.cost), 0);
+
+  //     // Tambahkan relasi rental-sensor
+  //     const insertPromises = uniqueNewSensorIds.map((sensorId) => client.query(
+  //       'INSERT INTO rental_sensors (rental_id, sensor_id) VALUES ($1, $2)',
+  //       [rentalId, sensorId],
+  //     ));
+  //     await Promise.all(insertPromises);
+
+  //     // Update total biaya sewa
+  //     await client.query(
+  //       'UPDATE rentals SET cost = cost + $1 WHERE id = $2',
+  //       [totalAdditionalCost, rentalId],
+  //     );
+
+  //     // Tambahkan catatan tambahan biaya ke pembayaran
+  //     const paymentId = `payment-${nanoid(16)}`;
+  //     await client.query(
+  //       'INSERT INTO payments (id, rental_id, amount) VALUES ($1, $2, $3)',
+  //       [paymentId, rentalId, totalAdditionalCost],
+  //     );
+
+  //     await client.query('COMMIT');
+  //     return { addedSensors: uniqueNewSensorIds, additionalCost: totalAdditionalCost, paymentId };
+  //   } catch (err) {
+  //     await client.query('ROLLBACK');
+  //     throw err;
+  //   } finally {
+  //     client.release();
+  //   }
+  // }
 }
 
 export default RentalsService;

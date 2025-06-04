@@ -2,6 +2,8 @@
 import createServer from './http/server.js';
 import './services/mqtt/SensorsService.js';
 import './services/cron/CleanExpiredRental.js';
+import './services/cron/dailyResetUsage.js';
+import './services/cron/deviceLimitEnforcer.js';
 import setupSwagger from './utils/swagger.js';
 
 const app = createServer();

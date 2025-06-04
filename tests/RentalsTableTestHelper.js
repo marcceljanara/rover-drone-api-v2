@@ -13,6 +13,7 @@ const RentalsTableTestHelper = {
 
   async cleanTable() {
     await pool.query('DELETE FROM rentals WHERE 1=1');
+    await pool.query('DELETE FROM rental_sensors WHERE 1=1');
   },
 };
 

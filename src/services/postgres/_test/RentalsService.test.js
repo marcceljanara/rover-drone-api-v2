@@ -140,7 +140,7 @@ describe('RentalsService', () => {
   });
 
   describe('addRental function', () => {
-    it('should add rental correctly', async () => {
+    it('should add rental correctly with 0 sensor', async () => {
       // Arrange
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
@@ -154,6 +154,22 @@ describe('RentalsService', () => {
       expect(rental[0]).toBeDefined();
       expect(rental[0].id).toBe(id);
       expect(cost).toBe(17100000);
+      expect(rental[0].rental_status).toBe('pending');
+    });
+    it('should add rental correctly with 2 sensors', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+
+      // Action
+      const { id, cost } = await rentalsService.addRental(user, 6, 'user', ['temperature', 'humidity']);
+
+      // Assert
+      const rental = await RentalsTableTestHelper.findRentalById(id);
+      expect(rental[0]).toBeDefined();
+      expect(rental[0].id).toBe(id);
+      expect(cost).toBe(17210000);
       expect(rental[0].rental_status).toBe('pending');
     });
 
@@ -327,4 +343,36 @@ describe('RentalsService', () => {
       await expect(rentalsService.cancelRental(payload, 'user')).rejects.toThrow(NotFoundError);
     });
   });
+
+  describe('getAllSensors function', () => {
+    it('should get all sensors id and cost', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+
+      // Action
+      const choice = await rentalsService.getAllSensors();
+
+      // Assert
+      expect(choice.length).toBe(3);
+    });
+  });
+
+  // describe('upgradeRentalSensors function', () => {
+  //   it('should upggrade amount sensors correctly', async () => {
+  //     // Arrange
+  //     const rentalsService = new RentalsService();
+  //     const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
+  //     await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+  //     const { id } = await rentalsService.addRental(user1, 6, 'user');
+  //     await rentalsService.changeStatusRental(id, 'active');
+
+  //     // Action
+  //     const rental = await rentalsService.upgradeRentalSensors(id, ['temperature', 'humidity']);
+
+  //     // Assert
+  //     expect(rental.addedSensors).toEqual(['temperature', 'humidity']);
+  //     expect(rental.additionalCost).toBe(110000);
+  //     expect(rental.paymentId).toBeDefined();
+  //   });
+  // });
 });

@@ -13,6 +13,7 @@ class RentalsHandler {
     this.getAllRentalHandler = this.getAllRentalHandler.bind(this);
     this.getDetailRentalHandler = this.getDetailRentalHandler.bind(this);
     this.putCancelRentalHandler = this.putCancelRentalHandler.bind(this);
+    this.getAllSensorsHandler = this.getAllSensorsHandler.bind(this);
   }
 
   async putStatusRentalHandler(req, res, next) {
@@ -50,9 +51,8 @@ class RentalsHandler {
       const { role } = req;
       const userId = req.id;
       await this._validator.validatePostAddRentalPayload(req.body);
-      // Need Update based rental interval 6,12,24,36 month
-      const { interval } = req.body;
-      const rental = await this._rentalsService.addRental(userId, interval, role);
+      const { interval, sensors } = req.body;
+      const rental = await this._rentalsService.addRental(userId, interval, role, sensors);
       const message = {
         userId,
         rentalId: rental.id,
@@ -83,6 +83,14 @@ class RentalsHandler {
     return res.status(200).json({
       status: 'success',
       data: { rentals },
+    });
+  }
+
+  async getAllSensorsHandler(req, res) {
+    const sensors = await this._rentalsService.getAllSensors();
+    return res.status(200).json({
+      status: 'success',
+      data: { sensors },
     });
   }
 

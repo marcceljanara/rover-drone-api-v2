@@ -18,6 +18,7 @@ class DevicesHandler {
     this.getSensorDataHandler = this.getSensorDataHandler.bind(this);
     this.getSensorDataLimitHandler = this.getSensorDataLimitHandler.bind(this);
     this.getSensorDataDownloadHandler = this.getSensorDataDownloadHandler.bind(this);
+    this.getDailyUsedHoursHandler = this.getDailyUsedHoursHandler.bind(this);
   }
 
   async postAddDeviceHandler(req, res) {
@@ -145,6 +146,19 @@ class DevicesHandler {
     } catch (error) {
       return next(error);
     }
+  }
+
+  async getDailyUsedHoursHandler(req, res) {
+    this._validator.validateParamsPayload(req.params);
+    const { id } = req.params;
+    const response = await this._devicesService.getDailyUsedHours(id);
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        deviceId: id,
+        usedHoursToday: response,
+      },
+    });
   }
 
   async getSensorDataHandler(req, res, next) {

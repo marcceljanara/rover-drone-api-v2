@@ -470,6 +470,7 @@ const rentalRoutes = (handler) => {
 
   router.put('/v1/rentals/:id/cancel', verifyToken, handler.putCancelRentalHandler);
 
+  router.get('/v1/sensors/available', verifyToken, handler.getAllSensorsHandler);
   return router;
 };
 

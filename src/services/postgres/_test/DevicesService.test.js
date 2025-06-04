@@ -7,6 +7,7 @@ import SensorTableTestHelper from '../../../../tests/SensorTableTestHelper.js';
 import DevicesTableTestHelper from '../../../../tests/DevicesTableTestHelper.js';
 import RentalsTableTestHelper from '../../../../tests/RentalsTableTestHelper.js';
 import pool from '../../../config/postgres/pool.js';
+import InvariantError from '../../../exceptions/InvariantError.js';
 
 dotenv.config();
 
@@ -381,6 +382,14 @@ describe('DevicesService', () => {
       // Assert
       expect(sensors).toHaveLength(1);
     });
+    it('should reject rental Not Found Error', async () => {
+      // Arrange
+      const devicesService = new DevicesService();
+      const deviceId = await devicesService.addDevice();
+
+      // Action and Assert
+      await expect(devicesService.getSensorData('user1', 'user', deviceId, '12h')).rejects.toThrow(NotFoundError);
+    });
   });
   describe('getSensorDataLimit function', () => {
     it('return all sensor data by admin based limit', async () => {
@@ -425,6 +434,14 @@ describe('DevicesService', () => {
       // Assert
       expect(sensors).toHaveLength(5);
     });
+    it('should reject rental Not Found Error', async () => {
+      // Arrange
+      const devicesService = new DevicesService();
+      const deviceId = await devicesService.addDevice();
+
+      // Action and Assert
+      await expect(devicesService.getSensorDataLimit('user1', 'user', deviceId, 5)).rejects.toThrow(NotFoundError);
+    });
   });
   describe('getSensorDataDownload function', () => {
     it('return all sensor data download by admin based timestamp', async () => {
@@ -459,14 +476,210 @@ describe('DevicesService', () => {
       // Assert
       expect(sensors).toBeDefined();
     });
+    it('should throw Data Not Found error', async () => {
+      // Arrange
+      const devicesService = new DevicesService();
+      const rentalsService = new RentalsService();
+      const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
+      const deviceId = await devicesService.addDevice();
+      const { id } = await rentalsService.addRental(user1, 6, 'user');
+      await rentalsService.changeStatusRental(id, 'active');
 
-    it('should throw Not Found error', async () => {
+      // Actions and Assert
+      await expect(devicesService.getSensorDataDownload(user1, 'user', deviceId, '12h')).rejects.toThrow(NotFoundError);
+    });
+
+    it('should throw Rental Not Found error', async () => {
       // Arrange
       const devicesService = new DevicesService();
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
 
       // Actions and Assert
       await expect(devicesService.getSensorDataDownload(user1, 'user', 'notfound', '12h')).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('_checkDailyUsageLimit', () => {
+    let instance;
+    let mockQuery;
+
+    beforeEach(() => {
+      mockQuery = jest.fn();
+      instance = new DevicesService();
+      instance._pool = { query: mockQuery };
+      jest.useFakeTimers('modern').setSystemTime(new Date('2025-06-04T10:00:00Z').getTime());
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('should throw InvariantError if total usage >= 8 hours', async () => {
+      mockQuery.mockResolvedValue({
+        rows: [{ total_hours: '8.5', last_usage_end: null }],
+      });
+
+      await expect(instance._checkDailyUsageLimit('device-123'))
+        .rejects.toThrow(new InvariantError('Batas penggunaan perangkat 8 jam per hari telah tercapai'));
+    });
+
+    test('should throw InvariantError if total usage >= 4 hours and session 2 start time less than 1 hour after last end time', async () => {
+    // last_usage_end = 09:30, now = 10:00, jeda 1 jam = sampai 10:30
+      const lastEndTime = new Date('2025-06-04T09:30:00Z').toISOString();
+
+      mockQuery.mockResolvedValue({
+        rows: [{ total_hours: '4.1', last_usage_end: lastEndTime }],
+      });
+
+      await expect(instance._checkDailyUsageLimit('device-123'))
+        .rejects.toThrow(InvariantError);
+    });
+
+    test('should NOT throw error if total usage < 4 hours', async () => {
+      mockQuery.mockResolvedValue({
+        rows: [{ total_hours: '3.5', last_usage_end: null }],
+      });
+
+      await expect(instance._checkDailyUsageLimit('device-123')).resolves.not.toThrow();
+    });
+
+    test('should NOT throw error if total usage >= 4 but now > nextAllowed', async () => {
+    // last_usage_end = 08:30, now = 10:00, jeda 1 jam selesai di 09:30
+      const lastEndTime = new Date('2025-06-04T08:30:00Z').toISOString();
+
+      mockQuery.mockResolvedValue({
+        rows: [{ total_hours: '4.1', last_usage_end: lastEndTime }],
+      });
+
+      await expect(instance._checkDailyUsageLimit('device-123')).resolves.not.toThrow();
+    });
+  });
+  describe('getDevicesOverFirstSession', () => {
+    let instance;
+    let mockQuery;
+
+    beforeEach(() => {
+      jest.useFakeTimers('modern').setSystemTime(new Date('2025-06-04T12:00:00Z').getTime());
+
+      mockQuery = jest.fn();
+      instance = new DevicesService();
+      instance._pool = { query: mockQuery };
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('should return device IDs that have used >= 4 hours in a single session today', async () => {
+      mockQuery.mockResolvedValue({
+        rows: [{ id: 'device-1' }, { id: 'device-2' }],
+      });
+
+      const result = await instance.getDevicesOverFirstSession();
+
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+
+      const [queryText, params] = mockQuery.mock.calls[0];
+      expect(queryText).toContain('SELECT d.id');
+      expect(params[0]).toBeInstanceOf(Date);
+
+      expect(result).toEqual(['device-1', 'device-2']);
+    });
+
+    test('should return empty array if no devices match the condition', async () => {
+      mockQuery.mockResolvedValue({ rows: [] });
+
+      const result = await instance.getDevicesOverFirstSession();
+
+      expect(result).toEqual([]);
+    });
+  });
+  describe('getOverusedActiveDevices', () => {
+    let instance;
+    let mockQuery;
+
+    beforeEach(() => {
+      mockQuery = jest.fn();
+      instance = new DevicesService();
+      instance._pool = { query: mockQuery };
+
+      // Set waktu sistem ke 2025-06-04 pukul 10:00 UTC
+      jest.useFakeTimers('modern').setSystemTime(new Date('2025-06-04T10:00:00Z').getTime());
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('should return device IDs with usage >= 8 hours and active status', async () => {
+      mockQuery.mockResolvedValue({
+        rows: [{ id: 'device-1' }, { id: 'device-2' }],
+      });
+
+      const result = await instance.getOverusedActiveDevices();
+
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+
+      const [queryText, params] = mockQuery.mock.calls[0];
+
+      expect(queryText).toContain('SELECT d.id');
+      expect(params[0]).toBeInstanceOf(Date); // Memastikan parameter pertama adalah Date
+
+      expect(result).toEqual(['device-1', 'device-2']);
+    });
+  });
+  describe('getDailyUsedHours', () => {
+    let instance;
+    let mockQuery;
+
+    beforeEach(() => {
+      mockQuery = jest.fn();
+      instance = new DevicesService();
+      instance._pool = { query: mockQuery };
+
+      // Set tanggal ke 2025-06-04T10:00:00Z
+      jest.useFakeTimers('modern').setSystemTime(new Date('2025-06-04T10:00:00Z').getTime());
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('should return parsed and rounded used hours', async () => {
+      mockQuery.mockResolvedValue({
+        rows: [{ used_hours: '5.678912' }],
+      });
+
+      const result = await instance.getDailyUsedHours('device-123');
+
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+
+      const [queryText, params] = mockQuery.mock.calls[0];
+      expect(queryText).toContain('SUM(EXTRACT(EPOCH');
+      expect(params[0]).toBe('device-123');
+      expect(params[1]).toBeInstanceOf(Date);
+
+      expect(result).toBe(5.679); // dibulatkan ke 3 angka desimal
+    });
+
+    test('should return 0 if used_hours is null', async () => {
+      mockQuery.mockResolvedValue({
+        rows: [{ used_hours: null }],
+      });
+
+      const result = await instance.getDailyUsedHours('device-456');
+
+      expect(result).toBe(0);
+    });
+
+    test('should return 0 if no rows returned', async () => {
+      mockQuery.mockResolvedValue({
+        rows: [],
+      });
+
+      const result = await instance.getDailyUsedHours('device-789');
+
+      expect(result).toBe(0);
     });
   });
 });
