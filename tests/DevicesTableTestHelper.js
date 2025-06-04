@@ -32,8 +32,19 @@ const DevicesTableTestHelper = {
     return result.rows[0];
   },
 
+  async addUsageLog() {
+    const query = {
+      text: `INSERT INTO device_usage_logs (id, device_id, start_time, end_time)
+      VALUES ('log-123', 'device-123', NOW() - INTERVAL '1 hour', NOW())`,
+      values: [],
+    };
+    const result = await pool.query(query);
+    return result.rows[0];
+  },
+
   async cleanTable() {
     await pool.query('DELETE FROM devices WHERE 1=1');
+    await pool.query('DELETE FROM device_usage_logs WHERE 1=1');
   },
 };
 
