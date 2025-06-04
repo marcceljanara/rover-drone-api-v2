@@ -3,6 +3,7 @@ import json2csv from 'json2csv';
 import { nanoid } from 'nanoid';
 import NotFoundError from '../../exceptions/NotFoundError.js';
 import pool from '../../config/postgres/pool.js';
+import InvariantError from '../../exceptions/InvariantError.js';
 
 class DevicesService {
   constructor() {
@@ -201,28 +202,38 @@ class DevicesService {
   }
 
   async deviceControl(userId, role, { id, action }) {
+    const logId = `log-${nanoid(6)}`;
     const status = action === 'on' ? 'active' : 'inactive';
+
+    // Cek batas penggunaan harian hanya saat perangkat akan dinyalakan
+    if (action === 'on') {
+      await this._checkDailyUsageLimit(id);
+    }
+
     let query;
 
     if (role === 'admin') {
-      // Query untuk admin
       query = {
-        text: 'UPDATE devices SET status = $1 WHERE id = $2 AND is_deleted = FALSE RETURNING id, status, control_topic',
+        text: `
+        UPDATE devices 
+        SET status = $1 
+        WHERE id = $2 AND is_deleted = FALSE 
+        RETURNING id, status, control_topic
+      `,
         values: [status, id],
       };
     } else {
-      // Query untuk user biasa
       query = {
         text: `
-          UPDATE devices 
-          SET status = $1 
-          WHERE id = $2 
-          AND rental_id IN (
-            SELECT id FROM rentals WHERE user_id = $3 AND rental_status = 'active'
-          ) 
-          AND is_deleted = FALSE 
-          RETURNING id, status, control_topic
-        `,
+        UPDATE devices 
+        SET status = $1 
+        WHERE id = $2 
+        AND rental_id IN (
+          SELECT id FROM rentals WHERE user_id = $3 AND rental_status = 'active'
+        )
+        AND is_deleted = FALSE 
+        RETURNING id, status, control_topic
+      `,
         values: [status, id, userId],
       };
     }
@@ -233,7 +244,119 @@ class DevicesService {
       throw new NotFoundError('Device tidak ditemukan atau Anda tidak memiliki akses');
     }
 
+    // Logging pemakaian perangkat
+    if (action === 'on') {
+      await this._pool.query(`
+      INSERT INTO device_usage_logs (id, device_id, start_time)
+      VALUES ($1, $2, NOW() AT TIME ZONE 'Asia/Jakarta')
+    `, [logId, id]);
+    }
+
+    if (action === 'off') {
+      await this._pool.query(`
+    UPDATE device_usage_logs
+    SET end_time = NOW() AT TIME ZONE 'Asia/Jakarta'
+    WHERE id IN (
+      SELECT id FROM device_usage_logs
+      WHERE device_id = $1 AND end_time IS NULL
+      ORDER BY start_time DESC
+      LIMIT 1
+    )
+  `, [id]);
+    }
+
     return result.rows[0];
+  }
+
+  async _checkDailyUsageLimit(deviceId) {
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+
+    const { rows } = await this._pool.query(`
+    SELECT 
+      SUM(EXTRACT(EPOCH FROM (end_time - start_time)) / 3600) AS total_hours,
+      MAX(end_time) AS last_usage_end
+    FROM device_usage_logs
+    WHERE device_id = $1 AND start_time >= $2
+  `, [deviceId, todayStart]);
+
+    const totalHours = parseFloat(rows[0].total_hours || 0);
+    const lastEnd = rows[0].last_usage_end ? new Date(rows[0].last_usage_end) : null;
+
+    // Aturan 1: maksimal 8 jam per hari
+    if (totalHours >= 8) { // 8
+      throw new InvariantError('Batas penggunaan perangkat 8 jam per hari telah tercapai');
+    }
+    // Aturan 2: jika sudah lebih dari 4 jam, wajib jeda 1 jam sebelum lanjut
+    if (totalHours >= 4 && totalHours < 8 && lastEnd) {
+      const nextAllowed = new Date(lastEnd.getTime() + 60 * 60 * 1000); // jeda 1 jam // 60 *60*1000
+      if (now < nextAllowed) {
+        throw new InvariantError(`Sesi ke-2 hanya dapat dimulai setelah pukul ${nextAllowed.toLocaleTimeString('id-ID')}`);
+      }
+    }
+  }
+
+  async getDevicesOverFirstSession() {
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+
+    const result = await this._pool.query(`
+    SELECT d.id
+    FROM devices d
+    JOIN (
+      SELECT device_id, MIN(start_time) AS first_on,
+             SUM(EXTRACT(EPOCH FROM (COALESCE(end_time, NOW()) - start_time))/3600) AS used_hours
+      FROM device_usage_logs
+      WHERE start_time >= $1
+      GROUP BY device_id
+    ) AS usage ON d.id = usage.device_id
+    WHERE d.status = 'active' AND usage.used_hours >= 4 AND (
+      SELECT COUNT(*) FROM device_usage_logs 
+      WHERE device_id = d.id AND start_time >= $1
+    ) = 1
+  `, [todayStart]); // 4 h
+
+    return result.rows.map((row) => row.id);
+  }
+
+  async getOverusedActiveDevices() {
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+
+    const result = await this._pool.query(`
+    SELECT d.id
+    FROM devices d
+    JOIN (
+      SELECT device_id, SUM(EXTRACT(EPOCH FROM (COALESCE(end_time, NOW()) - start_time))/3600) AS used_hours
+      FROM device_usage_logs
+      WHERE start_time >= $1
+      GROUP BY device_id
+    ) AS usage ON d.id = usage.device_id
+    WHERE usage.used_hours >= 8 AND d.status = 'active'
+  `, [todayStart]);
+
+    return result.rows.map((row) => row.id);
+  }
+
+  async getDailyUsedHours(deviceId) {
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+
+    const result = await this._pool.query(`
+    SELECT 
+      SUM(EXTRACT(EPOCH FROM (COALESCE(end_time, NOW()) - start_time)) / 3600) AS used_hours
+    FROM device_usage_logs
+    WHERE device_id = $1 AND start_time >= $2
+  `, [deviceId, todayStart]);
+
+    const rawValue = result.rows[0]?.used_hours;
+    const usedHours = rawValue ? parseFloat(rawValue) : 0;
+
+    return Number(usedHours.toFixed(3));
   }
 
   async getSensorData(userId, role, deviceId, interval) {
@@ -251,7 +374,6 @@ class DevicesService {
         '90d': '90 days',
       };
       const sqlInterval = intervalMap[interval];
-      if (!sqlInterval) throw new Error('Interval tidak valid');
 
       let queryText;
       let queryValues;
@@ -388,7 +510,6 @@ class DevicesService {
       };
 
       const sqlInterval = intervalMap[interval];
-      if (!sqlInterval) throw new Error('Interval tidak valid');
 
       let queryText;
       let queryValues;
