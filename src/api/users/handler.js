@@ -7,6 +7,12 @@ class UserHandler {
     this.postRegisterUserHandler = this.postRegisterUserHandler.bind(this);
     this.postVerifyOtpHandler = this.postVerifyOtpHandler.bind(this);
     this.postResendOtpHandler = this.postResendOtpHandler.bind(this);
+    this.postAddressHandler = this.postAddressHandler.bind(this);
+    this.getAllAddressHandler = this.getAllAddressHandler.bind(this);
+    this.getDetailAddressHandler = this.getDetailAddressHandler.bind(this);
+    this.putAddressHandler = this.putAddressHandler.bind(this);
+    this.patchSetDefaultAddress = this.patchSetDefaultAddress.bind(this);
+    this.deleteAddressHandler = this.deleteAddressHandler.bind(this);
   }
 
   async postRegisterUserHandler(req, res, next) {
@@ -77,6 +83,101 @@ class UserHandler {
       return res.status(200).json({
         status: 'success',
         message: 'Kode OTP telah dikirim ulang ke email Anda.',
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async postAddressHandler(req, res, next) {
+    try {
+      const userId = req.id;
+      this._validator.validateAddressPayload(req.body);
+
+      const address = await this._userService.addAddress(userId, req.body);
+      return res.status(201).json({
+        status: 'success',
+        message: 'Alamat pengiriman berhasil ditambahkan',
+        data: {
+          addressId: address,
+        },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getAllAddressHandler(req, res, next) {
+    try {
+      const userId = req.id;
+      const addresses = await this._userService.getAllAddress(userId);
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          addresses,
+        },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getDetailAddressHandler(req, res, next) {
+    try {
+      const userId = req.id;
+      const { id } = req.params;
+      const address = await this._userService.getDetailAddress(userId, id);
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          address,
+        },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async putAddressHandler(req, res, next) {
+    try {
+      const userId = req.id;
+      const { id } = req.params;
+      this._validator.validateAddressPayload(req.body);
+      const address = await this._userService.updateAddress(userId, id, req.body);
+      return res.status(200).json({
+        status: 'success',
+        message: 'Alamat pengiriman berhasil diperbarui!',
+        data: {
+          addressId: address,
+        },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async patchSetDefaultAddress(req, res, next) {
+    try {
+      const userId = req.id;
+      const { id } = req.params;
+      await this._userService.setDefaultAddress(userId, id);
+      return res.status(200).json({
+        status: 'success',
+        message: 'Alamat pengiriman utama berhasil diperbarui',
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async deleteAddressHandler(req, res, next) {
+    try {
+      const userId = req.id;
+      const { id } = req.params;
+      await this._userService.deleteAddress(userId, id);
+      return res.status(200).json({
+        status: 'success',
+        message: 'Alamat pengiriman berhasil dihapus!',
       });
     } catch (error) {
       return next(error);

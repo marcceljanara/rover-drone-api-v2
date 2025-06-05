@@ -1,4 +1,5 @@
 import express from 'express';
+import verifyToken from '../../middleware/verifyToken.js';
 
 const userRoutes = (handler) => {
   const router = express.Router();
@@ -189,6 +190,18 @@ const userRoutes = (handler) => {
    *                   example: Email tidak ditemukan atau akun telah terverifikasi
    */
   router.post('/resend-otp', handler.postResendOtpHandler);
+
+  router.post('/addresses', verifyToken, handler.postAddressHandler);
+
+  router.get('/addresses', verifyToken, handler.getAllAddressHandler);
+
+  router.get('/addresses/:id', verifyToken, handler.getDetailAddressHandler);
+
+  router.put('/addresses/:id', verifyToken, handler.putAddressHandler);
+
+  router.patch('/addresses/:id', verifyToken, handler.patchSetDefaultAddress);
+
+  router.delete('/addresses/:id', verifyToken, handler.deleteAddressHandler);
 
   return router;
 };
