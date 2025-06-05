@@ -655,7 +655,8 @@ describe('DevicesService', () => {
       expect(mockQuery).toHaveBeenCalledTimes(1);
 
       const [queryText, params] = mockQuery.mock.calls[0];
-      expect(queryText).toContain('SUM(EXTRACT(EPOCH');
+      expect(queryText.replace(/\s+/g, ' ')).toContain('SUM( EXTRACT(EPOCH FROM');
+
       expect(params[0]).toBe('device-123');
       expect(params[1]).toBeInstanceOf(Date);
 

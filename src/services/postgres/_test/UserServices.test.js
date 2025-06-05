@@ -22,7 +22,7 @@ describe('UserService', () => {
     userService = new UserService();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.clearAllMocks();
   });
   afterAll(async () => {
