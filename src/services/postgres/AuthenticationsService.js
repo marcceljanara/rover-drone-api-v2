@@ -84,6 +84,15 @@ class AuthenticationsService {
       throw new AuthorizationError('Anda belum melakukan verifikasi email, silahkan lakukan verifikasi terlebih dahulu');
     }
   }
+
+  async checkUserAddresses(userId) {
+    const query = {
+      text: 'SELECT COUNT(*) FROM user_addresses WHERE user_id = $1',
+      values: [userId],
+    };
+    const result = await this._pool.query(query);
+    return parseInt(result.rows[0].count, 10) === 0;
+  }
 }
 
 export default AuthenticationsService;
