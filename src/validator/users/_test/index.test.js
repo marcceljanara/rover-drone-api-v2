@@ -154,4 +154,75 @@ describe('User Schema', () => {
         .not.toThrowError(InvariantError);
     });
   });
+  describe('Address Payload', () => {
+    it('should throw error when payload did not contain needed property', () => {
+      // arrange
+      const payload = {
+        namaPenerima: 'I Nengah Marccel',
+        noHp: '085212345678',
+        alamatLengkap: 'Jalan Bali Indah, depan beringin RT X/RW X',
+        provinsi: 'Lampung',
+        kabupatenKota: 'Lampung Timur',
+        kecamatan: 'Raman Utara',
+        kelurahan: 'Rejo Binangun',
+      };
+
+      // Actions and assert
+      expect(() => UsersValidator.validateAddressPayload(payload)).toThrowError(InvariantError);
+    });
+
+    it('should throw error when payload did not meet data type specification', () => {
+      // Arrange
+      const payload = {
+        namaPenerima: 'I Nengah Marccel',
+        noHp: '085212345678',
+        alamatLengkap: 'Jalan Bali Indah, depan beringin RT X/RW X',
+        provinsi: 'Lampung',
+        kabupatenKota: 'Lampung Timur',
+        kecamatan: 'Raman Utara',
+        kelurahan: 'Rejo Binangun',
+        kodePos: true,
+        isDefault: true,
+      };
+
+      // Actions and assert
+      expect(() => UsersValidator.validateAddressPayload(payload)).toThrowError(InvariantError);
+    });
+
+    it('should throw error when No HP contains more than 20 character', () => {
+      // Arrange
+      const payload = {
+        namaPenerima: 'I Nengah Marccel',
+        noHp: '08521234567813114315436547347374746',
+        alamatLengkap: 'Jalan Bali Indah, depan beringin RT X/RW X',
+        provinsi: 'Lampung',
+        kabupatenKota: 'Lampung Timur',
+        kecamatan: 'Raman Utara',
+        kelurahan: 'Rejo Binangun',
+        kodePos: '34371',
+        isDefault: true,
+      };
+
+      // Actions and assert
+      expect(() => UsersValidator.validateAddressPayload(payload)).toThrowError(InvariantError);
+    });
+
+    it('should not throw error because pass validation', () => {
+      // Arrange
+      const payload = {
+        namaPenerima: 'I Nengah Marccel',
+        noHp: '085212345678',
+        alamatLengkap: 'Jalan Bali Indah, depan beringin RT X/RW X',
+        provinsi: 'Lampung',
+        kabupatenKota: 'Lampung Timur',
+        kecamatan: 'Raman Utara',
+        kelurahan: 'Rejo Binangun',
+        kodePos: '34371',
+        isDefault: true,
+      };
+
+      // Actions and assert
+      expect(() => UsersValidator.validateAddressPayload(payload)).not.toThrowError();
+    });
+  });
 });
