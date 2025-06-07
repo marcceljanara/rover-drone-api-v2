@@ -51,8 +51,11 @@ class RentalsHandler {
       const { role } = req;
       const userId = req.id;
       await this._validator.validatePostAddRentalPayload(req.body);
-      const { interval, sensors } = req.body;
-      const rental = await this._rentalsService.addRental(userId, interval, role, sensors);
+      const {
+        interval, sensors, shippingAddressId, shippingCost,
+      } = req.body;
+      const rental = await this._rentalsService
+        .addRental(userId, interval, role, shippingAddressId, shippingCost, sensors);
       const message = {
         userId,
         rentalId: rental.id,

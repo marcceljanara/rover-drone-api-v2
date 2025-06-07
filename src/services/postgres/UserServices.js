@@ -131,8 +131,8 @@ class UserService {
 
   async getAllAddress(userId) {
     const query = {
-      text: 'SELECT id, nama_penerima, no_hp, alamat_lengkap, kelurahan, is_default FROM user_addresses WHERE user_id = $1 ORDER BY updated_at DESC',
-      values: [userId],
+      text: 'SELECT id, nama_penerima, no_hp, alamat_lengkap, kelurahan, is_default FROM user_addresses WHERE user_id = $1 AND is_deleted = $2 ORDER BY updated_at DESC',
+      values: [userId, false],
     };
     const result = await this._pool.query(query);
     if (!result.rowCount) {
@@ -145,8 +145,8 @@ class UserService {
   async getDetailAddress(userId, id) {
     const query = {
       text: `SELECT id, nama_penerima, no_hp, alamat_lengkap, provinsi, kabupaten_kota, kecamatan, kelurahan, kode_pos, is_default 
-      FROM user_addresses WHERE user_id = $1 AND id = $2`,
-      values: [userId, id],
+      FROM user_addresses WHERE user_id = $1 AND id = $2 AND is_deleted = $3`,
+      values: [userId, id, false],
     };
 
     const result = await this._pool.query(query);
@@ -190,12 +190,12 @@ class UserService {
          kode_pos = $8,
          is_default = $9,
          updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10 AND user_id = $11
+       WHERE id = $10 AND user_id = $11 AND is_deleted = $12
        RETURNING id`,
         [
           namaPenerima, noHp, alamatLengkap,
           provinsi, kabupatenKota, kecamatan, kelurahan,
-          kodePos, isDefault, id, userId,
+          kodePos, isDefault, id, userId, false,
         ],
       );
 
@@ -230,9 +230,9 @@ class UserService {
         SET 
         is_default = $1,
         updated_at = CURRENT_TIMESTAMP
-        WHERE id = $2 AND user_id = $3
+        WHERE id = $2 AND user_id = $3 AND is_deleted = $4
         RETURNING id`,
-        [true, id, userId],
+        [true, id, userId, false],
       );
       if (!result.rowCount) {
         throw new NotFoundError('Gagal memperbarui alamat. Alamat tidak ditemukan atau bukan milik user.');
@@ -249,8 +249,13 @@ class UserService {
 
   async deleteAddress(userId, id) {
     const query = {
-      text: 'DELETE FROM user_addresses WHERE user_id = $1 AND id = $2 RETURNING id',
-      values: [userId, id],
+      text: `
+        UPDATE user_addresses 
+        SET is_deleted = $1
+        WHERE user_id = $2 
+          AND id = $3 
+        RETURNING id`,
+      values: [true, userId, id],
     };
 
     const result = await this._pool.query(query);

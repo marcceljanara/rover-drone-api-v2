@@ -130,7 +130,7 @@ class RentalsService {
     }
   }
 
-  async addRental(userId, interval, role, sensorIds = []) {
+  async addRental(userId, interval, role, shippingAddressId, shippingCost, sensorIds = []) {
     const client = await this._pool.connect(); // Dapatkan client dari pool untuk transaksi
     try {
       const id = `rental-${nanoid(6)}`;
@@ -180,6 +180,7 @@ class RentalsService {
       const baseCost = calculateRentalCost(interval).finalCost;
 
       let sensorCost = 0;
+      const setupCost = 1000000;
       if (sensorIds.length > 0) {
         const sensorQuery = `
         SELECT cost FROM sensors
@@ -189,17 +190,18 @@ class RentalsService {
         sensorCost = sensorResult.rows.reduce((acc, { cost }) => acc + Number(cost), 0);
       }
 
-      const totalCost = baseCost + sensorCost;
-
       // Tambahkan rental
       const rentalQuery = {
         text: `
-          INSERT INTO rentals (id, user_id, start_date, end_date, cost, reserved_until) 
-          VALUES ($1, $2, $3, $4, $5, NOW() + INTERVAL '1 day') 
-          RETURNING id, cost, start_date, end_date
-        `,
-        values: [id, userId, start_date, end_date, totalCost],
+    INSERT INTO rentals (
+      id, user_id, start_date, end_date, reserved_until, shipping_address_id
+    ) 
+    VALUES ($1, $2, $3, $4, NOW() + INTERVAL '1 day', $5)
+    RETURNING id, start_date, end_date
+  `,
+        values: [id, userId, start_date, end_date, shippingAddressId],
       };
+
       const rentalResult = await client.query(rentalQuery);
 
       const sensorInsertPromises = sensorIds.map((sensorId) => client.query(
@@ -208,6 +210,18 @@ class RentalsService {
       ));
 
       await Promise.all(sensorInsertPromises);
+
+      // Tambahkan semua biaya terkait penyewaan
+      const totalCost = baseCost + sensorCost + shippingCost + setupCost;
+      const costQuery = {
+        text: `
+    INSERT INTO rental_costs (
+      rental_id, base_cost, sensor_cost, shipping_cost, setup_cost, total_cost
+    ) VALUES ($1, $2, $3, $4, $5, $6)
+  `,
+        values: [id, baseCost, sensorCost, shippingCost, setupCost, totalCost],
+      };
+      await client.query(costQuery);
 
       // Tambahkan pembayaran terkait rental
       const paymentId = `payment-${nanoid(16)}`;
@@ -219,6 +233,7 @@ class RentalsService {
 
       await client.query('COMMIT'); // Commit transaksi jika sukses
       rentalResult.rows[0].payment_id = paymentId;
+      rentalResult.rows[0].cost = totalCost;
       return rentalResult.rows[0];
     } catch (error) {
       await client.query('ROLLBACK'); // Rollback jika ada kesalahan
@@ -229,48 +244,45 @@ class RentalsService {
   }
 
   async getAllRental(role, userId) {
+    const baseQuery = `
+    SELECT r.id, r.start_date, r.end_date, r.rental_status, rc.total_cost
+    FROM rentals r
+    LEFT JOIN rental_costs rc ON rc.rental_id = r.id
+    WHERE r.is_deleted = FALSE
+  `;
+
+    let query;
     if (role === 'admin') {
-      const query = {
-        text: `SELECT id, start_date, end_date, rental_status, cost 
-               FROM rentals 
-               WHERE is_deleted = FALSE`,
-        values: [],
+      query = { text: baseQuery, values: [] };
+    } else {
+      query = {
+        text: `${baseQuery} AND r.user_id = $1`,
+        values: [userId],
       };
-      const result = await this._pool.query(query);
-      return result.rows;
     }
 
-    const query = {
-      text: `SELECT id, start_date, end_date, rental_status, cost 
-             FROM rentals 
-             WHERE user_id = $1 AND is_deleted = FALSE`,
-      values: [userId],
-    };
     const result = await this._pool.query(query);
     return result.rows;
   }
 
   async getDetailRental(id, role, userId) {
+    const baseQuery = `
+    SELECT r.*, rc.total_cost, rc.base_cost, rc.sensor_cost, rc.shipping_cost, rc.setup_cost
+    FROM rentals r
+    LEFT JOIN rental_costs rc ON rc.rental_id = r.id
+    WHERE r.id = $1 AND r.is_deleted = FALSE
+  `;
+
+    let query;
     if (role === 'admin') {
-      const query = {
-        text: `SELECT *, start_date, end_date, reserved_until, created_at, updated_at 
-               FROM rentals 
-               WHERE id = $1 AND is_deleted = FALSE`,
-        values: [id],
+      query = { text: baseQuery, values: [id] };
+    } else {
+      query = {
+        text: `${baseQuery} AND r.user_id = $2`,
+        values: [id, userId],
       };
-      const result = await this._pool.query(query);
-      if (!result.rowCount) {
-        throw new NotFoundError('rental tidak ditemukan');
-      }
-      return result.rows[0];
     }
 
-    const query = {
-      text: `SELECT *, start_date, end_date, reserved_until, created_at, updated_at 
-             FROM rentals 
-             WHERE id = $1 AND user_id = $2 AND is_deleted = FALSE`,
-      values: [id, userId],
-    };
     const result = await this._pool.query(query);
     if (!result.rowCount) {
       throw new NotFoundError('rental tidak ditemukan');

@@ -79,7 +79,7 @@ const UsersTableTestHelper = {
 
   async findAddressById(id) {
     const query = {
-      text: 'SELECT * FROM user_addresses WHERE id = $1',
+      text: 'SELECT * FROM user_addresses WHERE id = $1 AND is_deleted = FALSE',
       values: [id],
     };
 
