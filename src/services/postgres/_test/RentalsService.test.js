@@ -27,7 +27,9 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { id } = await rentalsService.addRental(user, 6, 'user');
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, 500000);
       const payload = {
         id,
         rentalStatus: 'active',
@@ -47,7 +49,10 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { id } = await rentalsService.addRental(user, 6, 'user');
+
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, 500000);
       const payload = {
         id,
         rentalStatus: 'completed',
@@ -67,7 +72,10 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { id } = await rentalsService.addRental(user, 6, 'user');
+
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, 500000);
       const payload = {
         id,
         rentalStatus: 'active',
@@ -101,7 +109,10 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { id } = await rentalsService.addRental(user, 6, 'user');
+
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, 500000);
 
       // Action
       await rentalsService.deleteRental(id);
@@ -127,7 +138,10 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { id } = await rentalsService.addRental(user, 6, 'user');
+
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, 500000);
       const payload = {
         id,
         rentalStatus: 'active',
@@ -145,15 +159,16 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
 
       // Action
-      const { id, cost } = await rentalsService.addRental(user, 6, 'user');
+      const { id, cost } = await rentalsService.addRental(user, 6, 'user', addressId, 500000);
 
       // Assert
       const rental = await RentalsTableTestHelper.findRentalById(id);
       expect(rental[0]).toBeDefined();
       expect(rental[0].id).toBe(id);
-      expect(cost).toBe(17100000);
+      expect(cost).toBe(18600000);
       expect(rental[0].rental_status).toBe('pending');
     });
     it('should add rental correctly with 2 sensors', async () => {
@@ -161,15 +176,16 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
 
       // Action
-      const { id, cost } = await rentalsService.addRental(user, 6, 'user', ['temperature', 'humidity']);
+      const { id, cost } = await rentalsService.addRental(user, 6, 'user', addressId, 500000, ['temperature', 'humidity']);
 
       // Assert
       const rental = await RentalsTableTestHelper.findRentalById(id);
       expect(rental[0]).toBeDefined();
       expect(rental[0].id).toBe(id);
-      expect(cost).toBe(17210000);
+      expect(cost).toBe(18710000);
       expect(rental[0].rental_status).toBe('pending');
     });
 
@@ -180,16 +196,17 @@ describe('RentalsService', () => {
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
 
       // Action and Assert
-      await expect(rentalsService.addRental(user, 6, 'admin')).rejects.toThrow(AuthorizationError);
+      await expect(rentalsService.addRental(user, 6, 'admin', 'address', 500000)).rejects.toThrow(AuthorizationError);
     });
 
     it('should throw error when device not available', async () => {
       // Arrange
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
 
       // Action and Assert
-      await expect(rentalsService.addRental(user, 6, 'user')).rejects.toThrow(NotFoundError);
+      await expect(rentalsService.addRental(user, 6, 'user', addressId, 500000)).rejects.toThrow(NotFoundError);
     });
   });
   describe('getAllRental function', () => {
@@ -200,8 +217,10 @@ describe('RentalsService', () => {
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      await rentalsService.addRental(user1, 6, 'user');
-      await rentalsService.addRental(user2, 6, 'user');
+      const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
+      const addressId2 = await UsersTableTestHelper.addAddress(user2, { id: 'address-345' });
+      await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      await rentalsService.addRental(user2, 6, 'user', addressId2, 500000);
 
       // Action
       const rental = await rentalsService.getAllRental('admin', 'admin-dummy');
@@ -217,8 +236,10 @@ describe('RentalsService', () => {
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      await rentalsService.addRental(user1, 6, 'user');
-      await rentalsService.addRental(user2, 6, 'user');
+      const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
+      const addressId2 = await UsersTableTestHelper.addAddress(user2, { id: 'address-345' });
+      await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      await rentalsService.addRental(user2, 6, 'user', addressId2, 500000);
 
       // Action
       const rental = await rentalsService.getAllRental('user', user1);
@@ -236,8 +257,10 @@ describe('RentalsService', () => {
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      const { id } = await rentalsService.addRental(user1, 6, 'user');
-      await rentalsService.addRental(user2, 6, 'user');
+      const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
+      const addressId2 = await UsersTableTestHelper.addAddress(user2, { id: 'address-345' });
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      await rentalsService.addRental(user2, 6, 'user', addressId2, 500000);
 
       // Action
       const rental = await rentalsService.getDetailRental(id, 'admin', 'admindummy');
@@ -264,8 +287,10 @@ describe('RentalsService', () => {
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      const { id } = await rentalsService.addRental(user1, 6, 'user');
-      await rentalsService.addRental(user2, 6, 'user');
+      const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
+      const addressId2 = await UsersTableTestHelper.addAddress(user2, { id: 'address-345' });
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      await rentalsService.addRental(user2, 6, 'user', addressId2, 500000);
 
       // Action
       const rental = await rentalsService.getDetailRental(id, 'user', user1);
@@ -282,8 +307,10 @@ describe('RentalsService', () => {
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      const { id } = await rentalsService.addRental(user1, 6, 'user');
-      await rentalsService.addRental(user2, 6, 'user');
+      const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
+      const addressId2 = await UsersTableTestHelper.addAddress(user2, { id: 'address-345' });
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      await rentalsService.addRental(user2, 6, 'user', addressId2, 500000);
 
       // Action and Assert
       await expect(rentalsService.getDetailRental(id, 'user', user2)).rejects.toThrow(NotFoundError);
@@ -296,7 +323,9 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { id } = await rentalsService.addRental(user1, 6, 'user');
+      const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
+
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
       const payload = {
         userId: user1,
         id,
@@ -316,7 +345,8 @@ describe('RentalsService', () => {
       const rentalsService = new RentalsService();
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { id } = await rentalsService.addRental(user1, 6, 'user');
+      const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
       const payload = {
         userId: user1,
         id,

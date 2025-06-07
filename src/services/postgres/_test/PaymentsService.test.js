@@ -31,7 +31,8 @@ describe('PaymentsService', () => {
       const user = await UsersTableTestHelper.addUser({ id: 'user-123000', email: 'user@example.com', fullname: 'John Doe' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      const { payment_id } = await rentalsService.addRental(user, 6, 'user');
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      const { payment_id } = await rentalsService.addRental(user, 6, 'user', addressId, 500000);
 
       // Action
       const userData = await paymentsService.getUserByPaymentId(payment_id);
@@ -62,9 +63,10 @@ describe('PaymentsService', () => {
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      await rentalsService.addRental(user1, 6, 'user');
-      await rentalsService.addRental(user2, 6, 'user');
-
+      const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
+      await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      const addressId2 = await UsersTableTestHelper.addAddress(user2, { id: 'address-456' });
+      await rentalsService.addRental(user2, 6, 'user', addressId2, 500000);
       // Action
       const payment = await paymentsService.getAllPayments();
 
@@ -82,8 +84,10 @@ describe('PaymentsService', () => {
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-      const { payment_id } = await rentalsService.addRental(user1, 6, 'user');
-      await rentalsService.addRental(user2, 6, 'user');
+      const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
+      const addressId2 = await UsersTableTestHelper.addAddress(user1, { id: 'address-456' });
+      const { payment_id } = await rentalsService.addRental(user2, 6, 'user', addressId, 500000);
+      await rentalsService.addRental(user2, 6, 'user', addressId2, 500000);
 
       // Action
       const payment = await paymentsService.getDetailPayment(payment_id);
@@ -110,7 +114,8 @@ describe('PaymentsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { payment_id } = await rentalsService.addRental(user, 6, 'user');
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      const { payment_id } = await rentalsService.addRental(user, 6, 'user', addressId, 500000);
 
       const payload = {
         id: payment_id,
@@ -146,7 +151,8 @@ describe('PaymentsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { payment_id } = await rentalsService.addRental(user, 6, 'user');
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      const { payment_id } = await rentalsService.addRental(user, 6, 'user', addressId, 500000);
 
       const payload = {
         id: payment_id,
@@ -179,7 +185,8 @@ describe('PaymentsService', () => {
       const rentalsService = new RentalsService();
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const { payment_id } = await rentalsService.addRental(user, 6, 'user');
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      const { payment_id } = await rentalsService.addRental(user, 6, 'user', addressId, 500000);
 
       // Action
       const result = await paymentsService.deletePayment(payment_id);
