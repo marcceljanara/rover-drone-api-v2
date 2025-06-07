@@ -27,28 +27,54 @@ class RentalsService {
       }
 
       // Jika status diubah menjadi 'active', perbarui rental_id pada devices
+      // ...sebelumnya tetap
       if (rentalStatus === 'active') {
+        // 1. Update device dan hubungkan ke rental
         const updateDeviceQuery = {
           text: `
-            WITH cte AS (
-              SELECT id
-              FROM devices
-              WHERE rental_id IS NULL AND is_deleted = FALSE
-              LIMIT 1
-            )
-            UPDATE devices
-            SET rental_id = $1, reserved_until = NULL, reserved_rental_id = NULL
-            FROM cte
-            WHERE devices.id = cte.id AND is_deleted = FALSE
-            RETURNING devices.id, devices.rental_id;
-          `,
+      WITH cte AS (
+        SELECT id
+        FROM devices
+        WHERE rental_id IS NULL AND is_deleted = FALSE
+        LIMIT 1
+      )
+      UPDATE devices
+      SET rental_id = $1, reserved_until = NULL, reserved_rental_id = NULL
+      FROM cte
+      WHERE devices.id = cte.id AND is_deleted = FALSE
+      RETURNING devices.id, devices.rental_id;
+    `,
           values: [id],
         };
         const deviceResult = await client.query(updateDeviceQuery);
-
         if (deviceResult.rowCount === 0) {
           throw new NotFoundError('Tidak ada perangkat yang dapat dihubungkan dengan rental ini');
         }
+
+        // 2. Ambil shipping_address_id dari rental
+        const rentalAddressQuery = {
+          text: 'SELECT shipping_address_id FROM rentals WHERE id = $1',
+          values: [id],
+        };
+        const addressResult = await client.query(rentalAddressQuery);
+        const shippingAddressId = addressResult.rows?.[0]?.shipping_address_id;
+
+        if (!shippingAddressId) {
+          throw new Error('Alamat pengiriman tidak ditemukan untuk rental ini');
+        }
+
+        // 3. Generate baris shipment_orders baru (default: waiting)
+        const shipmentId = `ship-${nanoid(15)}`; // atau pakai nanoid
+        const insertShipmentQuery = {
+          text: `
+      INSERT INTO shipment_orders (
+        id, rental_id, shipping_address_id, shipping_status
+      )
+      VALUES ($1, $2, $3, $4)
+    `,
+          values: [shipmentId, id, shippingAddressId, 'waiting'],
+        };
+        await client.query(insertShipmentQuery);
       }
 
       // Jika status diubah menjadi 'completed', hapus rental_id
