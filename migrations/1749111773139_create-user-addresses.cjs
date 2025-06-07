@@ -41,6 +41,10 @@ exports.up = (pgm) => {
       type: 'boolean',
       default: false,
     },
+    is_deleted: {
+      type: 'boolean',
+      default: false,
+    },
     created_at: {
       type: 'timestamp',
       notNull: true,
