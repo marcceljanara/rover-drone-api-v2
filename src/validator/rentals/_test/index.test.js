@@ -87,6 +87,8 @@ describe('RentalsValidator', () => {
       const payload = {
         interval: 6,
         sensors: ['temperature', 'humidity'],
+        shippingAddressId: 'addressId',
+        shippingCost: 500000,
       };
 
       // Action and Assert
