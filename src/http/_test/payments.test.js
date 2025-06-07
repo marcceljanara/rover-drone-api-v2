@@ -71,10 +71,16 @@ describe('/v1/payments endpoint', () => {
     it('should return response code 200 and return all payment data', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        shippingCost: 500000,
+      };
       await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 });
+        .send(payload);
 
       // Action
       const response = await request(server)
@@ -92,10 +98,16 @@ describe('/v1/payments endpoint', () => {
     it('should return response code 200 and get detail payment', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        shippingCost: 500000,
+      };
       const { paymentId } = (await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 })).body.data;
+        .send(payload)).body.data;
 
       // Action
       const response = await request(server)
@@ -134,10 +146,16 @@ describe('/v1/payments endpoint', () => {
         transactionDescription: 'Payment successfully verified',
       };
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        shippingCost: 500000,
+      };
       const { paymentId } = (await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 })).body.data;
+        .send(payload)).body.data;
 
       // Action
       const response = await request(server)
@@ -176,10 +194,16 @@ describe('/v1/payments endpoint', () => {
     it('should return response code 404 and delete payment correctly', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        shippingCost: 500000,
+      };
       const { paymentId } = (await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 })).body.data;
+        .send(payload)).body.data;
 
       // Action
       const response = await request(server)

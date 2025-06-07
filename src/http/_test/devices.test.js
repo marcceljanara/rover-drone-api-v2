@@ -276,10 +276,16 @@ describe('/v1/devices endpoint', () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        shippingCost: 500000,
+      };
       const responseRental = await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 });
+        .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
@@ -304,10 +310,16 @@ describe('/v1/devices endpoint', () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-456' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        shippingCost: 500000,
+      };
       const responseRental = await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 });
+        .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)

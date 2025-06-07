@@ -73,15 +73,21 @@ describe('/v1/reports endpoint', () => {
     };
     await DevicesTableTestHelper.addDevice({ id: 'device-123' });
     await DevicesTableTestHelper.addDevice({ id: 'device-456' });
+    const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+    const payload = {
+      interval: 6,
+      shippingAddressId: addressId,
+      shippingCost: 500000,
+    };
     const response1 = (await request(server)
       .post('/v1/rentals')
       .set('Authorization', `Bearer ${accessTokenUser}`)
-      .send({ interval: 6 }));
+      .send(payload));
 
     const response2 = (await request(server)
       .post('/v1/rentals')
       .set('Authorization', `Bearer ${accessTokenUser}`)
-      .send({ interval: 6 }));
+      .send(payload));
 
     const paymentId1 = response1.body.data.paymentId;
     const paymentId2 = response2.body.data.paymentId;
