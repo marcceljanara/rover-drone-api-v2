@@ -45,8 +45,10 @@ describe('ReportsService', () => {
     const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'user456', email: 'user456@gmail.com' });
     await DevicesTableTestHelper.addDevice({ id: 'device-123' });
     await DevicesTableTestHelper.addDevice({ id: 'device-456' });
-    const paymentId1 = (await rentalsService.addRental(user1, 6, 'user')).payment_id;
-    const paymentId2 = (await rentalsService.addRental(user2, 6, 'user')).payment_id;
+    const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
+    const addressId2 = await UsersTableTestHelper.addAddress(user2, { id: 'address-456' });
+    const paymentId1 = (await rentalsService.addRental(user1, 6, 'user', addressId, 500000)).payment_id;
+    const paymentId2 = (await rentalsService.addRental(user2, 6, 'user', addressId2, 500000)).payment_id;
     const payload1 = {
       id: paymentId1,
       paymentStatus: 'completed',
