@@ -1,5 +1,8 @@
+/* eslint-disable import/no-extraneous-dependencies */
+import { differenceInHours } from 'date-fns';
 import InvariantError from '../../exceptions/InvariantError.js';
 import NotFoundError from '../../exceptions/NotFoundError.js';
+import AuthorizationError from '../../exceptions/AuthorizationError.js';
 import pool from '../../config/postgres/pool.js';
 
 class ShipmentsService {
@@ -128,6 +131,107 @@ class ShipmentsService {
 
     const result = await this._pool.query({ text: baseQuery, values });
 
+    return result.rows;
+  }
+
+  // 1. Ambil data return berdasarkan rentalId
+  async getReturnByRentalId(rentalId) {
+    const query = {
+      text: 'SELECT * FROM return_shipping_info WHERE rental_id = $1',
+      values: [rentalId],
+    };
+
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new NotFoundError('Informasi return tidak ditemukan');
+    }
+
+    return result.rows[0];
+  }
+
+  // 2. Update alamat penjemputan return, hanya jika belum lebih dari 2 hari
+  async updateReturnAddress(rentalId, userId, newAddressId) {
+    const result = await this._pool.query({
+      text: `
+      SELECT rsi.id, rsi.created_at
+      FROM return_shipping_info rsi
+      JOIN rentals r ON r.id = rsi.rental_id
+      WHERE rsi.rental_id = $1 AND r.user_id = $2
+    `,
+      values: [rentalId, userId],
+    });
+
+    if (!result.rowCount) {
+      throw new NotFoundError('Data pengembalian tidak ditemukan atau Anda tidak berhak mengaksesnya');
+    }
+
+    const returnData = result.rows[0];
+    const hoursSinceCreation = differenceInHours(new Date(), returnData.created_at);
+
+    if (hoursSinceCreation > 48) {
+      throw new AuthorizationError('Batas waktu untuk mengubah alamat sudah lewat');
+    }
+
+    await this._pool.query({
+      text: `
+      UPDATE return_shipping_info
+      SET pickup_address_id = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+    `,
+      values: [newAddressId, returnData.id],
+    });
+  }
+
+  // 3. Update status return oleh logistik/admin
+  async updateReturnStatus(returnId, newStatus) {
+    const allowedStatuses = ['requested', 'returning', 'returned', 'failed'];
+    if (!allowedStatuses.includes(newStatus)) {
+      throw new InvariantError('Status return tidak valid');
+    }
+
+    const result = await this._pool.query({
+      text: 'UPDATE return_shipping_info SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      values: [newStatus, returnId],
+    });
+
+    if (!result.rowCount) {
+      throw new NotFoundError('Return tidak ditemukan');
+    }
+  }
+
+  // 4. Tambahkan catatan return oleh admin
+  async addReturnNote(returnId, note) {
+    const result = await this._pool.query({
+      text: 'UPDATE return_shipping_info SET notes = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      values: [note, returnId],
+    });
+
+    if (!result.rowCount) {
+      throw new NotFoundError('Return tidak ditemukan');
+    }
+  }
+
+  // 5. Ambil daftar return dengan filter
+  async getAllReturns(filter = {}) {
+    let query = 'SELECT * FROM return_shipping_info WHERE 1=1';
+    const values = [];
+    let idx = 1;
+
+    if (filter.status) {
+      query += ` AND status = $${idx}`;
+      values.push(filter.status);
+      idx += 1;
+    }
+
+    if (filter.courierName) {
+      query += ` AND courier_name ILIKE $${idx}`;
+      values.push(`%${filter.courierName}%`);
+      idx += 1;
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const result = await this._pool.query({ text: query, values });
     return result.rows;
   }
 }

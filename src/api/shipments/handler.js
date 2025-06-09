@@ -10,6 +10,12 @@ class ShipmentsHandler {
     this.patchConfirmActualShippingHandler = this.patchConfirmActualShippingHandler.bind(this);
     this.patchConfirmDeliveryHandler = this.patchConfirmDeliveryHandler.bind(this);
     this.getAllShipmentsHandler = this.getAllShipmentsHandler.bind(this);
+
+    this.getReturnByRentalIdHandler = this.getReturnByRentalIdHandler.bind(this);
+    this.patchReturnAddressHandler = this.patchReturnAddressHandler.bind(this);
+    this.patchReturnStatusHandler = this.patchReturnStatusHandler.bind(this);
+    this.patchReturnNoteHandler = this.patchReturnNoteHandler.bind(this);
+    this.getAllReturnsHandler = this.getAllReturnsHandler.bind(this);
   }
 
   async getShipmentByRentalIdHandler(req, res, next) {
@@ -118,6 +124,97 @@ class ShipmentsHandler {
       return res.status(200).json({
         status: 'success',
         data: { shipments },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getReturnByRentalIdHandler(req, res, next) {
+    try {
+      this._validator.validateParamsPayload(req.params);
+      const { id } = req.params;
+      const returnData = await this._shipmentsService.getReturnByRentalId(id);
+
+      return res.status(200).json({
+        status: 'success',
+        data: { return: returnData },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async patchReturnAddressHandler(req, res, next) {
+    try {
+      this._validator.validateParamsPayload(req.params);
+      this._validator.validateUpdateReturnAddressPayload(req.body);
+
+      const { id: rentalId } = req.params;
+      const userId = req.id;
+      const { newAddressId } = req.body;
+
+      await this._shipmentsService.updateReturnAddress(rentalId, userId, newAddressId);
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'Alamat penjemputan return berhasil diperbarui',
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async patchReturnStatusHandler(req, res, next) {
+    try {
+      this._validator.validateParamsPayload(req.params);
+      this._validator.validateReturnStatusPayload(req.body);
+
+      const { id: returnId } = req.params;
+      const { status } = req.body;
+
+      await this._shipmentsService.updateReturnStatus(returnId, status);
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'Status return berhasil diperbarui',
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async patchReturnNoteHandler(req, res, next) {
+    try {
+      this._validator.validateParamsPayload(req.params);
+      this._validator.validateReturnNotePayload(req.body);
+
+      const { id: returnId } = req.params;
+      const { note } = req.body;
+
+      await this._shipmentsService.addReturnNote(returnId, note);
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'Catatan return berhasil ditambahkan',
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getAllReturnsHandler(req, res, next) {
+    try {
+      const filters = {
+        status: req.query.status,
+        courierName: req.query.courierName,
+      };
+
+      const returns = await this._shipmentsService.getAllReturns(filters);
+
+      return res.status(200).json({
+        status: 'success',
+        data: { returns },
       });
     } catch (error) {
       return next(error);

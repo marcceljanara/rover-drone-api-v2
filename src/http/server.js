@@ -12,6 +12,7 @@ import rentalsPlugin from '../api/rentals/index.js';
 import devicesPlugin from '../api/devices/index.js';
 import paymentsPlugin from '../api/payments/index.js';
 import reportsPlugin from '../api/reports/index.js';
+import shipmentsPlugin from '../api/shipments/index.js';
 
 // service
 import UserService from '../services/postgres/UserServices.js';
@@ -23,6 +24,7 @@ import PaymentsService from '../services/postgres/PaymentsService.js';
 import ProducerService from '../services/rabbitmq/ProducerService.js';
 import PublisherService from '../services/mqtt/PublisherServiceMqtt.js';
 import ReportsService from '../services/postgres/ReportsService.js';
+import ShipmentsService from '../services/postgres/ShipmentsService.js';
 
 // validator
 import UsersValidator from '../validator/users/index.js';
@@ -32,6 +34,7 @@ import RentalsValidator from '../validator/rentals/index.js';
 import DevicesValidator from '../validator/devices/index.js';
 import PaymentsValidator from '../validator/payments/index.js';
 import ReportsValidator from '../validator/reports/index.js';
+import ShipmentsValidator from '../validator/shipments/index.js';
 
 // token manager
 import TokenManager from '../tokenize/TokenManager.js';
@@ -59,6 +62,7 @@ function createServer() {
   const devicesService = new DevicesService();
   const paymentsService = new PaymentsService();
   const reportsService = new ReportsService();
+  const shipmentsService = new ShipmentsService();
 
   usersPlugin({
     app,
@@ -109,6 +113,13 @@ function createServer() {
     validator: ReportsValidator,
   });
 
+  shipmentsPlugin({
+    app,
+    shipmentsService,
+    rabbitmqService: ProducerService,
+    validator: ShipmentsValidator,
+  });
+
   // Global Error Handling Middleware
   // eslint-disable-next-line no-unused-vars
   app.get('/cause-error', (req, res) => {
@@ -124,6 +135,7 @@ function createServer() {
         message: err.message,
       });
     }
+    console.log(err);
     return res.status(500).json({
       status: 'error',
       message: 'Terjadi kesalahan pada server',

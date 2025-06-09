@@ -15,6 +15,27 @@ class RentalsService {
     const client = await this._pool.connect();
     try {
       await client.query('BEGIN'); // Mulai transaksi
+      // Ambil rental saat ini untuk validasi
+      const currentRentalQuery = {
+        text: 'SELECT rental_status FROM rentals WHERE id = $1 AND is_deleted = FALSE',
+        values: [id],
+      };
+      const currentResult = await client.query(currentRentalQuery);
+      if (currentResult.rowCount === 0) {
+        throw new NotFoundError('Rental tidak ditemukan');
+      }
+
+      const currentStatus = currentResult.rows[0].rental_status;
+
+      // Validasi status jika ingin mengganti menjadi 'completed'
+      if (
+        rentalStatus === 'completed'
+      && !['pending', 'awaiting-return'].includes(currentStatus)
+      ) {
+        throw new InvariantError(
+          `Rental hanya bisa diselesaikan jika status saat ini adalah 'pending' atau 'awaiting-return', status saat ini: '${currentStatus}'`,
+        );
+      }
 
       // Update status rental terlebih dahulu
       const updateRentalQuery = {
@@ -63,17 +84,46 @@ class RentalsService {
           throw new Error('Alamat pengiriman tidak ditemukan untuk rental ini');
         }
 
+        const courierQuery = {
+          text: `
+    SELECT courier_name, courier_service, etd
+    FROM rental_shipping_infos
+    WHERE rental_id = $1
+  `,
+          values: [id],
+        };
+        const { rows } = await client.query(courierQuery);
+        const courier = rows[0];
+        if (!courier) throw new Error('Ongkir belum tersedia untuk rental ini');
+
+        const estimatedDeliveryDate = new Date();
+        const estimatedShippingDate = new Date();
+        estimatedShippingDate.setDate(estimatedShippingDate.getDate() + 2);
+        estimatedDeliveryDate.setDate(estimatedDeliveryDate.getDate() + courier.etd + 2); // Tambah 2 hari buffer
+
         // 3. Generate baris shipment_orders baru (default: waiting)
         const shipmentId = `ship-${nanoid(15)}`; // atau pakai nanoid
         const insertShipmentQuery = {
           text: `
-      INSERT INTO shipment_orders (
-        id, rental_id, shipping_address_id, shipping_status
-      )
-      VALUES ($1, $2, $3, $4)
-    `,
-          values: [shipmentId, id, shippingAddressId, 'waiting'],
+    INSERT INTO shipment_orders (
+      id, rental_id, shipping_address_id,
+      courier_name, courier_service, shipping_status,
+      estimated_delivery_date, estimated_shipping_date
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+  `,
+          values: [
+            shipmentId,
+            id,
+            shippingAddressId,
+            courier.courier_name,
+            courier.courier_service,
+            'waiting',
+            estimatedDeliveryDate,
+            estimatedShippingDate,
+          ],
         };
+
         await client.query(insertShipmentQuery);
       }
 
@@ -156,10 +206,13 @@ class RentalsService {
     }
   }
 
-  async addRental(userId, interval, role, shippingAddressId, shippingCost, sensorIds = []) {
+  async addRental(userId, interval, role, shippingAddressId, shippingInfo, sensorIds = []) {
     const client = await this._pool.connect(); // Dapatkan client dari pool untuk transaksi
     try {
       const id = `rental-${nanoid(6)}`;
+      const {
+        shippingName, serviceName, shippingCost, etd,
+      } = shippingInfo;
 
       // Tentukan start_date dan end_date berdasarkan interval (bulan)
       const start_date = new Date(); // Waktu saat ini
@@ -248,6 +301,13 @@ class RentalsService {
         values: [id, baseCost, sensorCost, shippingCost, setupCost, totalCost],
       };
       await client.query(costQuery);
+      await client.query({
+        text: `
+    INSERT INTO rental_shipping_infos (id, rental_id, courier_name, courier_service, etd)
+    VALUES ($1, $2, $3, $4, $5)
+  `,
+        values: [`ship-info-${nanoid(10)}`, rentalResult.rows[0].id, shippingName, serviceName, parseInt(etd, 10)],
+      });
 
       // Tambahkan pembayaran terkait rental
       const paymentId = `payment-${nanoid(16)}`;
@@ -293,9 +353,22 @@ class RentalsService {
 
   async getDetailRental(id, role, userId) {
     const baseQuery = `
-    SELECT r.*, rc.total_cost, rc.base_cost, rc.sensor_cost, rc.shipping_cost, rc.setup_cost
+    SELECT 
+      r.*, 
+      rc.total_cost, rc.base_cost, rc.sensor_cost, rc.shipping_cost, rc.setup_cost,
+      ua.nama_penerima,
+      ua.no_hp,
+      CONCAT_WS(', ',
+        ua.alamat_lengkap,
+        ua.kelurahan,
+        ua.kecamatan,
+        ua.kabupaten_kota,
+        ua.provinsi,
+        ua.kode_pos
+      ) AS full_address
     FROM rentals r
     LEFT JOIN rental_costs rc ON rc.rental_id = r.id
+    LEFT JOIN user_addresses ua ON ua.id = r.shipping_address_id AND ua.is_deleted = FALSE
     WHERE r.id = $1 AND r.is_deleted = FALSE
   `;
 
@@ -313,6 +386,7 @@ class RentalsService {
     if (!result.rowCount) {
       throw new NotFoundError('rental tidak ditemukan');
     }
+
     return result.rows[0];
   }
 
