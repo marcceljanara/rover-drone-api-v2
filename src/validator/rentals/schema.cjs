@@ -13,7 +13,7 @@ const postAddRentalPayloadSchema = Joi.object({
   interval: Joi.number().valid(6, 12, 24, 36).required(),
   sensors: Joi.array(),
   shippingAddressId: Joi.string().max(15).required(),
-  shippingCost: Joi.number().required(),
+  subdistrictName: Joi.string().required(),
 });
 
 const putCancelRentalPayloadSchema = Joi.object({
