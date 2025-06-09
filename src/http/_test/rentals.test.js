@@ -6,6 +6,7 @@ import RentalsTableTestHelper from '../../../tests/RentalsTableTestHelper.js';
 import DevicesTableTestHelper from '../../../tests/DevicesTableTestHelper.js';
 import createServer from '../server.js';
 import pool from '../../config/postgres/pool.js';
+import calculateShippingCost from '../../utils/calculateShippingCost.js';
 
 dotenv.config();
 
@@ -40,6 +41,11 @@ const registerAndLoginUser = async (server) => {
   return accessToken;
 };
 
+jest.mock('../../utils/calculateShippingCost.js', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
+
 describe('/v1/rentals endpoint', () => {
   let server;
   let accessTokenAdmin;
@@ -52,6 +58,12 @@ describe('/v1/rentals endpoint', () => {
   beforeEach(async () => {
     accessTokenAdmin = await registerAndLoginAdmin(server);
     accessTokenUser = await registerAndLoginUser(server);
+    calculateShippingCost.mockResolvedValue({
+      shippingName: 'JNE',
+      serviceName: 'JTR23',
+      shippingCost: 500000,
+      etd: '4',
+    });
   });
 
   afterEach(async () => {
@@ -63,6 +75,7 @@ describe('/v1/rentals endpoint', () => {
 
   afterAll(async () => {
     await pool.end();
+    jest.clearAllMocks(); // reset semua mock state agar test tetap bersih
   });
 
   describe('PUT /v1/rentals/:id/status', () => {
@@ -70,10 +83,11 @@ describe('/v1/rentals endpoint', () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+
       const payload = {
         interval: 6,
         shippingAddressId: addressId,
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
@@ -107,7 +121,7 @@ describe('/v1/rentals endpoint', () => {
       const responseJson = response.body;
       expect(response.statusCode).toBe(404);
       expect(responseJson.status).toBe('fail');
-      expect(responseJson.message).toBe('rental tidak ditemukan');
+      expect(responseJson.message).toBe('Rental tidak ditemukan');
     });
   });
 
@@ -120,7 +134,7 @@ describe('/v1/rentals endpoint', () => {
       const payload = {
         interval: 6,
         shippingAddressId: addressId,
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
       }; const responseRental = await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
@@ -163,7 +177,7 @@ describe('/v1/rentals endpoint', () => {
       const payload = {
         interval: 6,
         shippingAddressId: addressId,
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
       };
       await request(server)
         .post('/v1/rentals')
@@ -191,7 +205,7 @@ describe('/v1/rentals endpoint', () => {
       const payload = {
         interval: 6,
         shippingAddressId: addressId,
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
@@ -237,7 +251,7 @@ describe('/v1/rentals endpoint', () => {
       const payload = {
         interval: 6,
         shippingAddressId: addressId,
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
         sensors: ['humidity'],
       };
       // Action
@@ -257,7 +271,7 @@ describe('/v1/rentals endpoint', () => {
       const payload = {
         interval: 6,
         shippingAddressId: 'addressId',
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
         sensors: ['humidity'],
       };
       // Action
@@ -280,7 +294,7 @@ describe('/v1/rentals endpoint', () => {
       const payload = {
         interval: 6,
         shippingAddressId: 'addressId',
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
         sensors: ['humidity'],
       };
       // Action
@@ -305,7 +319,7 @@ describe('/v1/rentals endpoint', () => {
       const payload = {
         interval: 6,
         shippingAddressId: addressId,
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
@@ -350,7 +364,7 @@ describe('/v1/rentals endpoint', () => {
       const payload = {
         interval: 6,
         shippingAddressId: addressId,
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
@@ -397,7 +411,7 @@ describe('/v1/rentals endpoint', () => {
       const payload = {
         interval: 6,
         shippingAddressId: addressId,
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
