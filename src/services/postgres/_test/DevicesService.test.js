@@ -176,7 +176,13 @@ describe('DevicesService', () => {
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-1234567', username: 'otng123', email: 'totonggg@gmail.com' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
-      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      const payload = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, payload);
       await rentalsService.changeStatusRental(id, 'active');
 
       // Action
@@ -223,7 +229,13 @@ describe('DevicesService', () => {
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
-      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      const payload = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, payload);
       await rentalsService.changeStatusRental(id, 'active');
 
       // Action
@@ -248,7 +260,13 @@ describe('DevicesService', () => {
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
-      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      const payload = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, payload);
       await rentalsService.changeStatusRental(id, 'active');
 
       // // Mengupdate perangkat sewa dengan rental_id
@@ -310,7 +328,13 @@ describe('DevicesService', () => {
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
 
-      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      const payload = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, payload);
       await rentalsService.changeStatusRental(id, 'active');
 
       // Action
@@ -328,7 +352,13 @@ describe('DevicesService', () => {
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
 
-      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      const payload = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, payload);
       await rentalsService.changeStatusRental(id, 'active');
 
       // Action
@@ -364,7 +394,13 @@ describe('DevicesService', () => {
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
-      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      const payload = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, payload);
       await rentalsService.changeStatusRental(id, 'active');
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-123', deviceId });
 
@@ -381,7 +417,13 @@ describe('DevicesService', () => {
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
-      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      const payload = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, payload);
       await rentalsService.changeStatusRental(id, 'active');
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-123', deviceId });
 
@@ -408,7 +450,13 @@ describe('DevicesService', () => {
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
-      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      const payload = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, payload);
       await rentalsService.changeStatusRental(id, 'active');
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-123', deviceId });
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-111', deviceId });
@@ -430,7 +478,13 @@ describe('DevicesService', () => {
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
-      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      const payload = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, payload);
       await rentalsService.changeStatusRental(id, 'active');
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-123', deviceId });
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-111', deviceId });
@@ -462,7 +516,13 @@ describe('DevicesService', () => {
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
-      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      const payload = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, payload);
       await rentalsService.changeStatusRental(id, 'active');
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-123', deviceId });
 
@@ -479,7 +539,13 @@ describe('DevicesService', () => {
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
-      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      const payload = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, payload);
       await rentalsService.changeStatusRental(id, 'active');
       await SensorTableTestHelper.addDataSensor({ sensorId: 'sensor-123', deviceId });
 
@@ -496,7 +562,13 @@ describe('DevicesService', () => {
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
-      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, 500000);
+      const payload = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user1, 6, 'user', addressId, payload);
       await rentalsService.changeStatusRental(id, 'active');
 
       // Actions and Assert
