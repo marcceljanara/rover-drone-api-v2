@@ -1,3 +1,5 @@
+import calculateShippingCost from '../../utils/calculateShippingCost.js';
+
 class RentalsHandler {
   constructor({ rentalsService, rabbitmqService, validator }) {
     this._rentalsService = rentalsService;
@@ -52,10 +54,11 @@ class RentalsHandler {
       const userId = req.id;
       await this._validator.validatePostAddRentalPayload(req.body);
       const {
-        interval, sensors, shippingAddressId, shippingCost,
+        interval, sensors, shippingAddressId, subdistrictName,
       } = req.body;
+      const shippingInfo = await calculateShippingCost(subdistrictName);
       const rental = await this._rentalsService
-        .addRental(userId, interval, role, shippingAddressId, shippingCost, sensors);
+        .addRental(userId, interval, role, shippingAddressId, shippingInfo, sensors);
       const message = {
         userId,
         rentalId: rental.id,
