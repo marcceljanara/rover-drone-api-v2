@@ -50,6 +50,10 @@ exports.up = (pgm) => {
       type: 'TIMESTAMP',
       notNull: false,
     },
+    estimated_delivery_date: {
+      type: 'TIMESTAMP',
+      notNull: false,
+    },
     actual_shipping_date: {
       type: 'TIMESTAMP',
       notNull: false,
