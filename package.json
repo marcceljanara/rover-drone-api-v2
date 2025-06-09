@@ -15,7 +15,8 @@
     "migrate:test": "node-pg-migrate -f config/database/test.json",
     "lint": "eslint ./src",
     "lint-fix": "eslint --fix ./src",
-    "generate-admin": "node src/utils/generateAdmin.js"
+    "generate-admin": "node src/utils/generateAdmin.js",
+    "clean-table": "node src/utils/cleanTable.js"
   },
   "repository": {
     "type": "git",
@@ -51,6 +52,7 @@
   "dependencies": {
     "@types/jest": "^29.5.14",
     "amqplib": "^0.10.5",
+    "axios": "^1.9.0",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.3",
     "cookie-parser": "^1.4.7",
