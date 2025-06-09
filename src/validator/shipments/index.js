@@ -4,6 +4,9 @@ import {
   shippingInfoPayloadSchema,
   shippingStatusPayloadSchema,
   shippingDatePayloadSchema,
+  updateReturnAddressPayloadSchema,
+  returnStatusPayloadSchema,
+  returnNotePayloadSchema,
 } from './schema.cjs';
 
 const ShipmentsValidator = {
@@ -21,6 +24,20 @@ const ShipmentsValidator = {
   },
   validateShippingDatePayload(payload) {
     const result = shippingDatePayloadSchema.validate(payload);
+    if (result.error) throw new InvariantError(result.error.message);
+  },
+  validateUpdateReturnAddressPayload(payload) {
+    const result = updateReturnAddressPayloadSchema.validate(payload);
+    if (result.error) throw new InvariantError(result.error.message);
+  },
+
+  validateReturnStatusPayload(payload) {
+    const result = returnStatusPayloadSchema.validate(payload);
+    if (result.error) throw new InvariantError(result.error.message);
+  },
+
+  validateReturnNotePayload(payload) {
+    const result = returnNotePayloadSchema.validate(payload);
     if (result.error) throw new InvariantError(result.error.message);
   },
 };

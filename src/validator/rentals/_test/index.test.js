@@ -88,7 +88,7 @@ describe('RentalsValidator', () => {
         interval: 6,
         sensors: ['temperature', 'humidity'],
         shippingAddressId: 'addressId',
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
       };
 
       // Action and Assert

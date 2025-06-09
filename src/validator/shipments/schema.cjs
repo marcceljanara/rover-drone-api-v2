@@ -22,9 +22,26 @@ const shippingDatePayloadSchema = Joi.object({
   date: Joi.date().iso().required(),
 });
 
+const updateReturnAddressPayloadSchema = Joi.object({
+  newAddressId: Joi.string().required(), // UUID
+});
+
+const returnStatusPayloadSchema = Joi.object({
+  status: Joi.string()
+    .valid('waiting', 'picked', 'in-transit', 'returned', 'cancelled')
+    .required(),
+});
+
+const returnNotePayloadSchema = Joi.object({
+  notes: Joi.string().max(255).allow('', null).required(),
+});
+
 module.exports = {
   paramsPayloadSchema,
   shippingInfoPayloadSchema,
   shippingStatusPayloadSchema,
   shippingDatePayloadSchema,
+  updateReturnAddressPayloadSchema,
+  returnStatusPayloadSchema,
+  returnNotePayloadSchema,
 };
