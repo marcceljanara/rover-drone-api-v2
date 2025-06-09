@@ -70,6 +70,7 @@ describe('RentalsService', () => {
 
       // Action
       const rental = await rentalsService.changeStatusRental(payload.id, payload.rentalStatus);
+
       // Assert
       const device = await DevicesTableTestHelper.findDeviceById(deviceId);
       expect(rental.rental_status).toBe('completed');

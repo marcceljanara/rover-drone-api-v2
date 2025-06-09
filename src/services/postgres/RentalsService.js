@@ -43,9 +43,6 @@ class RentalsService {
         values: [rentalStatus, id],
       };
       const rentalResult = await client.query(updateRentalQuery);
-      if (rentalResult.rowCount === 0) {
-        throw new NotFoundError('rental tidak ditemukan');
-      }
 
       // Jika status diubah menjadi 'active', perbarui rental_id pada devices
       // ...sebelumnya tetap
@@ -80,10 +77,6 @@ class RentalsService {
         const addressResult = await client.query(rentalAddressQuery);
         const shippingAddressId = addressResult.rows?.[0]?.shipping_address_id;
 
-        if (!shippingAddressId) {
-          throw new Error('Alamat pengiriman tidak ditemukan untuk rental ini');
-        }
-
         const courierQuery = {
           text: `
     SELECT courier_name, courier_service, etd
@@ -94,7 +87,7 @@ class RentalsService {
         };
         const { rows } = await client.query(courierQuery);
         const courier = rows[0];
-        if (!courier) throw new Error('Ongkir belum tersedia untuk rental ini');
+        if (!courier) throw new NotFoundError('Ongkir belum tersedia untuk rental ini');
 
         const estimatedDeliveryDate = new Date();
         const estimatedShippingDate = new Date();
