@@ -6,6 +6,7 @@ import DevicesTableTestHelper from '../../../tests/DevicesTableTestHelper.js';
 import SensorTableTestHelper from '../../../tests/SensorTableTestHelper.js';
 import createServer from '../server.js';
 import pool from '../../config/postgres/pool.js';
+import calculateShippingCost from '../../utils/calculateShippingCost.js';
 
 dotenv.config();
 
@@ -39,6 +40,10 @@ const registerAndLoginUser = async (server) => {
   const { accessToken } = login.body.data;
   return accessToken;
 };
+jest.mock('../../utils/calculateShippingCost.js', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
 
 describe('/v1/devices endpoint', () => {
   let server;
@@ -52,6 +57,12 @@ describe('/v1/devices endpoint', () => {
   beforeEach(async () => {
     accessTokenAdmin = await registerAndLoginAdmin(server);
     accessTokenUser = await registerAndLoginUser(server);
+    calculateShippingCost.mockResolvedValue({
+      shippingName: 'JNE',
+      serviceName: 'JTR23',
+      shippingCost: 500000,
+      etd: '4',
+    });
   });
 
   afterEach(async () => {
@@ -63,6 +74,7 @@ describe('/v1/devices endpoint', () => {
 
   afterAll(async () => {
     await pool.end();
+    jest.clearAllMocks(); // reset semua mock state agar test tetap bersih
   });
 
   describe('POST /v1/devices', () => {
@@ -280,7 +292,7 @@ describe('/v1/devices endpoint', () => {
       const payload = {
         interval: 6,
         shippingAddressId: addressId,
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
@@ -314,7 +326,7 @@ describe('/v1/devices endpoint', () => {
       const payload = {
         interval: 6,
         shippingAddressId: addressId,
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
