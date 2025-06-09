@@ -7,6 +7,7 @@ import DevicesTableTestHelper from '../../../tests/DevicesTableTestHelper';
 import PaymentsTableTestHelper from '../../../tests/PaymentTableTestHelper.js';
 import createServer from '../server.js';
 import pool from '../../config/postgres/pool.js';
+import calculateShippingCost from '../../utils/calculateShippingCost.js';
 
 dotenv.config();
 
@@ -41,6 +42,11 @@ const registerAndLoginUser = async (server) => {
   return accessToken;
 };
 
+jest.mock('../../utils/calculateShippingCost.js', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
+
 describe('/v1/payments endpoint', () => {
   let server;
   let accessTokenAdmin;
@@ -53,6 +59,12 @@ describe('/v1/payments endpoint', () => {
   beforeEach(async () => {
     accessTokenAdmin = await registerAndLoginAdmin(server);
     accessTokenUser = await registerAndLoginUser(server);
+    calculateShippingCost.mockResolvedValue({
+      shippingName: 'JNE',
+      serviceName: 'JTR23',
+      shippingCost: 500000,
+      etd: '4',
+    });
   });
 
   afterEach(async () => {
@@ -65,6 +77,7 @@ describe('/v1/payments endpoint', () => {
 
   afterAll(async () => {
     await pool.end();
+    jest.clearAllMocks(); // reset semua mock state agar test tetap bersih
   });
 
   describe('GET /v1/payments', () => {
@@ -75,7 +88,7 @@ describe('/v1/payments endpoint', () => {
       const payload = {
         interval: 6,
         shippingAddressId: addressId,
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
       };
       await request(server)
         .post('/v1/rentals')
@@ -102,7 +115,7 @@ describe('/v1/payments endpoint', () => {
       const payload = {
         interval: 6,
         shippingAddressId: addressId,
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
       };
       const { paymentId } = (await request(server)
         .post('/v1/rentals')
@@ -150,7 +163,7 @@ describe('/v1/payments endpoint', () => {
       const payload = {
         interval: 6,
         shippingAddressId: addressId,
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
       };
       const { paymentId } = (await request(server)
         .post('/v1/rentals')
@@ -198,7 +211,7 @@ describe('/v1/payments endpoint', () => {
       const payload = {
         interval: 6,
         shippingAddressId: addressId,
-        shippingCost: 500000,
+        subdistrictName: 'Rejo Binangun',
       };
       const { paymentId } = (await request(server)
         .post('/v1/rentals')
