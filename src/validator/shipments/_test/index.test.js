@@ -139,4 +139,40 @@ describe('ShipmentsValidator', () => {
         .not.toThrowError();
     });
   });
+  describe('validateUpdateReturnShippingInfoPayload', () => {
+    it('should not throw error when all optional fields are valid', () => {
+      const payload = {
+        courierName: 'JNE',
+        courierService: 'YES',
+        trackingNumber: 'JNE1234567890',
+        pickupUpAt: '2025-06-10T10:00:00Z',
+        returnedAt: '2025-06-11T14:00:00Z',
+      };
+      expect(() => ShipmentsValidator.validateUpdateReturnShippingInfoPayload(payload))
+        .not.toThrowError();
+    });
+
+    it('should throw error when courierName is too short', () => {
+      const payload = { courierName: 'J' };
+      expect(() => ShipmentsValidator.validateUpdateReturnShippingInfoPayload(payload))
+        .toThrowError(InvariantError);
+    });
+
+    it('should throw error when trackingNumber is too short', () => {
+      const payload = { trackingNumber: '1234' };
+      expect(() => ShipmentsValidator.validateUpdateReturnShippingInfoPayload(payload))
+        .toThrowError(InvariantError);
+    });
+
+    it('should throw error when pickupUpAt is invalid date', () => {
+      const payload = { pickupUpAt: 'invalid-date' };
+      expect(() => ShipmentsValidator.validateUpdateReturnShippingInfoPayload(payload))
+        .toThrowError(InvariantError);
+    });
+
+    it('should not throw error when payload is empty (all optional)', () => {
+      expect(() => ShipmentsValidator.validateUpdateReturnShippingInfoPayload({}))
+        .not.toThrowError();
+    });
+  });
 });

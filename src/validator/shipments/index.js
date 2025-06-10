@@ -7,6 +7,7 @@ import {
   updateReturnAddressPayloadSchema,
   returnStatusPayloadSchema,
   returnNotePayloadSchema,
+  updateReturnShippingInfoPayloadSchema,
 } from './schema.cjs';
 
 const ShipmentsValidator = {
@@ -38,6 +39,10 @@ const ShipmentsValidator = {
 
   validateReturnNotePayload(payload) {
     const result = returnNotePayloadSchema.validate(payload);
+    if (result.error) throw new InvariantError(result.error.message);
+  },
+  validateUpdateReturnShippingInfoPayload(payload) {
+    const result = updateReturnShippingInfoPayloadSchema.validate(payload);
     if (result.error) throw new InvariantError(result.error.message);
   },
 };

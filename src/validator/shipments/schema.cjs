@@ -35,6 +35,14 @@ const returnNotePayloadSchema = Joi.object({
   notes: Joi.string().max(255).allow('', null).required(),
 });
 
+const updateReturnShippingInfoPayloadSchema = Joi.object({
+  courierName: Joi.string().min(2).max(50),
+  courierService: Joi.string().min(2).max(50),
+  trackingNumber: Joi.string().min(5).max(100),
+  pickupUpAt: Joi.date().iso(),
+  returnedAt: Joi.date().iso(),
+});
+
 module.exports = {
   paramsPayloadSchema,
   shippingInfoPayloadSchema,
@@ -43,4 +51,5 @@ module.exports = {
   updateReturnAddressPayloadSchema,
   returnStatusPayloadSchema,
   returnNotePayloadSchema,
+  updateReturnShippingInfoPayloadSchema,
 };
