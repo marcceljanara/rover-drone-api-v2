@@ -30,7 +30,6 @@ describe('ShipmentsValidator', () => {
         courierName: 'JNE',
         courierService: 'Reguler',
         trackingNumber: '123',
-        estimatedShippingDate: '2025-06-10',
       };
       expect(() => ShipmentsValidator.validateShippingInfoPayload(payload))
         .toThrowError(InvariantError);
@@ -41,7 +40,6 @@ describe('ShipmentsValidator', () => {
         courierName: 'JNE',
         courierService: 'YES',
         trackingNumber: 'JNE1234567890',
-        estimatedShippingDate: '2025-06-10',
         notes: 'Handle with care',
       };
       expect(() => ShipmentsValidator.validateShippingInfoPayload(payload))

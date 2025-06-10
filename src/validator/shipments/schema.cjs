@@ -8,7 +8,6 @@ const shippingInfoPayloadSchema = Joi.object({
   courierName: Joi.string().min(2).max(50).required(),
   courierService: Joi.string().min(2).max(50).required(),
   trackingNumber: Joi.string().min(5).max(100).required(),
-  estimatedShippingDate: Joi.date().iso().required(),
   notes: Joi.string().allow('', null).max(255), // optional
 });
 
