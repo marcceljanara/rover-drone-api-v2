@@ -67,6 +67,7 @@
     "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^9.0.2",
     "mqtt": "^5.10.3",
+    "multer": "^2.0.1",
     "nanoid": "^5.0.9",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.16",
