@@ -36,7 +36,7 @@ async function calculateShippingCost(subdistrictName) {
     return {
       shippingName: jneOption.shipping_name,
       serviceName: jneOption.service_name,
-      shippingCost: jneOption.shipping_cost,
+      shippingCost: jneOption.shipping_cost * 2, // Mengalikan biaya ongkir dengan 2
       etd: jneOption.etd,
     };
   } catch (error) {
