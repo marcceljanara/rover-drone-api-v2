@@ -65,6 +65,10 @@ exports.up = (pgm) => {
     notes: {
       type: 'TEXT',
     },
+    delivery_proof_url: {
+      type: 'TEXT',
+      notNull: false,
+    },
     created_at: {
       type: 'TIMESTAMP',
       default: pgm.func('current_timestamp'),
