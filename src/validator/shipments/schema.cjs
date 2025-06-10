@@ -27,7 +27,7 @@ const updateReturnAddressPayloadSchema = Joi.object({
 
 const returnStatusPayloadSchema = Joi.object({
   status: Joi.string()
-    .valid('waiting', 'picked', 'in-transit', 'returned', 'cancelled')
+    .valid('requested', 'returning', 'returned', 'failed')
     .required(),
 });
 
