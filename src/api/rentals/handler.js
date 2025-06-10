@@ -28,6 +28,11 @@ class RentalsHandler {
       return res.status(200).json({
         status: 'success',
         message: `status rental ${rental.id} menjadi ${rental.rental_status}`,
+        data: {
+          shipmentId: rental.shipmentId,
+          rentalId: rental.id,
+          rentalStatus: rental.rental_status,
+        },
       });
     } catch (error) {
       return next(error);
