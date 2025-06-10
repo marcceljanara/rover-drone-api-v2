@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 
 // plugin
 import usersPlugin from '../api/users/index.js';
@@ -53,6 +54,9 @@ function createServer() {
   app.use(cors({
     origin: '*',
   }));
+
+  // Expose folder uploads secara publik
+  app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
   // Dependency Injection
   const userService = new UserService();

@@ -10,6 +10,8 @@ class ShipmentsHandler {
     this.patchConfirmActualShippingHandler = this.patchConfirmActualShippingHandler.bind(this);
     this.patchConfirmDeliveryHandler = this.patchConfirmDeliveryHandler.bind(this);
     this.getAllShipmentsHandler = this.getAllShipmentsHandler.bind(this);
+    this.uploadDeliveryProofHandler = this.uploadDeliveryProofHandler.bind(this);
+    this.getDeliveryProofHandler = this.getDeliveryProofHandler.bind(this);
 
     this.getReturnByRentalIdHandler = this.getReturnByRentalIdHandler.bind(this);
     this.patchReturnAddressHandler = this.patchReturnAddressHandler.bind(this);
@@ -19,6 +21,7 @@ class ShipmentsHandler {
     this.putReturnShippingInfoHandler = this.putReturnShippingInfoHandler.bind(this);
   }
 
+  // Shipments Handlers
   async getShipmentByRentalIdHandler(req, res, next) {
     try {
       this._validator.validateParamsPayload(req.params);
@@ -131,6 +134,40 @@ class ShipmentsHandler {
     }
   }
 
+  async uploadDeliveryProofHandler(req, res, next) {
+    try {
+      const { id: shipmentId } = req.params;
+      const photoUrl = `/uploads/delivery-proofs/${req.file.filename}`;
+
+      await this._shipmentsService.addDeliveryProof(shipmentId, photoUrl);
+
+      return res.status(201).json({
+        status: 'success',
+        message: 'Bukti pengiriman berhasil diunggah',
+        data: { photoUrl },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getDeliveryProofHandler(req, res, next) {
+    try {
+      this._validator.validateParamsPayload(req.params);
+      const { id: shipmentId } = req.params;
+
+      const deliveryProofUrl = await this._shipmentsService.getDeliveryProofUrl(shipmentId);
+
+      return res.status(200).json({
+        status: 'success',
+        data: { deliveryProofUrl },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  // Returns Shipping Handler
   async getReturnByRentalIdHandler(req, res, next) {
     try {
       this._validator.validateParamsPayload(req.params);

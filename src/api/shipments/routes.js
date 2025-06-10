@@ -1,6 +1,7 @@
 import express from 'express';
 import verifyToken from '../../middleware/verifyToken.js';
 import verifyAdmin from '../../middleware/verifyAdmin.js';
+import upload from '../../middleware/uploadImage.js';
 
 const shipmentRoutes = (handler) => {
   const router = express.Router();
@@ -26,6 +27,12 @@ const shipmentRoutes = (handler) => {
 
   // Konfirmasi tanggal aktual diterima (tanggal barang sampai)
   router.patch('/v1/shipments/:id/actual-delivery', verifyToken, verifyAdmin, handler.patchConfirmDeliveryHandler);
+
+  // Upload bukti pengiriman (foto)
+  router.post('/v1/shipments/:id/delivery-proof', verifyToken, upload, handler.uploadDeliveryProofHandler);
+
+  // GET bukti serah terima (delivery proof image URL)
+  router.get('/v1/shipments/:id/delivery-proof', verifyToken, handler.getDeliveryProofHandler);
 
   // ===========================
   // RETURNS ROUTES (PENGEMBALIAN)

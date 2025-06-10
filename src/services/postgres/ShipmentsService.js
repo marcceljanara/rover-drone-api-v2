@@ -133,6 +133,28 @@ class ShipmentsService {
     return result.rows;
   }
 
+  async addDeliveryProof(shipmentId, photoUrl) {
+    const result = await this._pool.query({
+      text: 'UPDATE shipment_orders SET delivery_proof_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id',
+      values: [photoUrl, shipmentId],
+    });
+
+    if (!result.rowCount) throw new NotFoundError('Pengiriman tidak ditemukan');
+  }
+
+  async getDeliveryProofUrl(shipmentId) {
+    const result = await this._pool.query(
+      'SELECT delivery_proof_url FROM shipment_orders WHERE id = $1',
+      [shipmentId],
+    );
+
+    if (!result.rowCount) {
+      throw new NotFoundError('Data shipment tidak ditemukan');
+    }
+
+    return result.rows[0].delivery_proof_url;
+  }
+
   // 1. Ambil data return berdasarkan rentalId
   async getReturnByRentalId(rentalId) {
     const query = {
