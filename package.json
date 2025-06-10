@@ -11,6 +11,7 @@
     "test:export": "jest --setupFiles dotenv/config -i --runInBand --json --outputFile=test-results.json",
     "test:watch:change": "jest --watch --setupFiles dotenv/config -i",
     "test:watch": "jest --watchAll --coverage --setupFiles dotenv/config -i",
+    "test:debug": "jest --setupFiles dotenv/config -i --runInBand --detectOpenHandles",
     "migrate": "node-pg-migrate",
     "migrate:test": "node-pg-migrate -f config/database/test.json",
     "lint": "eslint ./src",
