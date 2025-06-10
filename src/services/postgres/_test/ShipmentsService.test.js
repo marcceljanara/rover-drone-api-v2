@@ -7,6 +7,7 @@ import DevicesTableTestHelper from '../../../../tests/DevicesTableTestHelper';
 import InvariantError from '../../../exceptions/InvariantError';
 import NotFoundError from '../../../exceptions/NotFoundError';
 import pool from '../../../config/postgres/pool';
+import ReturnShippingTableTestHelper from '../../../../tests/ReturnShippingTableTestHelper';
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ describe('ShipmentsService', () => {
     await UsersTableTestHelper.cleanTable();
     await RentalsTableTestHelper.cleanTable();
     await DevicesTableTestHelper.cleanTable();
+    await ReturnShippingTableTestHelper.cleanTable();
   });
 
   describe('getShipmentByRentalId', () => {
@@ -311,6 +313,369 @@ describe('ShipmentsService', () => {
 
       // Assert
       expect(filtered).toEqual([]);
+    });
+  });
+  describe('getReturnByRentalId function', () => {
+    it('should get return shipment by rental ID', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const shipmentsService = new ShipmentsService();
+      const user = await UsersTableTestHelper.addUser({
+        id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
+      });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      await rentalsService.changeStatusRental(id, 'active');
+      await ReturnShippingTableTestHelper.addReturnShippingInfo({
+        id: 'return-123',
+        rental_id: id,
+        pickup_address_id: addressId,
+        status: 'requested',
+        pickup_method: 'pickup',
+      });
+
+      // Action
+      const returnShipment = await shipmentsService.getReturnByRentalId(id);
+
+      // Assert
+      expect(returnShipment.id).toBe('return-123');
+      expect(returnShipment.rental_id).toBe(id);
+      expect(returnShipment.pickup_address_id).toBe(addressId);
+      expect(returnShipment.status).toBe('requested');
+      expect(returnShipment.pickup_method).toBe('pickup');
+    });
+    it('should throw NotFoundError when return shipment not found', async () => {
+      // Arrange
+      const shipmentsService = new ShipmentsService();
+      const rentalId = 'rental-123';
+
+      // Action & Assert
+      await expect(shipmentsService.getReturnByRentalId(rentalId))
+        .rejects.toThrow(NotFoundError);
+    });
+  });
+  describe('updateReturnAddress function', () => {
+    it('should update return address correctly', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const shipmentsService = new ShipmentsService();
+      const user = await UsersTableTestHelper.addUser({
+        id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
+      });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123', isDefault: true });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      await rentalsService.changeStatusRental(id, 'active');
+      await ReturnShippingTableTestHelper.addReturnShippingInfo({
+        id: 'return-123',
+        rental_id: id,
+        pickup_address_id: addressId,
+        status: 'requested',
+        pickup_method: 'pickup',
+      });
+      const newAddressId = await UsersTableTestHelper.addAddress(user, { id: 'address-456' });
+
+      // Action and Assert
+      await expect(shipmentsService.updateReturnAddress(id, user, newAddressId))
+        .resolves.not.toThrow();
+    });
+    it('should throw NotFoundError when return shipping info not found', async () => {
+      // Arrange
+      const shipmentsService = new ShipmentsService();
+      const rentalId = 'rental-123';
+      const userId = 'user-123';
+      const newAddressId = 'address-456';
+
+      // Action & Assert
+      await expect(shipmentsService.updateReturnAddress(rentalId, userId, newAddressId))
+        .rejects.toThrow(NotFoundError);
+    });
+    it('should throw InvariantError when trying to update return address after 2 days', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const shipmentsService = new ShipmentsService();
+      const user = await UsersTableTestHelper.addUser({
+        id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
+      });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123', isDefault: true });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      await rentalsService.changeStatusRental(id, 'active');
+      await ReturnShippingTableTestHelper.addReturnShippingInfo({
+        id: 'return-123',
+        rental_id: id,
+        pickup_address_id: addressId,
+        status: 'requested',
+        pickup_method: 'pickup',
+      });
+      const newAddressId = await UsersTableTestHelper.addAddress(user, { id: 'address-456' });
+
+      // Simulate that the return was created more than 48 hours ago
+      const returnCreatedAt = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000); // 3 days ago
+      await pool.query('UPDATE return_shipping_info SET created_at = $1 WHERE id = $2', [returnCreatedAt, 'return-123']);
+
+      // Action & Assert
+      await expect(shipmentsService.updateReturnAddress(id, user, newAddressId))
+        .rejects.toThrow(InvariantError);
+    });
+  });
+  describe('updateReturnStatus function', () => {
+    it('should update return status correctly', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const shipmentsService = new ShipmentsService();
+      const user = await UsersTableTestHelper.addUser({
+        id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
+      });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      await rentalsService.changeStatusRental(id, 'active');
+      const returnId = await ReturnShippingTableTestHelper.addReturnShippingInfo({
+        id: 'return-123',
+        rental_id: id,
+        pickup_address_id: addressId,
+        status: 'requested',
+        pickup_method: 'pickup',
+      });
+
+      // Action
+      const updatedReturn = await shipmentsService.updateReturnStatus(returnId, 'returning');
+
+      // Assert
+      expect(updatedReturn.id).toBe(returnId);
+      expect(updatedReturn.status).toBe('returning');
+    });
+    it('should throw InvariantError for invalid status', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const shipmentsService = new ShipmentsService();
+      const user = await UsersTableTestHelper.addUser({
+        id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
+      });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      await rentalsService.changeStatusRental(id, 'active');
+      const returnId = await ReturnShippingTableTestHelper.addReturnShippingInfo({
+        id: 'return-123',
+        rental_id: id,
+        pickup_address_id: addressId,
+        status: 'requested',
+        pickup_method: 'pickup',
+      });
+
+      // Action & Assert
+      await expect(shipmentsService.updateReturnStatus(returnId, 'invalid_status'))
+        .rejects.toThrow(InvariantError);
+    });
+    it('should throw NotFoundError when return not found', async () => {
+      // Arrange
+      const shipmentsService = new ShipmentsService();
+      const returnId = 'return-123';
+
+      // Action & Assert
+      await expect(shipmentsService.updateReturnStatus(returnId, 'returning'))
+        .rejects.toThrow(NotFoundError);
+    });
+  });
+  describe('addReturnNote function', () => {
+    it('should add return note correctly', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const shipmentsService = new ShipmentsService();
+      const user = await UsersTableTestHelper.addUser({
+        id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
+      });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      await rentalsService.changeStatusRental(id, 'active');
+      const returnId = await ReturnShippingTableTestHelper.addReturnShippingInfo({
+        id: 'return-123',
+        rental_id: id,
+        pickup_address_id: addressId,
+        status: 'requested',
+        pickup_method: 'pickup',
+      });
+
+      // Action & Assert
+      await expect(shipmentsService.addReturnNote(returnId, 'Catatan tambahan untuk return')).resolves.not.toThrow();
+    });
+    it('should throw NotFoundErrror when return not found', async () => {
+      // Arrange
+      const shipmentsService = new ShipmentsService();
+      const returnId = 'return-123';
+      const note = 'Catatan tambahan untuk return';
+
+      // Action & Assert
+      await expect(shipmentsService.addReturnNote(returnId, note))
+        .rejects.toThrow(NotFoundError);
+    });
+  });
+  describe('updateReturnShippingInfo function', () => {
+    it('should update return shipping info correctly', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const shipmentsService = new ShipmentsService();
+      const user = await UsersTableTestHelper.addUser({
+        id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
+      });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      await rentalsService.changeStatusRental(id, 'active');
+      const returnId = await ReturnShippingTableTestHelper.addReturnShippingInfo({
+        id: 'return-123',
+        rental_id: id,
+        pickup_address_id: addressId,
+        status: 'requested',
+        pickup_method: 'pickup',
+      });
+
+      // Action
+      const updatedReturn = await shipmentsService.updateReturnShippingInfo(returnId, {
+        courierName: 'TIKI',
+        courierService: 'ONS',
+        trackingNumber: '0987654321',
+        pickedUpAt: new Date(),
+      });
+
+      // Assert
+      expect(updatedReturn.id).toBe(returnId);
+    });
+
+    it('should throw NotFoundError when return shipping info not found', async () => {
+      // Arrange
+      const shipmentsService = new ShipmentsService();
+      const returnId = 'return-123';
+      const payload = {
+        courierName: 'TIKI',
+        courierService: 'ONS',
+        trackingNumber: '0987654321',
+        pickedUpAt: new Date(),
+      };
+
+      // Action & Assert
+      await expect(shipmentsService.updateReturnShippingInfo(returnId, payload))
+        .rejects.toThrow(NotFoundError);
+    });
+  });
+  describe('getAllReturns function', () => {
+    const shipmentsService = new ShipmentsService();
+    const rentalsService = new RentalsService();
+
+    beforeEach(async () => {
+    // Arrange
+      const user = await UsersTableTestHelper.addUser({
+        id: 'user-123', email: 'returnuser@test.com', username: 'returnuser', password: 'password',
+      });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-456' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-45678' });
+
+      // Rental 1 - JNE, status requested
+      const rental1 = await rentalsService.addRental(user, 6, 'user', addressId, {
+        shippingName: 'JNE', serviceName: 'YES', shippingCost: 100000, etd: '2',
+      });
+      await rentalsService.changeStatusRental(rental1.id, 'active');
+      await ReturnShippingTableTestHelper.addReturnShippingInfo({
+        id: 'return-1',
+        rental_id: rental1.id,
+        pickup_address_id: addressId,
+        courier_name: 'JNE',
+        status: 'requested',
+        pickup_method: 'pickup',
+      });
+
+      // Rental 2 - TIKI, status returning
+      const rental2 = await rentalsService.addRental(user, 6, 'user', addressId, {
+        shippingName: 'TIKI', serviceName: 'ONS', shippingCost: 120000, etd: '3',
+      });
+      await rentalsService.changeStatusRental(rental2.id, 'active');
+      await ReturnShippingTableTestHelper.addReturnShippingInfo({
+        id: 'return-2',
+        rental_id: rental2.id,
+        pickup_address_id: addressId,
+        courier_name: 'TIKI',
+        status: 'returning',
+        pickup_method: 'pickup',
+      });
+    });
+
+    it('should return all returns when no filter is applied', async () => {
+      const result = await shipmentsService.getAllReturns();
+
+      expect(result.length).toBeGreaterThanOrEqual(2);
+      const returnIds = result.map((r) => r.id);
+      expect(returnIds).toEqual(expect.arrayContaining(['return-1', 'return-2']));
+    });
+
+    it('should filter returns by status', async () => {
+      const result = await shipmentsService.getAllReturns({ status: 'requested' });
+
+      expect(result.length).toBeGreaterThan(0);
+      result.forEach((item) => {
+        expect(item.status).toBe('requested');
+      });
+    });
+
+    it('should filter returns by courier name (case-insensitive, partial match)', async () => {
+      const result = await shipmentsService.getAllReturns({ courierName: 'jne' });
+
+      expect(result.length).toBeGreaterThan(0);
+      result.forEach((item) => {
+        expect(item.courier_name.toLowerCase()).toContain('jne');
+      });
+    });
+    it('should return empty array if no return matches the filter', async () => {
+      const result = await shipmentsService.getAllReturns({ courierName: 'invalid-courier' });
+
+      expect(result).toEqual([]);
     });
   });
 });

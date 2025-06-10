@@ -2,7 +2,6 @@
 import { differenceInHours } from 'date-fns';
 import InvariantError from '../../exceptions/InvariantError.js';
 import NotFoundError from '../../exceptions/NotFoundError.js';
-import AuthorizationError from '../../exceptions/AuthorizationError.js';
 import pool from '../../config/postgres/pool.js';
 
 class ShipmentsService {
@@ -169,7 +168,7 @@ class ShipmentsService {
     const hoursSinceCreation = differenceInHours(new Date(), returnData.created_at);
 
     if (hoursSinceCreation > 48) {
-      throw new AuthorizationError('Batas waktu untuk mengubah alamat sudah lewat');
+      throw new InvariantError('Batas waktu untuk mengubah alamat sudah lewat');
     }
 
     await this._pool.query({
@@ -190,19 +189,20 @@ class ShipmentsService {
     }
 
     const result = await this._pool.query({
-      text: 'UPDATE return_shipping_info SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      text: 'UPDATE return_shipping_info SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, status',
       values: [newStatus, returnId],
     });
 
     if (!result.rowCount) {
       throw new NotFoundError('Return tidak ditemukan');
     }
+    return result.rows[0];
   }
 
   // 4. Tambahkan catatan return oleh admin
   async addReturnNote(returnId, note) {
     const result = await this._pool.query({
-      text: 'UPDATE return_shipping_info SET notes = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      text: 'UPDATE return_shipping_info SET notes = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id',
       values: [note, returnId],
     });
 
@@ -233,6 +233,48 @@ class ShipmentsService {
 
     const result = await this._pool.query({ text: query, values });
     return result.rows;
+  }
+
+  // 6. Update data pengiriman return (logistik/admin)
+  async updateReturnShippingInfo(returnId, payload) {
+    const {
+      courierName = null,
+      courierService = null,
+      trackingNumber = null,
+      pickedUpAt = null,
+      returnedAt = null,
+    } = payload;
+
+    const query = {
+      text: `
+      UPDATE return_shipping_info
+      SET
+        courier_name = $1,
+        courier_service = $2,
+        tracking_number = $3,
+        picked_up_at = $4,
+        returned_at = $5,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $6
+      RETURNING id
+    `,
+      values: [
+        courierName,
+        courierService,
+        trackingNumber,
+        pickedUpAt,
+        returnedAt,
+        returnId,
+      ],
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rowCount) {
+      throw new NotFoundError('Return tidak ditemukan');
+    }
+
+    return result.rows[0];
   }
 }
 
