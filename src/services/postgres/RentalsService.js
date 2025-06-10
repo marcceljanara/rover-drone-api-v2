@@ -13,6 +13,7 @@ class RentalsService {
 
   async changeStatusRental(id, rentalStatus) {
     const client = await this._pool.connect();
+    const shipmentId = `ship-${nanoid(15)}`; // atau pakai nanoid
     try {
       await client.query('BEGIN'); // Mulai transaksi
       // Ambil rental saat ini untuk validasi
@@ -95,7 +96,7 @@ class RentalsService {
         estimatedDeliveryDate.setDate(estimatedDeliveryDate.getDate() + courier.etd + 2); // Tambah 2 hari buffer
 
         // 3. Generate baris shipment_orders baru (default: waiting)
-        const shipmentId = `ship-${nanoid(15)}`; // atau pakai nanoid
+
         const insertShipmentQuery = {
           text: `
     INSERT INTO shipment_orders (
@@ -130,6 +131,7 @@ class RentalsService {
         await client.query(updateDeviceQuery);
       }
 
+      rentalResult.rows[0].shipmentId = shipmentId;
       await client.query('COMMIT'); // Komit transaksi
       return rentalResult.rows[0];
     } catch (error) {
