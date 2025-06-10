@@ -29,7 +29,6 @@ class ShipmentsService {
       courierName,
       courierService,
       trackingNumber,
-      estimatedShippingDate,
       notes,
     } = payload;
 
@@ -39,15 +38,13 @@ class ShipmentsService {
         courier_name = $1,
         courier_service = $2,
         tracking_number = $3,
-        estimated_shipping_date = $4,
-        notes = $5,
+        notes = $4,
         updated_at = CURRENT_TIMESTAMP 
-      WHERE id = $6`,
+      WHERE id = $5`,
       values: [
         courierName,
         courierService,
         trackingNumber,
-        estimatedShippingDate,
         notes,
         shipmentId,
       ],
@@ -72,7 +69,7 @@ class ShipmentsService {
     }
 
     const query = {
-      text: 'UPDATE shipment_orders SET shipping_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      text: 'UPDATE shipment_orders SET shipping_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, shipping_status',
       values: [status, shipmentId],
     };
 
@@ -80,13 +77,14 @@ class ShipmentsService {
     if (!result.rowCount) {
       throw new NotFoundError('Pengiriman tidak ditemukan');
     }
+    return result.rows[0];
   }
 
   async confirmActualShipping(shipmentId, date) {
     const query = {
       text: `UPDATE shipment_orders 
              SET actual_shipping_date = $1, updated_at = CURRENT_TIMESTAMP 
-             WHERE id = $2`,
+             WHERE id = $2 RETURNING id, actual_shipping_date`,
       values: [date, shipmentId],
     };
 
@@ -94,13 +92,14 @@ class ShipmentsService {
     if (!result.rowCount) {
       throw new NotFoundError('Pengiriman tidak ditemukan');
     }
+    return result.rows[0];
   }
 
   async confirmDelivery(shipmentId, date) {
     const query = {
       text: `UPDATE shipment_orders 
              SET actual_delivery_date = $1, updated_at = CURRENT_TIMESTAMP 
-             WHERE id = $2`,
+             WHERE id = $2 RETURNING id, actual_delivery_date`,
       values: [date, shipmentId],
     };
 
@@ -108,6 +107,7 @@ class ShipmentsService {
     if (!result.rowCount) {
       throw new NotFoundError('Pengiriman tidak ditemukan');
     }
+    return result.rows[0];
   }
 
   async getAllShipments(filter = {}) {
