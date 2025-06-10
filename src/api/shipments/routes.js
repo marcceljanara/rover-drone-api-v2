@@ -40,6 +40,9 @@ const shipmentRoutes = (handler) => {
   // Update alamat penjemputan pengembalian (maks 2 hari)
   router.patch('/v1/returns/:id/address', verifyToken, handler.patchReturnAddressHandler);
 
+  // Update informasi pengembalian (kurir, nomor resi, estimasi penjemputan)
+  router.put('/v1/returns/:id', verifyToken, verifyAdmin, handler.putReturnShippingInfoHandler);
+
   // Update status pengembalian
   router.patch('/v1/returns/:id/status', verifyToken, verifyAdmin, handler.patchReturnStatusHandler);
 

@@ -16,6 +16,7 @@ class ShipmentsHandler {
     this.patchReturnStatusHandler = this.patchReturnStatusHandler.bind(this);
     this.patchReturnNoteHandler = this.patchReturnNoteHandler.bind(this);
     this.getAllReturnsHandler = this.getAllReturnsHandler.bind(this);
+    this.putReturnShippingInfoHandler = this.putReturnShippingInfoHandler.bind(this);
   }
 
   async getShipmentByRentalIdHandler(req, res, next) {
@@ -215,6 +216,23 @@ class ShipmentsHandler {
       return res.status(200).json({
         status: 'success',
         data: { returns },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async putReturnShippingInfoHandler(req, res, next) {
+    try {
+      this._validator.validateParamsPayload(req.params);
+      this._validator.validateUpdateReturnShippingInfoPayload(req.body);
+
+      const { id } = req.params;
+      const returnData = await this._shipmentsService.updateReturnShippingInfo(id, req.body);
+
+      return res.status(200).json({
+        status: 'success',
+        data: { return: returnData },
       });
     } catch (error) {
       return next(error);
