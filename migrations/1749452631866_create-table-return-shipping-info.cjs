@@ -25,11 +25,12 @@ exports.up = (pgm) => {
     },
     courier_name: {
       type: 'TEXT',
-      notNull: false,
+    },
+    courier_service: {
+      type: 'TEXT',
     },
     tracking_number: {
       type: 'TEXT',
-      notNull: false,
     },
     picked_up_at: {
       type: 'timestamp',
