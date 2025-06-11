@@ -169,7 +169,7 @@ const rentalRoutes = (handler) => {
  * /v1/rentals:
  *   post:
  *     summary: "Mengajukan penyewaan rental (auth: user)"
- *     description: "User dapat mengajukan penyewaan rental dengan memilih interval 6, 12, 24, atau 36 bulan. Admin tidak diperbolehkan mengajukan rental."
+ *     description: "User dapat mengajukan penyewaan rental dengan memilih interval 6, 12, 24, atau 36 bulan. Admin tidak diperbolehkan mengajukan rental. Biaya dihitung berdasarkan durasi, sensor, pengiriman, dan biaya pemasangan."
  *     tags:
  *       - Rentals
  *     security:
@@ -180,11 +180,27 @@ const rentalRoutes = (handler) => {
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - interval
+ *               - shippingAddressId
+ *               - subdistrictName
  *             properties:
  *               interval:
  *                 type: number
  *                 enum: [6, 12, 24, 36]
  *                 example: 12
+ *               shippingAddressId:
+ *                 type: string
+ *                 example: "address-abc123"
+ *               subdistrictName:
+ *                 type: string
+ *                 example: "Tanjung Karang Barat"
+ *               sensors:
+ *                 type: array
+ *                 description: "Opsional. Daftar ID sensor yang ingin disewa"
+ *                 items:
+ *                   type: string
+ *                 example: ["sensor-xyz01", "sensor-xyz02"]
  *     responses:
  *       201:
  *         description: "Berhasil mengajukan penyewaan rental"
@@ -198,7 +214,7 @@ const rentalRoutes = (handler) => {
  *                   example: "success"
  *                 message:
  *                   type: string
- *                   example: "Berhasil mengajukan penyewaan, silahkan melakukan pembayaran sebesar 500000 dengan catatan menulis (Pembayaran rental-abcdef)"
+ *                   example: "Berhasil mengajukan penyewaan, silahkan melakukan pembayaran sebesar 2150000 dengan catatan menulis (Pembayaran rental-abcdef)"
  *                 data:
  *                   type: object
  *                   properties:
@@ -209,7 +225,7 @@ const rentalRoutes = (handler) => {
  *                       type: string
  *                       example: "payment-1234567890abcdef"
  *       400:
- *         description: "Interval tidak valid atau tidak ada perangkat yang tersedia"
+ *         description: "Input tidak valid atau tidak ada perangkat yang tersedia"
  *         content:
  *           application/json:
  *             schema:
@@ -353,9 +369,6 @@ const rentalRoutes = (handler) => {
  *                           type: string
  *                           enum: ["pending", "active", "completed", "canceled"]
  *                           example: "active"
- *                         cost:
- *                           type: number
- *                           example: 500000
  *                         reserved_until:
  *                           type: string
  *                           format: date-time
@@ -368,6 +381,30 @@ const rentalRoutes = (handler) => {
  *                           type: string
  *                           format: date-time
  *                           example: "2025-03-09T10:05:00+07:00"
+ *                         total_cost:
+ *                           type: number
+ *                           example: 750000
+ *                         base_cost:
+ *                           type: number
+ *                           example: 500000
+ *                         sensor_cost:
+ *                           type: number
+ *                           example: 100000
+ *                         shipping_cost:
+ *                           type: number
+ *                           example: 100000
+ *                         setup_cost:
+ *                           type: number
+ *                           example: 50000
+ *                         nama_penerima:
+ *                           type: string
+ *                           example: "Budi Hartono"
+ *                         no_hp:
+ *                           type: string
+ *                           example: "081234567890"
+ *                         full_address:
+ *                           type: string
+ *                           example: "Jl. Melati No.123, Kelurahan Sukamaju, Kecamatan Sukasari, Kota Bandung, Jawa Barat, 40123"
  *       403:
  *         description: "User tidak memiliki izin untuk melihat rental ini"
  *         content:
@@ -470,7 +507,111 @@ const rentalRoutes = (handler) => {
 
   router.put('/v1/rentals/:id/cancel', verifyToken, handler.putCancelRentalHandler);
 
+  /**
+ * @swagger
+ * /v1/sensors/available:
+ *   get:
+ *     summary: "Mendapatkan daftar sensor yang tersedia (auth: user/admin)"
+ *     description: "Mengembalikan daftar semua sensor beserta biayanya. Endpoint ini dapat diakses oleh pengguna dengan role 'user' maupun 'admin'."
+ *     tags:
+ *       - Sensors
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: "Berhasil mendapatkan daftar sensor"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     sensors:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             example: "sensor-abc123"
+ *                           cost:
+ *                             type: number
+ *                             example: 150000
+ */
+
   router.get('/v1/sensors/available', verifyToken, handler.getAllSensorsHandler);
+
+  /**
+ * @swagger
+ * /v1/shipping-cost:
+ *   get:
+ *     summary: "Menghitung biaya pengiriman ke lokasi tujuan (auth: user/admin)"
+ *     description: "Mengembalikan informasi biaya pengiriman ke kelurahan tertentu menggunakan ekspedisi JNE. Mengambil data dari API Komerce dan mengalikan ongkir 2x lipat sebagai kebijakan sistem."
+ *     tags:
+ *       - Shipping
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               subdistrictName:
+ *                 type: string
+ *                 example: "Sukabirus"
+ *                 description: "Nama kelurahan atau kecamatan tujuan pengiriman"
+ *     responses:
+ *       200:
+ *         description: "Berhasil menghitung ongkir"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     shippingInfo:
+ *                       type: object
+ *                       properties:
+ *                         shippingName:
+ *                           type: string
+ *                           example: "JNE"
+ *                         serviceName:
+ *                           type: string
+ *                           example: "REG"
+ *                         shippingCost:
+ *                           type: number
+ *                           example: 30000
+ *                         etd:
+ *                           type: string
+ *                           example: "2-3 hari"
+ *       400:
+ *         description: "Permintaan tidak valid atau nama kelurahan tidak ditemukan"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "fail"
+ *                 message:
+ *                   type: string
+ *                   example: "Gagal menghitung ongkir: Tujuan pengiriman tidak ditemukan."
+ */
+
+  router.get('/v1/shipping-cost', verifyToken, handler.getShippingCostHandler);
   return router;
 };
 
