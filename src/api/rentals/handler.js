@@ -16,6 +16,7 @@ class RentalsHandler {
     this.getDetailRentalHandler = this.getDetailRentalHandler.bind(this);
     this.putCancelRentalHandler = this.putCancelRentalHandler.bind(this);
     this.getAllSensorsHandler = this.getAllSensorsHandler.bind(this);
+    this.getShippingCostHandler = this.getShippingCostHandler.bind(this);
   }
 
   async putStatusRentalHandler(req, res, next) {
@@ -138,6 +139,16 @@ class RentalsHandler {
     } catch (error) {
       return next(error);
     }
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async getShippingCostHandler(req, res) {
+    const { subdistrictName } = req.body;
+    const shippingInfo = await calculateShippingCost(subdistrictName);
+    return res.status(200).json({
+      status: 'success',
+      data: { shippingInfo },
+    });
   }
 }
 
