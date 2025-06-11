@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import express from 'express';
 import verifyToken from '../../middleware/verifyToken.js';
 
@@ -191,15 +192,515 @@ const userRoutes = (handler) => {
    */
   router.post('/resend-otp', handler.postResendOtpHandler);
 
+  /**
+ * @swagger
+ * /addresses:
+ *   post:
+ *     summary: "Menambahkan alamat pengiriman baru (auth: user)"
+ *     description: "User dapat menambahkan alamat pengiriman ke akun mereka. Jika `isDefault` diset true, maka alamat ini akan dijadikan alamat utama, dan alamat lain akan di-set sebagai non-default."
+ *     tags:
+ *       - User Addresses
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - namaPenerima
+ *               - noHp
+ *               - alamatLengkap
+ *               - provinsi
+ *               - kabupatenKota
+ *               - kecamatan
+ *               - kelurahan
+ *               - kodePos
+ *               - isDefault
+ *             properties:
+ *               namaPenerima:
+ *                 type: string
+ *                 example: "Budi Santoso"
+ *               noHp:
+ *                 type: string
+ *                 example: "081234567890"
+ *               alamatLengkap:
+ *                 type: string
+ *                 example: "Jl. Merpati No. 12"
+ *               provinsi:
+ *                 type: string
+ *                 example: "Lampung"
+ *               kabupatenKota:
+ *                 type: string
+ *                 example: "Tanggamus"
+ *               kecamatan:
+ *                 type: string
+ *                 example: "Wonosobo"
+ *               kelurahan:
+ *                 type: string
+ *                 example: "Air Kubang"
+ *               kodePos:
+ *                 type: string
+ *                 example: "35365"
+ *               isDefault:
+ *                 type: boolean
+ *                 example: true
+ *     responses:
+ *       201:
+ *         description: "Alamat berhasil ditambahkan"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 message:
+ *                   type: string
+ *                   example: "Alamat pengiriman berhasil ditambahkan"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     addressId:
+ *                       type: string
+ *                       example: "address-abcde"
+ *       400:
+ *         description: "Payload tidak valid"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "fail"
+ *                 message:
+ *                   type: string
+ *                   example: "Validasi gagal: namaPenerima wajib diisi"
+ *       500:
+ *         description: "Kesalahan server saat menambahkan alamat"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "error"
+ *                 message:
+ *                   type: string
+ *                   example: "Terjadi kesalahan pada server"
+ */
+
   router.post('/addresses', verifyToken, handler.postAddressHandler);
+
+  /**
+ * @swagger
+ * /addresses:
+ *   get:
+ *     summary: "Mengambil semua alamat pengiriman milik user (auth: user)"
+ *     description: "Mengembalikan daftar alamat pengiriman milik user yang belum dihapus (is_deleted = false), diurutkan berdasarkan waktu pembaruan terakhir."
+ *     tags:
+ *       - User Addresses
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: "Daftar alamat berhasil diambil"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     addresses:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             example: "address-abcde"
+ *                           nama_penerima:
+ *                             type: string
+ *                             example: "Budi Santoso"
+ *                           no_hp:
+ *                             type: string
+ *                             example: "081234567890"
+ *                           alamat_lengkap:
+ *                             type: string
+ *                             example: "Jl. Merpati No. 12"
+ *                           kelurahan:
+ *                             type: string
+ *                             example: "Air Kubang"
+ *                           is_default:
+ *                             type: boolean
+ *                             example: true
+ *       404:
+ *         description: "User belum memiliki alamat pengiriman"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "fail"
+ *                 message:
+ *                   type: string
+ *                   example: "Belum ada alamat pengiriman!"
+ *       500:
+ *         description: "Kesalahan server saat mengambil data alamat"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "error"
+ *                 message:
+ *                   type: string
+ *                   example: "Terjadi kesalahan pada server"
+ */
 
   router.get('/addresses', verifyToken, handler.getAllAddressHandler);
 
+  /**
+ * @swagger
+ * /addresses/{id}:
+ *   get:
+ *     summary: "Mengambil detail alamat pengiriman milik user (auth: user)"
+ *     description: "Mengembalikan detail alamat pengiriman tertentu milik user yang belum dihapus berdasarkan ID."
+ *     tags:
+ *       - User Addresses
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID alamat pengiriman yang ingin diambil
+ *         example: address-abcde
+ *     responses:
+ *       200:
+ *         description: "Detail alamat berhasil diambil"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     address:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                           example: address-abcde
+ *                         nama_penerima:
+ *                           type: string
+ *                           example: Budi Santoso
+ *                         no_hp:
+ *                           type: string
+ *                           example: 081234567890
+ *                         alamat_lengkap:
+ *                           type: string
+ *                           example: Jl. Merpati No. 12
+ *                         provinsi:
+ *                           type: string
+ *                           example: Lampung
+ *                         kabupaten_kota:
+ *                           type: string
+ *                           example: Tanggamus
+ *                         kecamatan:
+ *                           type: string
+ *                           example: Talang Padang
+ *                         kelurahan:
+ *                           type: string
+ *                           example: Air Kubang
+ *                         kode_pos:
+ *                           type: string
+ *                           example: 35384
+ *                         is_default:
+ *                           type: boolean
+ *                           example: true
+ *       404:
+ *         description: "Alamat tidak ditemukan"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: Pengguna atau alamat tidak ditemukan
+ *       500:
+ *         description: "Kesalahan server saat mengambil detail alamat"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Terjadi kesalahan pada server
+ */
+
   router.get('/addresses/:id', verifyToken, handler.getDetailAddressHandler);
+
+  /**
+ * @swagger
+ * /addresses/{id}:
+ *   put:
+ *     summary: Memperbarui alamat pengiriman user
+ *     description: Mengubah data alamat pengiriman berdasarkan ID alamat yang dimiliki oleh user.
+ *     tags:
+ *       - User Addresses
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID alamat yang ingin diperbarui
+ *         schema:
+ *           type: string
+ *         example: address-abcde
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - namaPenerima
+ *               - noHp
+ *               - alamatLengkap
+ *               - provinsi
+ *               - kabupatenKota
+ *               - kecamatan
+ *               - kelurahan
+ *               - kodePos
+ *               - isDefault
+ *             properties:
+ *               namaPenerima:
+ *                 type: string
+ *                 example: Budi Santoso
+ *               noHp:
+ *                 type: string
+ *                 example: 081234567890
+ *               alamatLengkap:
+ *                 type: string
+ *                 example: Jl. Merpati No. 12
+ *               provinsi:
+ *                 type: string
+ *                 example: Lampung
+ *               kabupatenKota:
+ *                 type: string
+ *                 example: Tanggamus
+ *               kecamatan:
+ *                 type: string
+ *                 example: Talang Padang
+ *               kelurahan:
+ *                 type: string
+ *                 example: Air Kubang
+ *               kodePos:
+ *                 type: string
+ *                 example: 35384
+ *               isDefault:
+ *                 type: boolean
+ *                 example: true
+ *     responses:
+ *       200:
+ *         description: Alamat berhasil diperbarui
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Alamat pengiriman berhasil diperbarui!
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     addressId:
+ *                       type: string
+ *                       example: address-abcde
+ *       404:
+ *         description: Alamat tidak ditemukan atau bukan milik user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: Gagal memperbarui alamat. Alamat tidak ditemukan atau bukan milik user.
+ *       500:
+ *         description: Terjadi kesalahan pada server
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Terjadi kesalahan pada server
+ */
 
   router.put('/addresses/:id', verifyToken, handler.putAddressHandler);
 
+  /**
+ * @swagger
+ * /addresses/{id}:
+ *   patch:
+ *     summary: Menetapkan alamat utama (default) untuk pengguna
+ *     description: Menjadikan alamat dengan ID tertentu sebagai alamat utama pengguna. Alamat lain akan di-set sebagai non-default.
+ *     tags:
+ *       - User Addresses
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID alamat yang akan dijadikan default
+ *         schema:
+ *           type: string
+ *         example: address-xyz12
+ *     responses:
+ *       200:
+ *         description: Alamat utama berhasil diperbarui
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Alamat pengiriman utama berhasil diperbarui
+ *       404:
+ *         description: Alamat tidak ditemukan atau bukan milik user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: Gagal memperbarui alamat. Alamat tidak ditemukan atau bukan milik user.
+ *       500:
+ *         description: Terjadi kesalahan pada server
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Terjadi kesalahan pada server
+ */
+
   router.patch('/addresses/:id', verifyToken, handler.patchSetDefaultAddress);
+
+  /**
+ * @swagger
+ * /addresses/{id}:
+ *   delete:
+ *     summary: Menghapus alamat pengguna
+ *     description: Menghapus alamat berdasarkan ID untuk pengguna yang sedang login (soft delete).
+ *     tags:
+ *       - User Addresses
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID alamat yang akan dihapus
+ *         schema:
+ *           type: string
+ *         example: address-xyz12
+ *     responses:
+ *       200:
+ *         description: Alamat berhasil dihapus
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Alamat pengiriman berhasil dihapus!
+ *       404:
+ *         description: Alamat tidak ditemukan atau bukan milik user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: Gagal menghapus alamat. Alamat tidak ditemukan atau bukan milik user.
+ *       500:
+ *         description: Terjadi kesalahan pada server
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Terjadi kesalahan pada server
+ */
 
   router.delete('/addresses/:id', verifyToken, handler.deleteAddressHandler);
 
