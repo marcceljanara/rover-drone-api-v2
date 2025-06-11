@@ -6,6 +6,7 @@ import DevicesTableTestHelper from '../../../tests/DevicesTableTestHelper.js';
 import SensorTableTestHelper from '../../../tests/SensorTableTestHelper.js';
 import createServer from '../server.js';
 import pool from '../../config/postgres/pool.js';
+import calculateShippingCost from '../../utils/calculateShippingCost.js';
 
 dotenv.config();
 
@@ -39,6 +40,10 @@ const registerAndLoginUser = async (server) => {
   const { accessToken } = login.body.data;
   return accessToken;
 };
+jest.mock('../../utils/calculateShippingCost.js', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
 
 describe('/v1/devices endpoint', () => {
   let server;
@@ -52,6 +57,12 @@ describe('/v1/devices endpoint', () => {
   beforeEach(async () => {
     accessTokenAdmin = await registerAndLoginAdmin(server);
     accessTokenUser = await registerAndLoginUser(server);
+    calculateShippingCost.mockResolvedValue({
+      shippingName: 'JNE',
+      serviceName: 'JTR23',
+      shippingCost: 500000,
+      etd: '4',
+    });
   });
 
   afterEach(async () => {
@@ -63,6 +74,7 @@ describe('/v1/devices endpoint', () => {
 
   afterAll(async () => {
     await pool.end();
+    jest.clearAllMocks(); // reset semua mock state agar test tetap bersih
   });
 
   describe('POST /v1/devices', () => {
@@ -276,10 +288,16 @@ describe('/v1/devices endpoint', () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      };
       const responseRental = await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 });
+        .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
@@ -304,10 +322,16 @@ describe('/v1/devices endpoint', () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-456' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      };
       const responseRental = await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 });
+        .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)

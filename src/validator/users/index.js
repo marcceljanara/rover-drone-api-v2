@@ -16,6 +16,11 @@ const UsersValidator = {
     const result = UserSchema.resendOtpPayload.validate(payload);
     if (result.error) throw new InvariantError(result.error.message);
   },
+
+  validateAddressPayload: (payload) => {
+    const result = UserSchema.addressPayload.validate(payload);
+    if (result.error) throw new InvariantError(result.error.message);
+  },
 };
 
 export default UsersValidator;

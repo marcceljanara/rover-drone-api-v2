@@ -18,7 +18,10 @@ class AuthenticationHandler {
       const { email, password } = req.body;
       await this._authenticationsService.checkStatusAccount(email);
       const { id, role } = await this._authenticationsService.verifyUserCredential(email, password);
-      const accessToken = this._tokenManager.generateAccessToken({ id, role });
+      const isNeedAddress = await this._authenticationsService.checkUserAddresses(id);
+      const accessToken = this._tokenManager.generateAccessToken(
+        { id, role, needsAddress: isNeedAddress },
+      );
       const refreshToken = this._tokenManager.generateRefreshToken({ id, role });
       await this._authenticationsService.addRefreshToken(refreshToken);
       return res.status(201).json({

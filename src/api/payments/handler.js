@@ -69,6 +69,12 @@ class PaymentsHandler {
           paymentId: payment.id,
         };
         await this._rabbitmqService.sendMessage('payment:success', JSON.stringify(message));
+        await this._rabbitmqService.sendMessage('shipment:pending', JSON.stringify({
+          userId: user.user_id,
+          email: user.email,
+          paymentId: payment.id,
+          rentalId: payment.rental_id,
+        }));
 
         // Return nilai untuk memastikan transaksi mengembalikan data
         return {

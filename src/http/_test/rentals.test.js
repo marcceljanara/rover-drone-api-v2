@@ -6,6 +6,7 @@ import RentalsTableTestHelper from '../../../tests/RentalsTableTestHelper.js';
 import DevicesTableTestHelper from '../../../tests/DevicesTableTestHelper.js';
 import createServer from '../server.js';
 import pool from '../../config/postgres/pool.js';
+import calculateShippingCost from '../../utils/calculateShippingCost.js';
 
 dotenv.config();
 
@@ -40,6 +41,11 @@ const registerAndLoginUser = async (server) => {
   return accessToken;
 };
 
+jest.mock('../../utils/calculateShippingCost.js', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
+
 describe('/v1/rentals endpoint', () => {
   let server;
   let accessTokenAdmin;
@@ -52,6 +58,12 @@ describe('/v1/rentals endpoint', () => {
   beforeEach(async () => {
     accessTokenAdmin = await registerAndLoginAdmin(server);
     accessTokenUser = await registerAndLoginUser(server);
+    calculateShippingCost.mockResolvedValue({
+      shippingName: 'JNE',
+      serviceName: 'JTR23',
+      shippingCost: 500000,
+      etd: '4',
+    });
   });
 
   afterEach(async () => {
@@ -63,16 +75,24 @@ describe('/v1/rentals endpoint', () => {
 
   afterAll(async () => {
     await pool.end();
+    jest.clearAllMocks(); // reset semua mock state agar test tetap bersih
   });
 
   describe('PUT /v1/rentals/:id/status', () => {
     it('should return response code 200 and change status rental', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      };
       const responseRental = await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 });
+        .send(payload);
       const rentalId = responseRental.body.data.id;
 
       // Action
@@ -101,7 +121,7 @@ describe('/v1/rentals endpoint', () => {
       const responseJson = response.body;
       expect(response.statusCode).toBe(404);
       expect(responseJson.status).toBe('fail');
-      expect(responseJson.message).toBe('rental tidak ditemukan');
+      expect(responseJson.message).toBe('Rental tidak ditemukan');
     });
   });
 
@@ -109,10 +129,16 @@ describe('/v1/rentals endpoint', () => {
     it('should return response code 200 and soft delete rental', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      const responseRental = await request(server)
+
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      }; const responseRental = await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 });
+        .send(payload);
       const rentalId = responseRental.body.data.id;
 
       // Action
@@ -147,10 +173,16 @@ describe('/v1/rentals endpoint', () => {
     it('should return response code 200 and return all rental data', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      };
       await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 });
+        .send(payload);
 
       // Action
       const response = await request(server)
@@ -169,10 +201,16 @@ describe('/v1/rentals endpoint', () => {
     it('should return response code 200 and get detail rental', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      };
       const responseRental = await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 });
+        .send(payload);
       const rentalId = responseRental.body.data.id;
 
       // Action
@@ -209,12 +247,18 @@ describe('/v1/rentals endpoint', () => {
     it('should return response 201 and add new rental', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+        sensors: ['humidity'],
+      };
       // Action
       const response = await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6, sensors: ['humidity'] });
+        .send(payload);
 
       // Assert
       const responseJson = response.body;
@@ -224,13 +268,18 @@ describe('/v1/rentals endpoint', () => {
     });
     it('should return response 404 if device not available', async () => {
       // Arrange
-
+      const payload = {
+        interval: 6,
+        shippingAddressId: 'addressId',
+        subdistrictName: 'Rejo Binangun',
+        sensors: ['humidity'],
+      };
       // Action
       const response = await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send(
-          { interval: 6 },
+          payload,
         );
 
       // Assert
@@ -242,12 +291,17 @@ describe('/v1/rentals endpoint', () => {
     it('should return response 403 if admin add rental', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-
+      const payload = {
+        interval: 6,
+        shippingAddressId: 'addressId',
+        subdistrictName: 'Rejo Binangun',
+        sensors: ['humidity'],
+      };
       // Action
       const response = await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ interval: 6 });
+        .send(payload);
 
       // Assert
       const responseJson = response.body;
@@ -261,10 +315,16 @@ describe('/v1/rentals endpoint', () => {
     it('should return response code 200 and cancel rental', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      };
       const responseRental = await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 });
+        .send(payload);
       const rentalId = responseRental.body.data.id;
 
       // Action
@@ -300,10 +360,16 @@ describe('/v1/rentals endpoint', () => {
     it('should return response code 200 and return all rental data', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      };
       const responseRental = await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 });
+        .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
@@ -341,10 +407,16 @@ describe('/v1/rentals endpoint', () => {
     it('should return response code 200 and return rental data', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      };
       const responseRental = await request(server)
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send({ interval: 6 });
+        .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)

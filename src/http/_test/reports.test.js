@@ -8,6 +8,7 @@ import PaymentsTableTestHelper from '../../../tests/PaymentTableTestHelper.js';
 import ReportsTableTestHelper from '../../../tests/ReportTableTestHelper.js';
 import createServer from '../server.js';
 import pool from '../../config/postgres/pool.js';
+import calculateShippingCost from '../../utils/calculateShippingCost.js';
 
 dotenv.config();
 
@@ -57,12 +58,23 @@ const registerAndLoginUser = async (server) => {
   return accessToken;
 };
 
+jest.mock('../../utils/calculateShippingCost.js', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
+
 describe('/v1/reports endpoint', () => {
   let server;
   let accessTokenAdmin;
   let accessTokenUser;
 
   beforeAll(async () => {
+    calculateShippingCost.mockResolvedValue({
+      shippingName: 'JNE',
+      serviceName: 'JTR23',
+      shippingCost: 500000,
+      etd: '4',
+    });
     server = createServer();
     accessTokenAdmin = await registerAndLoginAdmin(server);
     accessTokenUser = await registerAndLoginUser(server);
@@ -73,15 +85,21 @@ describe('/v1/reports endpoint', () => {
     };
     await DevicesTableTestHelper.addDevice({ id: 'device-123' });
     await DevicesTableTestHelper.addDevice({ id: 'device-456' });
+    const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+    const payload = {
+      interval: 6,
+      shippingAddressId: addressId,
+      subdistrictName: 'Rejo Binangun',
+    };
     const response1 = (await request(server)
       .post('/v1/rentals')
       .set('Authorization', `Bearer ${accessTokenUser}`)
-      .send({ interval: 6 }));
+      .send(payload));
 
     const response2 = (await request(server)
       .post('/v1/rentals')
       .set('Authorization', `Bearer ${accessTokenUser}`)
-      .send({ interval: 6 }));
+      .send(payload));
 
     const paymentId1 = response1.body.data.paymentId;
     const paymentId2 = response2.body.data.paymentId;
@@ -108,6 +126,7 @@ describe('/v1/reports endpoint', () => {
     await DevicesTableTestHelper.cleanTable();
     await PaymentsTableTestHelper.cleanTable();
     await pool.end();
+    jest.clearAllMocks(); // reset semua mock state agar test tetap bersih
   });
 
   describe('POST /v1/reports', () => {

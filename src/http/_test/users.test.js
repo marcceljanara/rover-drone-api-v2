@@ -3,14 +3,36 @@ import dotenv from 'dotenv';
 import UsersTableTestHelper from '../../../tests/UserTableHelper.js';
 import createServer from '../server.js';
 import pool from '../../config/postgres/pool.js';
+import AuthenticationsTableTestHelper from '../../../tests/AuthenticationTableHelper.js';
 
 dotenv.config();
 
+const registerAndLoginUser = async (server) => {
+  const payload = {
+    id: 'user-12345',
+    username: 'userkeren',
+    email: 'userkeren@gmail.com',
+    password: 'superuser',
+  };
+  await UsersTableTestHelper.addUser(payload);
+
+  const login = await request(server).post('/v1/authentications')
+    .send({ email: payload.email, password: payload.password });
+
+  const { accessToken } = login.body.data;
+  return accessToken;
+};
+
 describe('/v1/users endpoints', () => {
   let server;
+  let accessTokenUser;
 
   beforeAll(async () => {
     server = createServer();
+  });
+
+  beforeEach(async () => {
+    accessTokenUser = await registerAndLoginUser(server);
   });
 
   afterAll(async () => {
@@ -18,6 +40,7 @@ describe('/v1/users endpoints', () => {
   });
   afterEach(async () => {
     await UsersTableTestHelper.cleanTable();
+    await AuthenticationsTableTestHelper.cleanTable();
   });
 
   describe('POST /v1/users/register', () => {
@@ -162,6 +185,242 @@ describe('/v1/users endpoints', () => {
       // Assert
       const responseJson = await response.body;
       expect(response.statusCode).toBe(400);
+      expect(responseJson.status).toBe('fail');
+    });
+  });
+
+  describe('POST /v1/users/addresses', () => {
+    it('should return response code 200 and add new address', async () => {
+      // Arrange
+      const requestPayload = {
+        namaPenerima: 'I Nengah Marccel',
+        noHp: '085212345678',
+        alamatLengkap: 'Jalan Bali Indah, depan beringin RT X/RW X',
+        provinsi: 'Lampung',
+        kabupatenKota: 'Lampung Timur',
+        kecamatan: 'Raman Utara',
+        kelurahan: 'Rejo Binangun',
+        kodePos: '34371',
+        isDefault: true,
+      };
+
+      // Action
+      const response = await request(server)
+        .post('/v1/users/addresses')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send(requestPayload);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(201);
+      expect(responseJson.status).toBe('success');
+      expect(responseJson.data.addressId).toBeDefined();
+    });
+
+    it('should return code 400 bad request becauce invalid payload', async () => {
+      // Arrange
+      const requestPayload = {
+        namaPenerima: 'I Nengah Marccel',
+        noHp: '085212345678',
+        alamatLengkap: 'Jalan Bali Indah, depan beringin RT X/RW X',
+        provinsi: 'Lampung',
+        kabupatenKota: 'Lampung Timur',
+        kecamatan: 'Raman Utara',
+        kelurahan: 'Rejo Binangun',
+        isDefault: true,
+      };
+
+      // Action
+      const response = await request(server)
+        .post('/v1/users/addresses')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send(requestPayload);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(400);
+      expect(responseJson.status).toBe('fail');
+    });
+  });
+
+  describe('GET /v1/users/addresses', () => {
+    it('should return response code 200 and get all address', async () => {
+      // Arrange
+      const user = 'user-12345';
+      await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      await UsersTableTestHelper.addAddress(user, { id: 'address-345' });
+
+      // Action
+      const response = await request(server)
+        .get('/v1/users/addresses')
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(200);
+      expect(responseJson.status).toBe('success');
+      expect(responseJson.data.addresses).toHaveLength(2);
+    });
+    it('should return response code 404 if address not found', async () => {
+      // Action
+      const response = await request(server)
+        .get('/v1/users/addresses')
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(404);
+      expect(responseJson.status).toBe('fail');
+    });
+  });
+
+  describe('GET /v1/users/addresses/:id', () => {
+    it('should return response code 200 and get detail address', async () => {
+      // Arrange
+      const user = 'user-12345';
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      await UsersTableTestHelper.addAddress(user, { id: 'address-345' });
+
+      // Action
+      const response = await request(server)
+        .get(`/v1/users/addresses/${addressId}`)
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(200);
+      expect(responseJson.status).toBe('success');
+      expect(responseJson.data.address).toBeDefined();
+    });
+    it('should return response code 404 if address not found', async () => {
+      // Arrange
+      const addressId = 'user-12345';
+
+      // Action
+      const response = await request(server)
+        .get(`/v1/users/addresses/${addressId}`)
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(404);
+      expect(responseJson.status).toBe('fail');
+    });
+  });
+
+  describe('PUT /v1/users/addresses/:id', () => {
+    it('should return response code 200 and update address user', async () => {
+      // Arrange
+      const user = 'user-12345';
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      const requestPayload = {
+        namaPenerima: 'I Nengah Marccel',
+        noHp: '085212345678',
+        alamatLengkap: 'xxx',
+        provinsi: 'Lampung',
+        kabupatenKota: 'Lampung Timur',
+        kecamatan: 'Raman Utara',
+        kelurahan: 'Rejo Binangun',
+        kodePos: '34371',
+        isDefault: true,
+      };
+
+      // Action
+      const response = await request(server)
+        .put(`/v1/users/addresses/${addressId}`)
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send(requestPayload);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(200);
+      expect(responseJson.status).toBe('success');
+    });
+
+    it('should return response code 404 if address not found', async () => {
+      // Arrange
+      const addressId = 'user-12345';
+      const requestPayload = {
+        namaPenerima: 'I Nengah Marccel',
+        noHp: '085212345678',
+        alamatLengkap: 'xxx',
+        provinsi: 'Lampung',
+        kabupatenKota: 'Lampung Timur',
+        kecamatan: 'Raman Utara',
+        kelurahan: 'Rejo Binangun',
+        kodePos: '34371',
+        isDefault: true,
+      };
+
+      // Action
+      const response = await request(server)
+        .put(`/v1/users/addresses/${addressId}`)
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send(requestPayload);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(404);
+      expect(responseJson.status).toBe('fail');
+    });
+  });
+
+  describe('PATCH /v1/users/addresses/:id', () => {
+    it('should return response code 200 and set default address', async () => {
+      // Arrange
+      const user = 'user-12345';
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+
+      // Action
+      const response = await request(server)
+        .patch(`/v1/users/addresses/${addressId}`)
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(200);
+      expect(responseJson.status).toBe('success');
+      expect(responseJson.message).toBe('Alamat pengiriman utama berhasil diperbarui');
+    });
+    it('should return response code 404 if address not found', async () => {
+      // Action
+      const response = await request(server)
+        .patch('/v1/users/addresses/notfound')
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(404);
+      expect(responseJson.status).toBe('fail');
+    });
+  });
+
+  describe('DELETE /v1/users/addresses', () => {
+    it('should return response code 200 and delete address', async () => {
+      // Arrange
+      const user = 'user-12345';
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+
+      // Action
+      const response = await request(server)
+        .delete(`/v1/users/addresses/${addressId}`)
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(200);
+      expect(responseJson.status).toBe('success');
+      expect(responseJson.message).toBe('Alamat pengiriman berhasil dihapus!');
+    });
+    it('should return response code 404 if address not found', async () => {
+      // Action
+      const response = await request(server)
+        .delete('/v1/users/addresses/notfound')
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(404);
       expect(responseJson.status).toBe('fail');
     });
   });

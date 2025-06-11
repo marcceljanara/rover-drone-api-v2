@@ -342,16 +342,23 @@ class DevicesService {
   }
 
   async getDailyUsedHours(deviceId) {
-    const now = new Date();
-    const todayStart = new Date(now);
+    const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+
     const result = await this._pool.query(`
-    SELECT 
-      SUM(EXTRACT(EPOCH FROM (COALESCE(end_time, NOW()) - start_time)) / 3600) AS used_hours
-    FROM device_usage_logs
-    WHERE device_id = $1 AND start_time >= $2
-  `, [deviceId, todayStart]);
+  SELECT 
+    SUM(
+      EXTRACT(EPOCH FROM (
+        LEAST(COALESCE(end_time, NOW()), $3) - GREATEST(start_time, $2)
+      )) / 3600
+    ) AS used_hours
+  FROM device_usage_logs
+  WHERE device_id = $1 
+    AND start_time < $3 AND COALESCE(end_time, NOW()) > $2
+`, [deviceId, todayStart, todayEnd]);
 
     const rawValue = result.rows[0]?.used_hours;
     const usedHours = rawValue ? parseFloat(rawValue) : 0;

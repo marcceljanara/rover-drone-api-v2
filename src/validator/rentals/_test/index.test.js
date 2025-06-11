@@ -87,6 +87,8 @@ describe('RentalsValidator', () => {
       const payload = {
         interval: 6,
         sensors: ['temperature', 'humidity'],
+        shippingAddressId: 'addressId',
+        subdistrictName: 'Rejo Binangun',
       };
 
       // Action and Assert

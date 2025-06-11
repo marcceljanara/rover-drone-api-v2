@@ -1,3 +1,5 @@
+import calculateShippingCost from '../../utils/calculateShippingCost.js';
+
 class RentalsHandler {
   constructor({ rentalsService, rabbitmqService, validator }) {
     this._rentalsService = rentalsService;
@@ -14,6 +16,7 @@ class RentalsHandler {
     this.getDetailRentalHandler = this.getDetailRentalHandler.bind(this);
     this.putCancelRentalHandler = this.putCancelRentalHandler.bind(this);
     this.getAllSensorsHandler = this.getAllSensorsHandler.bind(this);
+    this.getShippingCostHandler = this.getShippingCostHandler.bind(this);
   }
 
   async putStatusRentalHandler(req, res, next) {
@@ -26,6 +29,11 @@ class RentalsHandler {
       return res.status(200).json({
         status: 'success',
         message: `status rental ${rental.id} menjadi ${rental.rental_status}`,
+        data: {
+          shipmentId: rental.shipmentId,
+          rentalId: rental.id,
+          rentalStatus: rental.rental_status,
+        },
       });
     } catch (error) {
       return next(error);
@@ -51,8 +59,12 @@ class RentalsHandler {
       const { role } = req;
       const userId = req.id;
       await this._validator.validatePostAddRentalPayload(req.body);
-      const { interval, sensors } = req.body;
-      const rental = await this._rentalsService.addRental(userId, interval, role, sensors);
+      const {
+        interval, sensors, shippingAddressId, subdistrictName,
+      } = req.body;
+      const shippingInfo = await calculateShippingCost(subdistrictName);
+      const rental = await this._rentalsService
+        .addRental(userId, interval, role, shippingAddressId, shippingInfo, sensors);
       const message = {
         userId,
         rentalId: rental.id,
@@ -127,6 +139,16 @@ class RentalsHandler {
     } catch (error) {
       return next(error);
     }
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async getShippingCostHandler(req, res) {
+    const { subdistrictName } = req.body;
+    const shippingInfo = await calculateShippingCost(subdistrictName);
+    return res.status(200).json({
+      status: 'success',
+      data: { shippingInfo },
+    });
   }
 }
 
