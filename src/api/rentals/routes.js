@@ -612,6 +612,12 @@ const rentalRoutes = (handler) => {
  */
 
   router.get('/v1/shipping-cost', verifyToken, handler.getShippingCostHandler);
+
+  // Extension
+  router.post('/v1/extensions', verifyToken, handler.postExtendRentalHandler);
+  router.get('/v1/extensions/:id', verifyToken, handler.getDetailExtensionHandler);
+  router.get('/v1/rentals/:id/extensions', verifyToken, handler.getAllExtensionsHandler);
+
   return router;
 };
 

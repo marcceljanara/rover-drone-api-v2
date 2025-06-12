@@ -498,23 +498,223 @@ describe('RentalsService', () => {
       expect(choice.length).toBe(3);
     });
   });
+  describe('extensionRental funuction', () => {
+    it('should extend rental correctly', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      await rentalsService.changeStatusRental(id, 'active');
+      const payload = {
+        id,
+        interval: 6,
+      };
 
-  // describe('upgradeRentalSensors function', () => {
-  //   it('should upggrade amount sensors correctly', async () => {
-  //     // Arrange
-  //     const rentalsService = new RentalsService();
-  //     const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
-  //     await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-  //     const { id } = await rentalsService.addRental(user1, 6, 'user');
-  //     await rentalsService.changeStatusRental(id, 'active');
+      // Action
+      const extension = await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
 
-  //     // Action
-  //     const rental = await rentalsService.upgradeRentalSensors(id, ['temperature', 'humidity']);
+      // Assert
+      expect(extension.id).toBeDefined();
+    });
+    it('should throw error when rental not found', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const id = 'notfound';
+      const payload = {
+        id,
+        interval: 6,
+      };
 
-  //     // Assert
-  //     expect(rental.addedSensors).toEqual(['temperature', 'humidity']);
-  //     expect(rental.additionalCost).toBe(110000);
-  //     expect(rental.paymentId).toBeDefined();
-  //   });
-  // });
+      // Action and Assert
+      await expect(rentalsService.extensionRental('user-123', payload.id, payload.interval, 'user'))
+        .rejects.toThrow(NotFoundError);
+    });
+    it('should throw AuthorizationError when admin try to extend rental', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      await rentalsService.changeStatusRental(id, 'active');
+      const payload = {
+        id,
+        interval: 6,
+      };
+
+      // Action and Assert
+      await expect(rentalsService.extensionRental(user, payload.id, payload.interval, 'admin'))
+        .rejects.toThrow(AuthorizationError);
+    });
+  });
+  describe('completeExtension function', () => {
+    it('should complete extension rental correctly', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      await rentalsService.changeStatusRental(id, 'active');
+      const payload = {
+        id,
+        interval: 6,
+      };
+      const { id: extensionId } = await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
+      // Action & Assert
+      await expect(rentalsService.completeExtension(id)).resolves.not.toThrow();
+      const extension = await RentalsTableTestHelper.findRentalExtensionById(extensionId);
+      const rentalCost = await RentalsTableTestHelper.findRentalCostById(id);
+      expect(extension.amount).toBe(17100000);
+      expect(rentalCost.total_cost).toBe(35700000);
+    });
+
+    it('should throw error when extension not found', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const id = 'notfound';
+
+      // Action and Assert
+      await expect(rentalsService.completeExtension(id)).rejects.toThrow(NotFoundError);
+    });
+  });
+  describe('getAllRentalExtentions function', () => {
+    it('should get all rental extensions by admin', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      await rentalsService.changeStatusRental(id, 'active');
+      const payload = {
+        id,
+        interval: 6,
+      };
+      await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
+      await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
+
+      // Action
+      const extension = await rentalsService.getAllRentalExtensions(id, user, 'admin');
+
+      // Assert
+      expect(extension).toHaveLength(2);
+    });
+    it('should get all rental extensions by user', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      await rentalsService.changeStatusRental(id, 'active');
+      const payload = {
+        id,
+        interval: 6,
+      };
+      await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
+      await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
+
+      // Action
+      const extension = await rentalsService.getAllRentalExtensions(id, user, 'user');
+
+      // Assert
+      expect(extension).toHaveLength(2);
+    });
+  });
+  describe('getRentalExtension function', () => {
+    it('should get rental extension by id role user', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      await rentalsService.changeStatusRental(id, 'active');
+      const payload = {
+        id,
+        interval: 6,
+      };
+      const { id: extensionId } = await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
+
+      // Action
+      const extension = await rentalsService.getRentalExtensionById(extensionId, user, 'user');
+
+      // Assert
+      expect(extension.id).toBe(extensionId);
+    });
+    it('should get rental extension by id role admin', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'JTR23',
+        shippingCost: 500000,
+        etd: '4',
+      };
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      await rentalsService.changeStatusRental(id, 'active');
+      const payload = {
+        id,
+        interval: 6,
+      };
+      const { id: extensionId } = await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
+
+      // Action
+      const extension = await rentalsService.getRentalExtensionById(extensionId, user, 'admin');
+
+      // Assert
+      expect(extension.id).toBe(extensionId);
+    });
+
+    it('should throw error when rental extension not found', async () => {
+      // Arrange
+      const rentalsService = new RentalsService();
+      const id = 'notfound';
+
+      // Action and Assert
+      await expect(rentalsService.getRentalExtensionById(id, 'user-123', 'user')).rejects.toThrow(NotFoundError);
+    });
+  });
 });

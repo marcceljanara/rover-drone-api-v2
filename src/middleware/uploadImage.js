@@ -1,8 +1,8 @@
 /* eslint-disable import/no-extraneous-dependencies */
-// uploadImage.js
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import InvariantError from '../exceptions/InvariantError';
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -28,9 +28,19 @@ const upload = multer({
     if (isValidExt && isValidMime) {
       cb(null, true);
     } else {
-      cb(new Error('File harus berupa gambar (jpeg, jpg, png)'));
+      // ✅ Gunakan MulterError dengan kode khusus untuk identifikasi
+      cb(new InvariantError('File harus berupa gambar (jpeg, jpg, png)'));
     }
   },
 });
 
-export default upload.single('photo'); // ✅ default export
+const uploadSingleImage = (req, res, next) => {
+  upload.single('photo')(req, res, (err) => {
+    if (err) {
+      req.uploadError = err.message; // tandai error secara manual
+    }
+    return next(); // lanjut ke handler apapun kondisinya
+  });
+};
+
+export default uploadSingleImage;

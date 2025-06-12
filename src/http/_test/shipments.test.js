@@ -1,5 +1,7 @@
 import request from 'supertest';
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
 import UsersTableTestHelper from '../../../tests/UserTableHelper.js';
 import AuthenticationsTableTestHelper from '../../../tests/AuthenticationTableHelper.js';
 import RentalsTableTestHelper from '../../../tests/RentalsTableTestHelper.js';
@@ -363,6 +365,71 @@ describe('/v1/shipments endpoints', () => {
 
       // Assert
       expect(response.statusCode).toBe(404);
+    });
+  });
+  describe('POST /v1/shipments/:id/delivery-proof', () => {
+    let uploadedFilePath;
+
+    const setupRentalAndShipment = async (deviceId, addressId) => {
+      await DevicesTableTestHelper.addDevice({ id: deviceId });
+      const realAddressId = await UsersTableTestHelper.addAddress('user-12345', { id: addressId });
+
+      const rentalPayload = {
+        interval: 6,
+        shippingAddressId: realAddressId,
+        subdistrictName: 'Rejo Binangun',
+      };
+
+      const rentalResponse = await request(server)
+        .post('/v1/rentals')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send(rentalPayload);
+
+      const rentalId = rentalResponse.body.data.id;
+
+      const verifyResponse = await request(server)
+        .put(`/v1/rentals/${rentalId}/status`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .send({ rentalStatus: 'active' });
+
+      return verifyResponse.body.data.shipmentId;
+    };
+
+    it('should upload delivery proof and return 201 with photoUrl', async () => {
+      const shipmentId = await setupRentalAndShipment('device-456', 'address-456');
+
+      const response = await request(server)
+        .post(`/v1/shipments/${shipmentId}/delivery-proof`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .attach('photo', '__tests__/assets/delivery-proof.jpg');
+
+      expect(response.statusCode).toBe(201);
+      expect(response.body.status).toBe('success');
+      expect(response.body.data.photoUrl).toMatch(/^\/uploads\/delivery-proofs\/.+\.jpg$/);
+
+      // Simpan path absolut untuk cleanup
+      uploadedFilePath = path.resolve(
+        __dirname,
+        '..',
+        'uploads',
+        'delivery-proofs',
+        path.basename(response.body.data.photoUrl),
+      );
+    });
+
+    afterAll(() => {
+      if (uploadedFilePath) {
+        try {
+          if (fs.existsSync(uploadedFilePath)) {
+            fs.unlinkSync(uploadedFilePath);
+            console.log('✅ File berhasil dihapus:', uploadedFilePath);
+          } else {
+            console.warn('⚠️ File tidak ditemukan untuk dihapus:', uploadedFilePath);
+          }
+        } catch (err) {
+          console.error('❌ Gagal menghapus file:', err);
+        }
+      }
     });
   });
 });

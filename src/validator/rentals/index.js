@@ -4,6 +4,7 @@ import {
   paramsPayloadSchema,
   postAddRentalPayloadSchema,
   putStatusRentalPayloadSchema,
+  postExtendRentalPayloadSchema,
 } from './schema.cjs';
 
 const RentalsValidator = {
@@ -27,6 +28,12 @@ const RentalsValidator = {
   },
   validatePutCancelRentalPayload: (payload) => {
     const validationResult = putCancelRentalPayloadSchema.validate(payload);
+    if (validationResult.error) {
+      throw new InvariantError(validationResult.error.message);
+    }
+  },
+  validatePostExtendRentalPayload: (payload) => {
+    const validationResult = postExtendRentalPayloadSchema.validate(payload);
     if (validationResult.error) {
       throw new InvariantError(validationResult.error.message);
     }

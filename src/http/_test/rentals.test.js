@@ -453,4 +453,166 @@ describe('/v1/rentals endpoint', () => {
       expect(responseJson.message).toBe('rental tidak ditemukan');
     });
   });
+  describe('GET /v1/shipping-cost', () => {
+    it('should return response code 200 and return shipping cost', async () => {
+      // Arrange
+      const subdistrictName = 'Rejo Binangun';
+
+      // Action
+      const response = await request(server)
+        .get('/v1/shipping-cost')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send({ subdistrictName });
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(200);
+      expect(responseJson.status).toBe('success');
+      expect(responseJson.data.shippingInfo).toBeDefined();
+      expect(responseJson.data.shippingInfo.shippingName).toBe('JNE');
+      expect(responseJson.data.shippingInfo.serviceName).toBe('JTR23');
+      expect(responseJson.data.shippingInfo.shippingCost).toBe(500000);
+      expect(responseJson.data.shippingInfo.etd).toBe('4');
+    });
+  });
+  describe('POST /v1/extensions', () => {
+    it('should return response code 201 and add extension', async () => {
+      // Arrange
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      };
+      const responseRental = await request(server)
+        .post('/v1/rentals')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send(payload);
+      const rentalId = responseRental.body.data.id;
+
+      await request(server)
+        .put(`/v1/rentals/${rentalId}/status`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .send({ rentalStatus: 'active' });
+
+      // Action
+      const response = await request(server)
+        .post('/v1/extensions')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send({ rentalId, interval: 6 });
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(201);
+      expect(responseJson.status).toBe('success');
+      expect(responseJson.data.id).toBeDefined();
+    });
+    it('should return response code 404 if rental not found', async () => {
+      // Arrange
+      const rentalId = 'notfound';
+
+      // Action
+      const response = await request(server)
+        .post('/v1/extensions')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send({ rentalId, interval: 6 });
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(404);
+      expect(responseJson.status).toBe('fail');
+    });
+  });
+  describe('GET /v1/extensions/:id', () => {
+    it('should return response code 200 and get detail extension', async () => {
+      // Arrange
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      };
+      const responseRental = await request(server)
+        .post('/v1/rentals')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send(payload);
+      const rentalId = responseRental.body.data.id;
+
+      await request(server)
+        .put(`/v1/rentals/${rentalId}/status`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .send({ rentalStatus: 'active' });
+
+      const responseExtension = await request(server)
+        .post('/v1/extensions')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send({ rentalId, interval: 6 });
+      const extensionId = responseExtension.body.data.id;
+
+      // Action
+      const response = await request(server)
+        .get(`/v1/extensions/${extensionId}`)
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(200);
+      expect(responseJson.status).toBe('success');
+      expect(responseJson.data.extension.id).toBe(extensionId);
+    });
+    it('should return response code 404 if extension not found', async () => {
+      // Arrange
+      const extensionId = 'notfound';
+
+      // Action
+      const response = await request(server)
+        .get(`/v1/extensions/${extensionId}`)
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(404);
+      expect(responseJson.status).toBe('fail');
+    });
+  });
+  describe('GET /v1/rentals/:id/extensions', () => {
+    it('should return response code 200 and get all extensions for rental', async () => {
+      // Arrange
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      };
+      const responseRental = await request(server)
+        .post('/v1/rentals')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send(payload);
+      const rentalId = responseRental.body.data.id;
+
+      await request(server)
+        .put(`/v1/rentals/${rentalId}/status`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .send({ rentalStatus: 'active' });
+
+      await request(server)
+        .post('/v1/extensions')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send({ rentalId, interval: 6 });
+
+      // Action
+      const response = await request(server)
+        .get(`/v1/rentals/${rentalId}/extensions`)
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(200);
+      expect(responseJson.status).toBe('success');
+      expect(responseJson.data.extensions).toHaveLength(1);
+    });
+  });
 });
