@@ -307,9 +307,10 @@ class RentalsService {
       // Tambahkan pembayaran terkait rental
       const paymentId = `payment-${nanoid(16)}`;
       const paymentQuery = {
-        text: 'INSERT INTO payments (id, rental_id, amount) VALUES ($1, $2, $3)',
-        values: [paymentId, rentalResult.rows[0].id, totalCost],
+        text: 'INSERT INTO payments (id, rental_id, amount, payment_type) VALUES ($1, $2, $3, $4)',
+        values: [paymentId, rentalResult.rows[0].id, totalCost, 'initial'],
       };
+
       await client.query(paymentQuery);
 
       await client.query('COMMIT'); // Commit transaksi jika sukses
@@ -434,6 +435,162 @@ class RentalsService {
     };
     const result = await this._pool.query(query);
     return result.rows;
+  }
+
+  async extensionRental(userId, rentalId, durationMonths, role) {
+    if (role === 'admin') {
+      throw new AuthorizationError('Admin tidak diperbolehkan mengajukan perpanjangan rental');
+    }
+
+    const client = await this._pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Cek apakah rental dimiliki oleh user dan masih aktif
+      const rentalCheck = await client.query(
+        `
+        SELECT id, end_date FROM rentals
+        WHERE id = $1 AND user_id = $2 AND is_deleted = FALSE AND rental_status = $3
+      `,
+        [rentalId, userId, 'active'],
+      );
+
+      if (rentalCheck.rowCount === 0) {
+        throw new NotFoundError('Rental tidak ditemukan, tidak aktif, atau bukan milik Anda');
+      }
+
+      const currentEndDate = rentalCheck.rows[0].end_date;
+      const newEndDate = new Date(currentEndDate);
+      newEndDate.setMonth(newEndDate.getMonth() + durationMonths);
+
+      // Hitung biaya tambahan
+      const additionalCost = calculateRentalCost(durationMonths).finalCost;
+
+      // Tambahkan ekstensi rental
+      const extensionId = `ext-${nanoid(10)}`;
+      const insertExtensionQuery = {
+        text: `
+        INSERT INTO rental_extensions (id, rental_id, duration_months, new_end_date, amount)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, new_end_date, status
+      `,
+        values: [extensionId, rentalId, durationMonths, newEndDate, additionalCost],
+      };
+      const extensionResult = await client.query(insertExtensionQuery);
+
+      // Tambahkan biaya tambahan ke pembayaran
+      const paymentId = `payment-${nanoid(16)}`;
+      await client.query(
+        'INSERT INTO payments (id, rental_id, amount, payment_type) VALUES ($1, $2, $3 , $4)',
+        [paymentId, rentalId, additionalCost, 'extension'],
+      );
+
+      await client.query('COMMIT');
+      return { ...extensionResult.rows[0], paymentId };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async completeExtension(rentalId) {
+    const client = await this._pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Ambil perpanjangan dengan status pending_payment
+      const pendingResult = await client.query(
+        'SELECT * FROM rental_extensions WHERE rental_id = $1 AND status = $2',
+        [rentalId, 'pending_payment'],
+      );
+      const extension = await pendingResult.rows[0];
+      // console.log(extension)
+      if (!extension) {
+        throw new NotFoundError('No pending extension found');
+      }
+
+      // Update tanggal akhir penyewaan
+      await client.query(
+        'UPDATE rentals SET end_date = $1 WHERE id = $2',
+        [extension.new_end_date, rentalId],
+      );
+
+      // Tambahkan biaya extension ke total cost
+      await client.query(
+        'UPDATE rental_costs SET total_cost = total_cost + $1, updated_at = NOW() WHERE rental_id = $2',
+        [extension.amount, rentalId],
+      );
+
+      // Tandai perpanjangan sebagai completed
+      await client.query(
+        'UPDATE rental_extensions SET status = $1, updated_at = NOW() WHERE id = $2',
+        ['completed', extension.id],
+      );
+
+      await client.query('COMMIT');
+      return { success: true };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getAllRentalExtensions(rentalId, userId, role) {
+    const values = [rentalId];
+    let queryText = `
+    SELECT re.id, re.duration_months, re.new_end_date, re.amount, 
+           re.status, re.created_at, re.updated_at
+    FROM rental_extensions re
+    JOIN rentals r ON re.rental_id = r.id
+    WHERE re.rental_id = $1
+  `;
+
+    if (role !== 'admin') {
+      queryText += ' AND r.user_id = $2';
+      values.push(userId);
+    }
+
+    queryText += ' ORDER BY re.created_at DESC';
+
+    const query = {
+      text: queryText,
+      values,
+    };
+
+    const result = await this._pool.query(query);
+    return result.rows;
+  }
+
+  async getRentalExtensionById(extensionId, userId, role) {
+    const values = [extensionId];
+    let queryText = `
+    SELECT re.id, re.rental_id, re.duration_months, re.new_end_date, 
+           re.amount, re.status, re.created_at, re.updated_at
+    FROM rental_extensions re
+    JOIN rentals r ON re.rental_id = r.id
+    WHERE re.id = $1
+  `;
+
+    if (role !== 'admin') {
+      queryText += ' AND r.user_id = $2';
+      values.push(userId);
+    }
+
+    const query = {
+      text: queryText,
+      values,
+    };
+
+    const result = await this._pool.query(query);
+    if (result.rowCount === 0) {
+      throw new NotFoundError('Perpanjangan rental tidak ditemukan');
+    }
+
+    return result.rows[0];
   }
 
   // async upgradeRentalSensors(rentalId, newSensorIds) {
