@@ -678,4 +678,94 @@ describe('ShipmentsService', () => {
       expect(result).toEqual([]);
     });
   });
+  describe('addDeliveryProof', () => {
+    it('should update delivery_proof_url correctly', async () => {
+    // Arrange
+      const shipmentsService = new ShipmentsService();
+
+      const user = await UsersTableTestHelper.addUser({
+        id: 'user-456',
+        email: 'unikdeliveryproof@gmail.com',
+        username: 'unikdeliveryproof',
+        password: 'password123',
+      });
+
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-456' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-456' });
+
+      const rentalsService = new RentalsService();
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'YES',
+        shippingCost: 800000,
+        etd: '2',
+      };
+
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      const { shipmentId } = await rentalsService.changeStatusRental(id, 'active');
+
+      const photoUrl = 'https://example.com/proof/photo.jpg';
+
+      // Action & Assert
+      await expect(shipmentsService.addDeliveryProof(shipmentId, photoUrl))
+        .resolves.not.toThrow();
+    });
+
+    it('should throw NotFoundError when shipment not found', async () => {
+    // Arrange
+      const shipmentsService = new ShipmentsService();
+      const fakeShipmentId = 'shipment-404';
+      const photoUrl = 'https://example.com/proof/notfound.jpg';
+
+      // Action & Assert
+      await expect(shipmentsService.addDeliveryProof(fakeShipmentId, photoUrl))
+        .rejects.toThrowError('Pengiriman tidak ditemukan');
+    });
+  });
+  describe('getDeliveryProofUrl', () => {
+    it('should return delivery proof URL correctly', async () => {
+    // Arrange
+      const shipmentsService = new ShipmentsService();
+
+      const user = await UsersTableTestHelper.addUser({
+        id: 'user-789',
+        email: 'proofurl@gmail.com',
+        username: 'proofurluser',
+        password: 'securepass',
+      });
+
+      const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-789' });
+      await DevicesTableTestHelper.addDevice({ id: 'device-789' });
+
+      const rentalsService = new RentalsService();
+      const payloadRental = {
+        shippingName: 'JNE',
+        serviceName: 'REG',
+        shippingCost: 600000,
+        etd: '3',
+      };
+
+      const { id } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental);
+      const { shipmentId } = await rentalsService.changeStatusRental(id, 'active');
+
+      const photoUrl = 'https://example.com/proof/image.jpg';
+      await shipmentsService.addDeliveryProof(shipmentId, photoUrl);
+
+      // Action
+      const result = await shipmentsService.getDeliveryProofUrl(shipmentId);
+
+      // Assert
+      expect(result).toEqual(photoUrl);
+    });
+
+    it('should throw NotFoundError when shipment is not found', async () => {
+    // Arrange
+      const shipmentsService = new ShipmentsService();
+      const fakeShipmentId = 'shipment-notfound';
+
+      // Action & Assert
+      await expect(shipmentsService.getDeliveryProofUrl(fakeShipmentId))
+        .rejects.toThrowError('Data shipment tidak ditemukan');
+    });
+  });
 });

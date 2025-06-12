@@ -2,7 +2,7 @@
 import express from 'express';
 import verifyToken from '../../middleware/verifyToken.js';
 import verifyAdmin from '../../middleware/verifyAdmin.js';
-import upload from '../../middleware/uploadImage.js';
+import uploadSingleImage from '../../middleware/uploadImage.js';
 
 const shipmentRoutes = (handler) => {
   const router = express.Router();
@@ -694,7 +694,7 @@ const shipmentRoutes = (handler) => {
  *                   example: Terjadi kesalahan pada server
  */
 
-  router.post('/v1/shipments/:id/delivery-proof', verifyToken, upload, handler.uploadDeliveryProofHandler);
+  router.post('/v1/shipments/:id/delivery-proof', verifyToken, uploadSingleImage, handler.uploadDeliveryProofHandler);
 
   // GET bukti serah terima (delivery proof image URL)
   /**
