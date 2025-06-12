@@ -170,6 +170,7 @@ class RentalsHandler {
           id: extension.id,
           newEndDate: extension.new_end_date,
           status: extension.status,
+          paymentId: extension.paymentId,
         },
       });
     } catch (error) {

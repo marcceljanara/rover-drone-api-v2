@@ -38,7 +38,7 @@ class PaymentsHandler {
 
   async putVerificationPaymentHandler(req, res, next) {
     try {
-      // Validasi input
+    // Validasi input
       this._validator.validateParamsPayload(req.params);
       this._validator.validatePutVerificationPaymentPayload(req.body);
 
@@ -47,28 +47,33 @@ class PaymentsHandler {
         paymentStatus, paymentMethod, transactionDescription,
       } = req.body;
 
-      // Status rental yang akan diubah
       const RENTAL_STATUS_ACTIVE = 'active';
 
-      // Gunakan transaksi database untuk memastikan konsistensi
+      // Proses transaksi pembayaran (jangan ubah bagian ini)
       const result = await this._paymentsService.transaction(async (transaction) => {
-        // Verifikasi pembayaran
         const payment = await this._paymentsService.verificationPayment({
           id, paymentStatus, paymentMethod, transactionDescription,
         }, transaction);
 
-        // Ubah status rental
+        const user = await this._paymentsService.getUserByPaymentId(id, transaction);
+
+        return { payment, user };
+      });
+
+      const { payment, user } = result;
+
+      // Jika payment_type = initial → aktifkan rental & kirim notifikasi
+      if (payment.payment_type === 'initial') {
         const rental = await this._rentalsService
           .changeStatusRental(payment.rental_id, RENTAL_STATUS_ACTIVE);
 
-        const user = await this._paymentsService.getUserByPaymentId(id, transaction);
-        const message = {
+        await this._rabbitmqService.sendMessage('payment:success', JSON.stringify({
           userId: user.user_id,
           email: user.email,
           fullname: user.fullname,
           paymentId: payment.id,
-        };
-        await this._rabbitmqService.sendMessage('payment:success', JSON.stringify(message));
+        }));
+
         await this._rabbitmqService.sendMessage('shipment:pending', JSON.stringify({
           userId: user.user_id,
           email: user.email,
@@ -76,20 +81,39 @@ class PaymentsHandler {
           rentalId: payment.rental_id,
         }));
 
-        // Return nilai untuk memastikan transaksi mengembalikan data
-        return {
-          payment,
-          rental,
-        };
-      });
+        return res.status(200).json({
+          status: 'success',
+          message: `Pembayaran ${payment.id} berhasil diverifikasi dan rental telah ${rental.rental_status}`,
+        });
+      }
 
-      // Kirim respons di luar transaksi
-      return res.status(200).json({
-        status: 'success',
-        message: `Pembayaran ${result.payment.id} berhasil diverifikasi dan rental telah ${result.rental.rental_status}`,
-      });
+      // Jika payment_type = extension → panggil completeExtension
+      if (payment.payment_type === 'extension') {
+        await this._rentalsService.completeExtension(payment.rental_id);
+
+        await this._rabbitmqService.sendMessage('payment:success', JSON.stringify({
+          userId: user.user_id,
+          email: user.email,
+          fullname: user.fullname,
+          paymentId: payment.id,
+        }));
+
+        await this._rabbitmqService.sendMessage('extension:completed', JSON.stringify({
+          userId: user.user_id,
+          email: user.email,
+          paymentId: payment.id,
+          rentalId: payment.rental_id,
+        }));
+
+        return res.status(200).json({
+          status: 'success',
+          message: `Pembayaran ${payment.id} berhasil diverifikasi dan perpanjangan telah diterapkan.`,
+        });
+      }
+
+      // Jika tipe pembayaran tidak dikenal
+      throw new Error(`Unknown payment_type: ${payment.payment_type}`);
     } catch (error) {
-      // Tangani error
       return next(error);
     }
   }

@@ -9,9 +9,15 @@ class PaymentsService {
 
   async getAllPayments() {
     const query = {
-      text: 'SELECT id, rental_id, amount, payment_status from payments WHERE is_deleted = FALSE',
+      text: `
+    SELECT id, rental_id, amount, payment_status
+    FROM payments
+    WHERE is_deleted = FALSE
+    ORDER BY created_at DESC
+  `,
       values: [],
     };
+
     const result = await this._pool.query(query);
     return result.rows;
   }
@@ -80,7 +86,7 @@ class PaymentsService {
       text: `UPDATE payments
              SET payment_date = NOW(), payment_status = $1, payment_method = $2, transaction_description = $3
              WHERE id = $4
-             RETURNING id, rental_id, payment_status`,
+             RETURNING id, rental_id, payment_status, payment_type`,
       values: [paymentStatus, paymentMethod, transactionDescription, id],
     };
 

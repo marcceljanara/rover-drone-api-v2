@@ -151,7 +151,7 @@ describe('/v1/payments endpoint', () => {
   });
 
   describe('PUT /v1/payments/:id', () => {
-    it('should return response code 200 and verify payment correctly', async () => {
+    it('should return response code 200 and verify Initial payment correctly', async () => {
       // Arrange
       const requestPayload = {
         paymentStatus: 'completed',
@@ -169,6 +169,48 @@ describe('/v1/payments endpoint', () => {
         .post('/v1/rentals')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send(payload)).body.data;
+
+      // Action
+      const response = await request(server)
+        .put(`/v1/payments/${paymentId}`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .send(requestPayload);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(200);
+      expect(responseJson.status).toBe('success');
+    });
+    it('should return response code 200 and verify extension payment correctly', async () => {
+      // Arrange
+      const requestPayload = {
+        paymentStatus: 'completed',
+        paymentMethod: 'BRI',
+        transactionDescription: 'Payment successfully verified',
+      };
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      };
+      const { id } = (await request(server)
+        .post('/v1/rentals')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send(payload)).body.data;
+
+      await request(server)
+        .put(`/v1/rentals/${id}/status`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .send({ rentalStatus: 'active' });
+
+      const extension = await request(server)
+        .post('/v1/extensions')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send({ rentalId: id, interval: 6 });
+
+      const { paymentId } = extension.body.data;
 
       // Action
       const response = await request(server)
