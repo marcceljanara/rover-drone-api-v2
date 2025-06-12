@@ -614,8 +614,290 @@ const rentalRoutes = (handler) => {
   router.get('/v1/shipping-cost', verifyToken, handler.getShippingCostHandler);
 
   // Extension
+  /**
+ * @swagger
+ * /v1/extensions:
+ *   post:
+ *     summary: Mengajukan perpanjangan masa sewa perangkat
+ *     description: Pengguna dapat mengajukan perpanjangan sewa untuk rental yang masih aktif. Admin tidak diperbolehkan mengakses endpoint ini.
+ *     tags:
+ *       - Rentals
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - rentalId
+ *               - interval
+ *             properties:
+ *               rentalId:
+ *                 type: string
+ *                 description: ID rental yang ingin diperpanjang
+ *                 example: rent-abc123
+ *               interval:
+ *                 type: integer
+ *                 enum: [6, 12, 24, 36]
+ *                 description: Lama perpanjangan dalam bulan (6, 12, 24, atau 36 bulan)
+ *                 example: 12
+ *     responses:
+ *       201:
+ *         description: Pengajuan perpanjangan rental berhasil
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Berhasil mengajukan perpanjangan rental rent-abc123
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       example: ext-AbC123xYz0
+ *                     newEndDate:
+ *                       type: string
+ *                       format: date
+ *                       example: 2026-06-11
+ *                     status:
+ *                       type: string
+ *                       example: waiting
+ *                     paymentId:
+ *                       type: string
+ *                       example: payment-AbCdEf123456
+ *       400:
+ *         description: Permintaan tidak valid (payload tidak lengkap atau salah format)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: Payload tidak valid
+ *       401:
+ *         description: Token tidak valid atau tidak ada token
+ *       403:
+ *         description: Admin tidak diperbolehkan mengajukan perpanjangan rental
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: Admin tidak diperbolehkan mengajukan perpanjangan rental
+ *       404:
+ *         description: Rental tidak ditemukan, tidak aktif, atau bukan milik pengguna
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: Rental tidak ditemukan, tidak aktif, atau bukan milik Anda
+ *       500:
+ *         description: Terjadi kesalahan pada server
+ */
+
   router.post('/v1/extensions', verifyToken, handler.postExtendRentalHandler);
+
+  /**
+ * @swagger
+ * /v1/extensions/{id}:
+ *   get:
+ *     summary: Mendapatkan detail perpanjangan rental
+ *     description: Mengambil informasi detail perpanjangan rental berdasarkan ID. Pengguna hanya bisa mengakses data miliknya, kecuali admin.
+ *     tags:
+ *       - Rentals
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID perpanjangan rental
+ *         example: ext-AbC123xYz0
+ *     responses:
+ *       200:
+ *         description: Data perpanjangan rental berhasil diambil
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     extension:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                           example: ext-AbC123xYz0
+ *                         rental_id:
+ *                           type: string
+ *                           example: rent-abc123
+ *                         duration_months:
+ *                           type: integer
+ *                           example: 12
+ *                         new_end_date:
+ *                           type: string
+ *                           format: date
+ *                           example: 2026-06-11
+ *                         amount:
+ *                           type: integer
+ *                           example: 1200000
+ *                         status:
+ *                           type: string
+ *                           example: waiting
+ *                         created_at:
+ *                           type: string
+ *                           format: date-time
+ *                           example: 2025-06-11T10:00:00.000Z
+ *                         updated_at:
+ *                           type: string
+ *                           format: date-time
+ *                           example: 2025-06-11T12:00:00.000Z
+ *       401:
+ *         description: Token tidak valid atau tidak ada token
+ *       403:
+ *         description: Akses ditolak. Data bukan milik pengguna
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: Akses ditolak
+ *       404:
+ *         description: Data perpanjangan tidak ditemukan
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: Perpanjangan rental tidak ditemukan
+ *       500:
+ *         description: Terjadi kesalahan pada server
+ */
+
   router.get('/v1/extensions/:id', verifyToken, handler.getDetailExtensionHandler);
+
+  /**
+ * @swagger
+ * /v1/rentals/{id}/extensions:
+ *   get:
+ *     summary: Mendapatkan daftar semua perpanjangan dari satu rental
+ *     description: Mengambil semua data perpanjangan rental tertentu berdasarkan ID rental. Pengguna hanya bisa melihat miliknya sendiri, kecuali admin.
+ *     tags:
+ *       - Rentals
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID rental
+ *         schema:
+ *           type: string
+ *           example: rent-abc123
+ *     responses:
+ *       200:
+ *         description: Daftar perpanjangan berhasil diambil
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     extensions:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             example: ext-AbC123xYz0
+ *                           duration_months:
+ *                             type: integer
+ *                             example: 6
+ *                           new_end_date:
+ *                             type: string
+ *                             format: date
+ *                             example: 2025-12-11
+ *                           amount:
+ *                             type: integer
+ *                             example: 600000
+ *                           status:
+ *                             type: string
+ *                             example: waiting
+ *                           created_at:
+ *                             type: string
+ *                             format: date-time
+ *                             example: 2025-06-11T10:00:00.000Z
+ *                           updated_at:
+ *                             type: string
+ *                             format: date-time
+ *                             example: 2025-06-11T10:30:00.000Z
+ *       401:
+ *         description: Token tidak valid atau tidak ditemukan
+ *       403:
+ *         description: Akses ditolak. Data bukan milik pengguna
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: Akses ditolak
+ *       404:
+ *         description: Data rental tidak ditemukan atau tidak aktif
+ *       500:
+ *         description: Terjadi kesalahan pada server
+ */
+
   router.get('/v1/rentals/:id/extensions', verifyToken, handler.getAllExtensionsHandler);
 
   return router;
