@@ -472,7 +472,7 @@ class RentalsService {
         text: `
         INSERT INTO rental_extensions (id, rental_id, duration_months, new_end_date, amount)
         VALUES ($1, $2, $3, $4, $5)
-        RETURNING id, new_end_date, status
+        RETURNING id, new_end_date, status, amount
       `,
         values: [extensionId, rentalId, interval, newEndDate, additionalCost],
       };

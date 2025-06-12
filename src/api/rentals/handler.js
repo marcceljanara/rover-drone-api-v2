@@ -163,6 +163,19 @@ class RentalsHandler {
       const { rentalId, interval } = req.body;
       const extension = await this._rentalsService
         .extensionRental(userId, rentalId, interval, role);
+      // Kirim ke RabbitMQ setelah berhasil
+      const message = {
+        userId,
+        rentalId: extension.id,
+        paymentId: extension.paymentId,
+        cost: extension.amount,
+        endDate: extension.new_end_date,
+      };
+
+      // Kirim ke queue "extension:request" dan "extension:payment"
+      await this._rabbitmqService.sendMessage('extension:request', JSON.stringify(message));
+      await this._rabbitmqService.sendMessage('extension:payment', JSON.stringify(message));
+
       return res.status(201).json({
         status: 'success',
         message: `Berhasil mengajukan perpanjangan rental ${rentalId}`,
