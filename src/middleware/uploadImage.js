@@ -37,7 +37,6 @@ const upload = multer({
 const uploadSingleImage = (req, res, next) => {
   upload.single('photo')(req, res, (err) => {
     if (err) {
-      console.warn('Upload gagal:', err.message);
       req.uploadError = err.message; // tandai error secara manual
     }
     return next(); // lanjut ke handler apapun kondisinya
