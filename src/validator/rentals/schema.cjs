@@ -20,9 +20,15 @@ const putCancelRentalPayloadSchema = Joi.object({
   rentalStatus: Joi.string().valid('cancelled').required(),
 });
 
+const postExtendRentalPayloadSchema = Joi.object({
+  interval: Joi.number().valid(6, 12, 24, 36).required(),
+  rentalId: Joi.string().max(23).required(),
+});
+
 module.exports = {
   paramsPayloadSchema,
   putStatusRentalPayloadSchema,
   postAddRentalPayloadSchema,
   putCancelRentalPayloadSchema,
+  postExtendRentalPayloadSchema,
 };

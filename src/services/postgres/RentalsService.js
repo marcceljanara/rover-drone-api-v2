@@ -437,7 +437,7 @@ class RentalsService {
     return result.rows;
   }
 
-  async extensionRental(userId, rentalId, durationMonths, role) {
+  async extensionRental(userId, rentalId, interval, role) {
     if (role === 'admin') {
       throw new AuthorizationError('Admin tidak diperbolehkan mengajukan perpanjangan rental');
     }
@@ -461,10 +461,10 @@ class RentalsService {
 
       const currentEndDate = rentalCheck.rows[0].end_date;
       const newEndDate = new Date(currentEndDate);
-      newEndDate.setMonth(newEndDate.getMonth() + durationMonths);
+      newEndDate.setMonth(newEndDate.getMonth() + interval);
 
       // Hitung biaya tambahan
-      const additionalCost = calculateRentalCost(durationMonths).finalCost;
+      const additionalCost = calculateRentalCost(interval).finalCost;
 
       // Tambahkan ekstensi rental
       const extensionId = `ext-${nanoid(10)}`;
@@ -474,7 +474,7 @@ class RentalsService {
         VALUES ($1, $2, $3, $4, $5)
         RETURNING id, new_end_date, status
       `,
-        values: [extensionId, rentalId, durationMonths, newEndDate, additionalCost],
+        values: [extensionId, rentalId, interval, newEndDate, additionalCost],
       };
       const extensionResult = await client.query(insertExtensionQuery);
 

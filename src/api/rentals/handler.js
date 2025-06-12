@@ -17,6 +17,9 @@ class RentalsHandler {
     this.putCancelRentalHandler = this.putCancelRentalHandler.bind(this);
     this.getAllSensorsHandler = this.getAllSensorsHandler.bind(this);
     this.getShippingCostHandler = this.getShippingCostHandler.bind(this);
+    this.postExtendRentalHandler = this.postExtendRentalHandler.bind(this);
+    this.getAllExtensionsHandler = this.getAllExtensionsHandler.bind(this);
+    this.getDetailExtensionHandler = this.getDetailExtensionHandler.bind(this);
   }
 
   async putStatusRentalHandler(req, res, next) {
@@ -149,6 +152,58 @@ class RentalsHandler {
       status: 'success',
       data: { shippingInfo },
     });
+  }
+
+  // Beri rabbitMq untuk perpanjangan rental
+  async postExtendRentalHandler(req, res, next) {
+    try {
+      const userId = req.id;
+      const { role } = req;
+      this._validator.validatePostExtendRentalPayload(req.body);
+      const { rentalId, interval } = req.body;
+      const extension = await this._rentalsService
+        .extensionRental(userId, rentalId, interval, role);
+      return res.status(201).json({
+        status: 'success',
+        message: `Berhasil mengajukan perpanjangan rental ${rentalId}`,
+        data: {
+          id: extension.id,
+          newEndDate: extension.new_end_date,
+          status: extension.status,
+        },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getAllExtensionsHandler(req, res) {
+    const userId = req.id;
+    const { role } = req;
+    this._validator.validateParamsPayload(req.params);
+    const { id: rentalId } = req.params;
+
+    const extensions = await this._rentalsService.getAllRentalExtensions(rentalId, userId, role);
+    return res.status(200).json({
+      status: 'success',
+      data: { extensions },
+    });
+  }
+
+  async getDetailExtensionHandler(req, res, next) {
+    try {
+      const userId = req.id;
+      const { role } = req;
+      this._validator.validateParamsPayload(req.params);
+      const { id } = req.params;
+      const extension = await this._rentalsService.getRentalExtensionById(id, userId, role);
+      return res.status(200).json({
+        status: 'success',
+        data: { extension },
+      });
+    } catch (error) {
+      return next(error);
+    }
   }
 }
 

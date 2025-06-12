@@ -515,11 +515,11 @@ describe('RentalsService', () => {
       await rentalsService.changeStatusRental(id, 'active');
       const payload = {
         id,
-        durationMonths: 6,
+        interval: 6,
       };
 
       // Action
-      const extension = await rentalsService.extensionRental(user, payload.id, payload.durationMonths, 'user');
+      const extension = await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
 
       // Assert
       expect(extension.id).toBeDefined();
@@ -530,11 +530,11 @@ describe('RentalsService', () => {
       const id = 'notfound';
       const payload = {
         id,
-        durationMonths: 6,
+        interval: 6,
       };
 
       // Action and Assert
-      await expect(rentalsService.extensionRental('user-123', payload.id, payload.durationMonths, 'user'))
+      await expect(rentalsService.extensionRental('user-123', payload.id, payload.interval, 'user'))
         .rejects.toThrow(NotFoundError);
     });
     it('should throw AuthorizationError when admin try to extend rental', async () => {
@@ -553,11 +553,11 @@ describe('RentalsService', () => {
       await rentalsService.changeStatusRental(id, 'active');
       const payload = {
         id,
-        durationMonths: 6,
+        interval: 6,
       };
 
       // Action and Assert
-      await expect(rentalsService.extensionRental(user, payload.id, payload.durationMonths, 'admin'))
+      await expect(rentalsService.extensionRental(user, payload.id, payload.interval, 'admin'))
         .rejects.toThrow(AuthorizationError);
     });
   });
@@ -578,9 +578,9 @@ describe('RentalsService', () => {
       await rentalsService.changeStatusRental(id, 'active');
       const payload = {
         id,
-        durationMonths: 6,
+        interval: 6,
       };
-      const { id: extensionId } = await rentalsService.extensionRental(user, payload.id, payload.durationMonths, 'user');
+      const { id: extensionId } = await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
       // Action & Assert
       await expect(rentalsService.completeExtension(id)).resolves.not.toThrow();
       const extension = await RentalsTableTestHelper.findRentalExtensionById(extensionId);
@@ -615,10 +615,10 @@ describe('RentalsService', () => {
       await rentalsService.changeStatusRental(id, 'active');
       const payload = {
         id,
-        durationMonths: 6,
+        interval: 6,
       };
-      await rentalsService.extensionRental(user, payload.id, payload.durationMonths, 'user');
-      await rentalsService.extensionRental(user, payload.id, payload.durationMonths, 'user');
+      await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
+      await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
 
       // Action
       const extension = await rentalsService.getAllRentalExtensions(id, user, 'admin');
@@ -642,10 +642,10 @@ describe('RentalsService', () => {
       await rentalsService.changeStatusRental(id, 'active');
       const payload = {
         id,
-        durationMonths: 6,
+        interval: 6,
       };
-      await rentalsService.extensionRental(user, payload.id, payload.durationMonths, 'user');
-      await rentalsService.extensionRental(user, payload.id, payload.durationMonths, 'user');
+      await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
+      await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
 
       // Action
       const extension = await rentalsService.getAllRentalExtensions(id, user, 'user');
@@ -671,9 +671,9 @@ describe('RentalsService', () => {
       await rentalsService.changeStatusRental(id, 'active');
       const payload = {
         id,
-        durationMonths: 6,
+        interval: 6,
       };
-      const { id: extensionId } = await rentalsService.extensionRental(user, payload.id, payload.durationMonths, 'user');
+      const { id: extensionId } = await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
 
       // Action
       const extension = await rentalsService.getRentalExtensionById(extensionId, user, 'user');
@@ -697,9 +697,9 @@ describe('RentalsService', () => {
       await rentalsService.changeStatusRental(id, 'active');
       const payload = {
         id,
-        durationMonths: 6,
+        interval: 6,
       };
-      const { id: extensionId } = await rentalsService.extensionRental(user, payload.id, payload.durationMonths, 'user');
+      const { id: extensionId } = await rentalsService.extensionRental(user, payload.id, payload.interval, 'user');
 
       // Action
       const extension = await rentalsService.getRentalExtensionById(extensionId, user, 'admin');

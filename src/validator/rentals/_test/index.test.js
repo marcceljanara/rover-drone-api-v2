@@ -135,4 +135,34 @@ describe('RentalsValidator', () => {
         .not.toThrowError(InvariantError);
     });
   });
+  describe('Post Extend Rental Payload', () => {
+    it('should throw error when payload did not contain needed property', () => {
+      // Arrange
+      const payload = {};
+
+      // Action and Assert
+      expect(() => RentalsValidator
+        .validatePostExtendRentalPayload(payload)).toThrowError(InvariantError);
+    });
+
+    it('should throw error when payload did not meet data type specification', () => {
+      // Arrange
+      const payload = {
+        interval: 'six',
+      };
+
+      // Action and Assert
+      expect(() => RentalsValidator
+        .validatePostExtendRentalPayload(payload)).toThrowError(InvariantError);
+    });
+
+    it('should not throw error because payload meet validation criteria', () => {
+      // Arrange
+      const payload = { interval: 6, rentalId: 'rental-123' };
+
+      // Action and Assert
+      expect(() => RentalsValidator.validatePostExtendRentalPayload(payload))
+        .not.toThrowError(InvariantError);
+    });
+  });
 });
