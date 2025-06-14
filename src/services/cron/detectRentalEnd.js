@@ -20,7 +20,6 @@ async function checkAndMarkEndedRentals() {
       FROM rentals
       WHERE rental_status = 'active'
         AND end_date < $1
-        AND notified_awaiting_return = FALSE
       FOR UPDATE
     `, [now]);
 
@@ -28,8 +27,7 @@ async function checkAndMarkEndedRentals() {
       // update status + flag dalam satu transaksi
       await client.query(`
         UPDATE rentals
-        SET rental_status = 'awaiting-return',
-            notified_awaiting_return = TRUE
+        SET rental_status = 'awaiting-return'
         WHERE id = $1
       `, [rental.id]);
 

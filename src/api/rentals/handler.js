@@ -166,10 +166,12 @@ class RentalsHandler {
       // Kirim ke RabbitMQ setelah berhasil
       const message = {
         userId,
-        rentalId: extension.id,
+        id: extension.id,
+        rentalId,
         paymentId: extension.paymentId,
         cost: extension.amount,
         endDate: extension.new_end_date,
+        addedDuration: interval,
       };
 
       // Kirim ke queue "extension:request" dan "extension:payment"

@@ -213,13 +213,6 @@ class ShipmentsHandler {
 
       await this._shipmentsService.updateReturnStatus(returnId, status);
 
-      const message = {
-        returnId,
-        status,
-      };
-      // Pesan pembaruan status pengembalian
-      await this._rabbitmqService.sendMessage('return:status', JSON.stringify(message));
-
       return res.status(200).json({
         status: 'success',
         message: 'Status return berhasil diperbarui',
