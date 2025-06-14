@@ -253,9 +253,9 @@ class UserService {
         UPDATE user_addresses 
         SET is_deleted = $1
         WHERE user_id = $2 
-          AND id = $3 
+          AND id = $3 AND is_deleted = $4 
         RETURNING id`,
-      values: [true, userId, id],
+      values: [true, userId, id, false],
     };
 
     const result = await this._pool.query(query);
