@@ -137,8 +137,15 @@ class ShipmentsHandler {
   async uploadDeliveryProofHandler(req, res, next) {
     try {
       const { id: shipmentId } = req.params;
-      const photoUrl = `/uploads/delivery-proofs/${req.file.filename}`;
 
+      if (!req.file) {
+        return res.status(400).json({
+          status: 'fail',
+          message: 'File terlalu besar atau tidak sesuai format atau tidak ditemukan',
+        });
+      }
+
+      const photoUrl = `/uploads/delivery-proofs/${req.file.filename}`;
       await this._shipmentsService.addDeliveryProof(shipmentId, photoUrl);
 
       return res.status(201).json({
