@@ -44,4 +44,13 @@ async function calculateShippingCost(subdistrictName) {
   }
 }
 
+// async function calculateShippingCost(subdistrictName) {
+//   return {
+//     shippingName: 'JNE',
+//     serviceName: 'JTR23',
+//     shippingCost: 800000 * 2, // Mengalikan biaya ongkir dengan 2
+//     etd: '5',
+//   };
+// }
+
 export default calculateShippingCost;
