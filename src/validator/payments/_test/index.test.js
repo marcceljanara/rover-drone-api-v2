@@ -55,7 +55,7 @@ describe('PaymentsValidator', () => {
     it('should not throw error because payload meets validation criteria', () => {
       const payload = {
         paymentStatus: 'completed',
-        paymentMethod: 'credit card',
+        paymentMethod: 'BNI',
         transactionDescription: 'Test payment',
       };
 

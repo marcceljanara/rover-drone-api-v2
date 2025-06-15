@@ -18,15 +18,70 @@ const UserSchema = {
   }),
 
   addressPayload: Joi.object({
-    namaPenerima: Joi.string().max(100).required(),
-    noHp: Joi.string().max(20).required(),
-    alamatLengkap: Joi.string().required(),
-    provinsi: Joi.string().max(100).required(),
-    kabupatenKota: Joi.string().max(100).required(),
-    kecamatan: Joi.string().max(100).required(),
-    kelurahan: Joi.string().max(100).required(),
-    kodePos: Joi.string().max(10).required(),
-    isDefault: Joi.boolean(),
+    namaPenerima: Joi.string()
+      .max(100)
+      .pattern(/^[a-zA-Z0-9\s.,'-]{1,100}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Nama hanya boleh mengandung huruf, angka, spasi, dan simbol umum.',
+      }),
+
+    noHp: Joi.string()
+      .max(20)
+      .pattern(/^(0|\+62)[0-9]{8,15}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Format nomor HP tidak valid (gunakan 08 atau +62).',
+      }),
+
+    alamatLengkap: Joi.string()
+      .max(200)
+      .pattern(/^[^<>]{1,200}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Alamat tidak boleh mengandung simbol < atau >.',
+      }),
+
+    provinsi: Joi.string()
+      .max(100)
+      .pattern(/^[^<>]{1,100}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Provinsi tidak boleh mengandung simbol < atau >.',
+      }),
+
+    kabupatenKota: Joi.string()
+      .max(100)
+      .pattern(/^[^<>]{1,100}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Kabupaten/Kota tidak boleh mengandung simbol < atau >.',
+      }),
+
+    kecamatan: Joi.string()
+      .max(100)
+      .pattern(/^[^<>]{1,100}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Kecamatan tidak boleh mengandung simbol < atau >.',
+      }),
+
+    kelurahan: Joi.string()
+      .max(100)
+      .pattern(/^[^<>]{1,100}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Kelurahan tidak boleh mengandung simbol < atau >.',
+      }),
+
+    kodePos: Joi.string()
+      .pattern(/^[0-9]{5}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Kode pos harus berupa 5 digit angka.',
+      }),
+
+    isDefault: Joi.boolean().default(false),
   }),
 };
 
