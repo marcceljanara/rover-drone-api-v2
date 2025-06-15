@@ -853,6 +853,62 @@ const deviceRoutes = (handler) => {
 
   router.get('/v1/devices/:id/sensors/downloads', verifyToken, handler.getSensorDataDownloadHandler);
 
+  /**
+ * @swagger
+ * /v1/devices/{id}/daily:
+ *   get:
+ *     summary: Mendapatkan total jam penggunaan perangkat hari ini
+ *     description: Mengembalikan jumlah jam perangkat digunakan pada hari ini berdasarkan ID perangkat.
+ *     tags:
+ *       - Devices
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID perangkat
+ *         schema:
+ *           type: string
+ *           example: dev-abc123
+ *     responses:
+ *       200:
+ *         description: Data jam penggunaan perangkat berhasil diambil
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     deviceId:
+ *                       type: string
+ *                       example: dev-abc123
+ *                     usedHoursToday:
+ *                       type: number
+ *                       format: float
+ *                       example: 4.125
+ *       400:
+ *         description: Parameter tidak valid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: fail
+ *                 message:
+ *                   type: string
+ *                   example: Parameter ID tidak valid
+ *       404:
+ *         description: Data perangkat tidak ditemukan
+ *       500:
+ *         description: Terjadi kesalahan pada server
+ */
+
   router.get('/v1/devices/:id/daily', handler.getDailyUsedHoursHandler);
 
   return router;
