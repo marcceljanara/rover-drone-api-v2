@@ -346,20 +346,27 @@ class DevicesService {
     SELECT 
       SUM(
         EXTRACT(EPOCH FROM (
-          LEAST(COALESCE(end_time, NOW()), (NOW() AT TIME ZONE 'Asia/Jakarta')::date + INTERVAL '1 day') - 
-          GREATEST(start_time, (NOW() AT TIME ZONE 'Asia/Jakarta')::date)
+          LEAST(
+            COALESCE(end_time, (NOW() AT TIME ZONE 'Asia/Jakarta')), 
+            (NOW() AT TIME ZONE 'Asia/Jakarta')::date + INTERVAL '1 day'
+          ) - 
+          GREATEST(
+            start_time, 
+            (NOW() AT TIME ZONE 'Asia/Jakarta')::date
+          )
         )) / 3600
       ) AS used_hours
     FROM device_usage_logs
     WHERE device_id = $1 
       AND start_time < ((NOW() AT TIME ZONE 'Asia/Jakarta')::date + INTERVAL '1 day')
-      AND COALESCE(end_time, NOW()) > (NOW() AT TIME ZONE 'Asia/Jakarta')::date
+      AND COALESCE(end_time, (NOW() AT TIME ZONE 'Asia/Jakarta')) > (NOW() AT TIME ZONE 'Asia/Jakarta')::date
   `, [deviceId]);
 
     const rawValue = result.rows[0]?.used_hours;
     const usedHours = rawValue ? parseFloat(rawValue) : 0;
 
-    return Number(usedHours.toFixed(3));
+    // Jaga-jaga kalau hasil negatif karena log data tidak lengkap
+    return Math.max(0, Number(usedHours.toFixed(3)));
   }
 
   async getSensorData(userId, role, deviceId, interval) {
