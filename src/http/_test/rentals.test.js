@@ -243,6 +243,99 @@ describe('/v1/rentals endpoint', () => {
     });
   });
 
+  describe('(Admin) GET /v1/extensions/:id', () => {
+    it('should return response code 200 and get detail extension', async () => {
+      // Arrange
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      };
+      const responseRental = await request(server)
+        .post('/v1/rentals')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send(payload);
+      const rentalId = responseRental.body.data.id;
+
+      await request(server)
+        .put(`/v1/rentals/${rentalId}/status`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .send({ rentalStatus: 'active' });
+
+      const responseExtension = await request(server)
+        .post('/v1/extensions')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send({ rentalId, interval: 6 });
+      const extensionId = responseExtension.body.data.id;
+
+      // Action
+      const response = await request(server)
+        .get(`/v1/extensions/${extensionId}`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(200);
+      expect(responseJson.status).toBe('success');
+      expect(responseJson.data.extension.id).toBe(extensionId);
+    });
+    it('should return response code 404 if extension not found', async () => {
+      // Arrange
+      const extensionId = 'notfound';
+
+      // Action
+      const response = await request(server)
+        .get(`/v1/extensions/${extensionId}`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(404);
+      expect(responseJson.status).toBe('fail');
+    });
+  });
+
+  describe('(Admin) GET /v1/rentals/:id/extensions', () => {
+    it('should return response code 200 and get all extensions for rental', async () => {
+      // Arrange
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      };
+      const responseRental = await request(server)
+        .post('/v1/rentals')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send(payload);
+      const rentalId = responseRental.body.data.id;
+
+      await request(server)
+        .put(`/v1/rentals/${rentalId}/status`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .send({ rentalStatus: 'active' });
+
+      await request(server)
+        .post('/v1/extensions')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send({ rentalId, interval: 6 });
+
+      // Action
+      const response = await request(server)
+        .get(`/v1/rentals/${rentalId}/extensions`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+
+      // Assert
+      const responseJson = response.body;
+      expect(response.statusCode).toBe(200);
+      expect(responseJson.status).toBe('success');
+      expect(responseJson.data.extensions).toHaveLength(1);
+    });
+  });
+
   describe('POST /v1/rentals', () => {
     it('should return response 201 and add new rental', async () => {
       // Arrange
@@ -524,7 +617,7 @@ describe('/v1/rentals endpoint', () => {
       expect(responseJson.status).toBe('fail');
     });
   });
-  describe('GET /v1/extensions/:id', () => {
+  describe('(User) GET /v1/extensions/:id', () => {
     it('should return response code 200 and get detail extension', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -577,7 +670,7 @@ describe('/v1/rentals endpoint', () => {
       expect(responseJson.status).toBe('fail');
     });
   });
-  describe('GET /v1/rentals/:id/extensions', () => {
+  describe('(User) GET /v1/rentals/:id/extensions', () => {
     it('should return response code 200 and get all extensions for rental', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });

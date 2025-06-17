@@ -194,7 +194,7 @@ const userRoutes = (handler) => {
 
   /**
  * @swagger
- * /addresses:
+ * /v1/users/addresses:
  *   post:
  *     summary: "Menambahkan alamat pengiriman baru (auth: user)"
  *     description: "User dapat menambahkan alamat pengiriman ke akun mereka. Jika `isDefault` diset true, maka alamat ini akan dijadikan alamat utama, dan alamat lain akan di-set sebagai non-default."
@@ -298,7 +298,7 @@ const userRoutes = (handler) => {
 
   /**
  * @swagger
- * /addresses:
+ * /v1/users/addresses:
  *   get:
  *     summary: "Mengambil semua alamat pengiriman milik user (auth: user)"
  *     description: "Mengembalikan daftar alamat pengiriman milik user yang belum dihapus (is_deleted = false), diurutkan berdasarkan waktu pembaruan terakhir."
@@ -375,7 +375,7 @@ const userRoutes = (handler) => {
 
   /**
  * @swagger
- * /addresses/{id}:
+ * /v1/users/addresses/{id}:
  *   get:
  *     summary: "Mengambil detail alamat pengiriman milik user (auth: user)"
  *     description: "Mengembalikan detail alamat pengiriman tertentu milik user yang belum dihapus berdasarkan ID."
@@ -470,7 +470,7 @@ const userRoutes = (handler) => {
 
   /**
  * @swagger
- * /addresses/{id}:
+ * /v1/users/addresses/{id}:
  *   put:
  *     summary: Memperbarui alamat pengiriman user
  *     description: Mengubah data alamat pengiriman berdasarkan ID alamat yang dimiliki oleh user.
@@ -582,7 +582,7 @@ const userRoutes = (handler) => {
 
   /**
  * @swagger
- * /addresses/{id}:
+ * /v1/users/addresses/{id}:
  *   patch:
  *     summary: Menetapkan alamat utama (default) untuk pengguna
  *     description: Menjadikan alamat dengan ID tertentu sebagai alamat utama pengguna. Alamat lain akan di-set sebagai non-default.
@@ -644,7 +644,7 @@ const userRoutes = (handler) => {
 
   /**
  * @swagger
- * /addresses/{id}:
+ * /v1/users/addresses/{id}:
  *   delete:
  *     summary: Menghapus alamat pengguna
  *     description: Menghapus alamat berdasarkan ID untuk pengguna yang sedang login (soft delete).
