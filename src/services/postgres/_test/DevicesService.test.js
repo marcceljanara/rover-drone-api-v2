@@ -744,7 +744,7 @@ describe('DevicesService', () => {
       expect(queryText.replace(/\s+/g, ' ')).toContain('SUM( EXTRACT(EPOCH FROM');
 
       expect(params[0]).toBe('device-123');
-      expect(params[1]).toBeInstanceOf(Date);
+      expect(params.length).toBe(1);
 
       expect(result).toBe(5.679); // dibulatkan ke 3 angka desimal
     });
