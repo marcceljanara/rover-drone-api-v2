@@ -80,7 +80,7 @@ describe('/v1/shipments endpoints', () => {
     jest.clearAllMocks(); // reset semua mock state agar test tetap bersih
   });
 
-  describe('GET /v1/shipments/:id', () => {
+  describe('(User) GET /v1/shipments/:id', () => {
     it('should return 200 and shipments data for valid rentalId', async () => {
       // Arrange
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -121,6 +121,75 @@ describe('/v1/shipments endpoints', () => {
       // Assert
       expect(response.statusCode).toBe(404);
       expect(response.body.status).toBe('fail');
+    });
+  });
+  describe('(User) GET /v1/shipments/:id/delivery-proof', () => {
+    let uploadedFilePath;
+
+    const setupRentalAndShipment = async (deviceId, addressId) => {
+      await DevicesTableTestHelper.addDevice({ id: deviceId });
+      const realAddressId = await UsersTableTestHelper.addAddress('user-12345', { id: addressId });
+
+      const rentalPayload = {
+        interval: 6,
+        shippingAddressId: realAddressId,
+        subdistrictName: 'Rejo Binangun',
+      };
+
+      const rentalResponse = await request(server)
+        .post('/v1/rentals')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send(rentalPayload);
+
+      const rentalId = rentalResponse.body.data.id;
+
+      const verifyResponse = await request(server)
+        .put(`/v1/rentals/${rentalId}/status`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .send({ rentalStatus: 'active' });
+
+      return verifyResponse.body.data.shipmentId;
+    };
+
+    it('should get delivery proof and return 200 with photoUrl', async () => {
+      const shipmentId = await setupRentalAndShipment('device-456', 'address-456');
+
+      await request(server)
+        .post(`/v1/shipments/${shipmentId}/delivery-proof`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .attach('photo', '__tests__/assets/delivery-proof.jpg');
+
+      const response = await request(server)
+        .get(`/v1/shipments/${shipmentId}/delivery-proof`)
+        .set('Authorization', `Bearer ${accessTokenUser}`);
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body.status).toBe('success');
+      expect(response.body.data.deliveryProofUrl).toMatch(/^\/uploads\/delivery-proofs\/.+\.jpg$/);
+
+      // Simpan path absolut untuk cleanup
+      uploadedFilePath = path.resolve(
+        __dirname,
+        '..',
+        'uploads',
+        'delivery-proofs',
+        path.basename(response.body.data.deliveryProofUrl),
+      );
+    });
+
+    afterAll(() => {
+      if (uploadedFilePath) {
+        try {
+          if (fs.existsSync(uploadedFilePath)) {
+            fs.unlinkSync(uploadedFilePath);
+            console.log('✅ File berhasil dihapus:', uploadedFilePath);
+          } else {
+            console.warn('⚠️ File tidak ditemukan untuk dihapus:', uploadedFilePath);
+          }
+        } catch (err) {
+          console.error('❌ Gagal menghapus file:', err);
+        }
+      }
     });
   });
   describe('GET /v1/shipments', () => {
@@ -430,6 +499,118 @@ describe('/v1/shipments endpoints', () => {
           console.error('❌ Gagal menghapus file:', err);
         }
       }
+    });
+  });
+  describe('GET /v1/shipments/:id/delivery-proof', () => {
+    let uploadedFilePath;
+
+    const setupRentalAndShipment = async (deviceId, addressId) => {
+      await DevicesTableTestHelper.addDevice({ id: deviceId });
+      const realAddressId = await UsersTableTestHelper.addAddress('user-12345', { id: addressId });
+
+      const rentalPayload = {
+        interval: 6,
+        shippingAddressId: realAddressId,
+        subdistrictName: 'Rejo Binangun',
+      };
+
+      const rentalResponse = await request(server)
+        .post('/v1/rentals')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send(rentalPayload);
+
+      const rentalId = rentalResponse.body.data.id;
+
+      const verifyResponse = await request(server)
+        .put(`/v1/rentals/${rentalId}/status`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .send({ rentalStatus: 'active' });
+
+      return verifyResponse.body.data.shipmentId;
+    };
+
+    it('should get delivery proof and return 200 with photoUrl', async () => {
+      const shipmentId = await setupRentalAndShipment('device-456', 'address-456');
+
+      await request(server)
+        .post(`/v1/shipments/${shipmentId}/delivery-proof`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .attach('photo', '__tests__/assets/delivery-proof.jpg');
+
+      const response = await request(server)
+        .get(`/v1/shipments/${shipmentId}/delivery-proof`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body.status).toBe('success');
+      expect(response.body.data.deliveryProofUrl).toMatch(/^\/uploads\/delivery-proofs\/.+\.jpg$/);
+
+      // Simpan path absolut untuk cleanup
+      uploadedFilePath = path.resolve(
+        __dirname,
+        '..',
+        'uploads',
+        'delivery-proofs',
+        path.basename(response.body.data.deliveryProofUrl),
+      );
+    });
+
+    afterAll(() => {
+      if (uploadedFilePath) {
+        try {
+          if (fs.existsSync(uploadedFilePath)) {
+            fs.unlinkSync(uploadedFilePath);
+            console.log('✅ File berhasil dihapus:', uploadedFilePath);
+          } else {
+            console.warn('⚠️ File tidak ditemukan untuk dihapus:', uploadedFilePath);
+          }
+        } catch (err) {
+          console.error('❌ Gagal menghapus file:', err);
+        }
+      }
+    });
+  });
+  describe('(Admin) GET /v1/shipments/:id', () => {
+    it('should return 200 and shipments data for valid rentalId', async () => {
+      // Arrange
+      await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+      const addressId = await UsersTableTestHelper.addAddress('user-12345', { id: 'address-123' });
+      const payload = {
+        interval: 6,
+        shippingAddressId: addressId,
+        subdistrictName: 'Rejo Binangun',
+      };
+      const responseRental = await request(server)
+        .post('/v1/rentals')
+        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .send(payload);
+      const rentalId = responseRental.body.data.id;
+
+      await request(server)
+        .put(`/v1/rentals/${rentalId}/status`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .send({ rentalStatus: 'active' });
+
+      // Action
+      const response = await request(server)
+        .get(`/v1/shipments/${rentalId}`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+
+      // Assert
+      expect(response.statusCode).toBe(200);
+      expect(response.body.data.shipment).toHaveProperty('rental_id', rentalId);
+    });
+    it('should return 404 for non-existent rentalId', async () => {
+      // Arrange
+      const nonExistentRentalId = 'rental-99999';
+      // Action
+      const response = await request(server)
+        .get(`/v1/shipments/${nonExistentRentalId}`)
+        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+
+      // Assert
+      expect(response.statusCode).toBe(404);
+      expect(response.body.status).toBe('fail');
     });
   });
 });
