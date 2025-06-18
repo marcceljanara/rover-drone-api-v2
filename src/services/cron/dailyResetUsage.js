@@ -13,7 +13,8 @@ cron.schedule('0 0 * * *', async () => {
 
     await pool.query(`
       DELETE FROM device_usage_logs
-      WHERE start_time < $1
+      WHERE end_time IS NOT NULL AND end_time < $1;
+
     `, [today]);
     await this._pool.query(`UPDATE devices 
       SET first_session_flag = FALSE`);
