@@ -302,7 +302,7 @@ class DevicesService {
       throw new InvariantError('Batas penggunaan perangkat 8 jam per hari telah tercapai');
     }
     // Aturan 2: jika sudah lebih dari 4 jam, wajib jeda 1 jam sebelum lanjut
-    if (totalHours >= 4 && totalHours < 8 && lastEnd) {
+    if (totalHours >= 4 && lastEnd) {
       const nextAllowed = new Date(lastEnd.getTime() + 60 * 60 * 1000); // jeda 1 jam // 60 *60*1000
       if (now < nextAllowed) {
         throw new InvariantError(`Sesi ke-2 hanya dapat dimulai setelah pukul ${nextAllowed.toLocaleTimeString('id-ID')}`);
