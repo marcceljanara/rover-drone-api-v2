@@ -20,6 +20,7 @@ cron.schedule('*/1 * * * *', async () => {
           });
 
           await PublisherService.publishMessage(response.control_topic, { action: 'off' });
+          await devicesService.markFirstSessionHandled(id);
           console.log(`[Cron] Device ${id} dinonaktifkan otomatis (lebih dari 4 jam sesi pertama)`);
         } catch (err) {
           console.error(`[Cron] Gagal mematikan device ${id} (sesi pertama):`, err.message);
