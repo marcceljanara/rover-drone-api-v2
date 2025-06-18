@@ -270,16 +270,19 @@ class DevicesService {
 
   async _checkDailyUsageLimit(deviceId) {
     const now = new Date();
-    const todayStart = new Date(now);
-    todayStart.setHours(0, 0, 0, 0);
+    const todayStartJakarta = new Date(
+      now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }),
+    );
+    todayStartJakarta.setHours(0, 0, 0, 0);
 
     const { rows } = await this._pool.query(`
-    SELECT 
-      SUM(EXTRACT(EPOCH FROM (end_time - start_time)) / 3600) AS total_hours,
-      MAX(end_time) AS last_usage_end
-    FROM device_usage_logs
-    WHERE device_id = $1 AND start_time >= $2
-  `, [deviceId, todayStart]);
+  SELECT 
+    SUM(EXTRACT(EPOCH FROM (end_time - start_time)) / 3600) AS total_hours,
+    MAX(end_time) AS last_usage_end
+  FROM device_usage_logs
+  WHERE device_id = $1 
+    AND start_time >= $2
+`, [deviceId, todayStartJakarta]);
 
     const totalHours = parseFloat(rows[0].total_hours || 0);
     const lastEnd = rows[0].last_usage_end ? new Date(rows[0].last_usage_end) : null;
@@ -299,44 +302,51 @@ class DevicesService {
 
   async getDevicesOverFirstSession() {
     const now = new Date();
-    const todayStart = new Date(now);
-    todayStart.setHours(0, 0, 0, 0);
+    const todayStartJakarta = new Date(
+      now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }),
+    );
+    todayStartJakarta.setHours(0, 0, 0, 0);
 
     const result = await this._pool.query(`
-    SELECT d.id
-    FROM devices d
-    JOIN (
-      SELECT device_id, MIN(start_time) AS first_on,
-             SUM(EXTRACT(EPOCH FROM (COALESCE(end_time, NOW()) - start_time))/3600) AS used_hours
-      FROM device_usage_logs
-      WHERE start_time >= $1
-      GROUP BY device_id
-    ) AS usage ON d.id = usage.device_id
-    WHERE d.status = 'active' AND usage.used_hours >= 4 AND (
-      SELECT COUNT(*) FROM device_usage_logs 
+  SELECT d.id
+  FROM devices d
+  JOIN (
+    SELECT device_id, MIN(start_time) AS first_on,
+           SUM(EXTRACT(EPOCH FROM (COALESCE(end_time, NOW() AT TIME ZONE 'Asia/Jakarta') - start_time)) / 3600) AS used_hours
+    FROM device_usage_logs
+    WHERE start_time >= $1
+    GROUP BY device_id
+  ) AS usage ON d.id = usage.device_id
+  WHERE d.status = 'active' 
+    AND usage.used_hours >= 4 
+    AND (
+      SELECT COUNT(*) 
+      FROM device_usage_logs 
       WHERE device_id = d.id AND start_time >= $1
     ) = 1
-  `, [todayStart]); // 4 h
+`, [todayStartJakarta]);
 
     return result.rows.map((row) => row.id);
   }
 
   async getOverusedActiveDevices() {
     const now = new Date();
-    const todayStart = new Date(now);
-    todayStart.setHours(0, 0, 0, 0);
+    const todayStartJakarta = new Date(
+      now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }),
+    );
+    todayStartJakarta.setHours(0, 0, 0, 0);
 
     const result = await this._pool.query(`
-    SELECT d.id
-    FROM devices d
-    JOIN (
-      SELECT device_id, SUM(EXTRACT(EPOCH FROM (COALESCE(end_time, NOW()) - start_time))/3600) AS used_hours
-      FROM device_usage_logs
-      WHERE start_time >= $1
-      GROUP BY device_id
-    ) AS usage ON d.id = usage.device_id
-    WHERE usage.used_hours >= 8 AND d.status = 'active'
-  `, [todayStart]);
+  SELECT d.id
+  FROM devices d
+  JOIN (
+    SELECT device_id, SUM(EXTRACT(EPOCH FROM (COALESCE(end_time, NOW() AT TIME ZONE 'Asia/Jakarta') - start_time)) / 3600) AS used_hours
+    FROM device_usage_logs
+    WHERE start_time >= $1
+    GROUP BY device_id
+  ) AS usage ON d.id = usage.device_id
+  WHERE usage.used_hours >= 8 AND d.status = 'active'
+`, [todayStartJakarta]);
 
     return result.rows.map((row) => row.id);
   }
