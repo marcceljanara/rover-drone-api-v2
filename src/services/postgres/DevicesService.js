@@ -1,3 +1,5 @@
+/* eslint-disable no-restricted-syntax */
+/* eslint-disable no-continue */
 /* eslint-disable import/no-extraneous-dependencies */
 import json2csv from 'json2csv';
 import { nanoid } from 'nanoid';
@@ -246,10 +248,18 @@ class DevicesService {
 
     // Logging pemakaian perangkat
     if (action === 'on') {
+      // Tutup sesi sebelumnya jika masih terbuka
       await this._pool.query(`
-      INSERT INTO device_usage_logs (id, device_id, start_time)
-      VALUES ($1, $2, NOW() AT TIME ZONE 'Asia/Jakarta')
-    `, [logId, id]);
+    UPDATE device_usage_logs
+    SET end_time = NOW() AT TIME ZONE 'Asia/Jakarta'
+    WHERE device_id = $1 AND end_time IS NULL
+  `, [id]);
+
+      // Buat sesi baru
+      await this._pool.query(`
+    INSERT INTO device_usage_logs (id, device_id, start_time)
+    VALUES ($1, $2, NOW() AT TIME ZONE 'Asia/Jakarta')
+  `, [logId, id]);
     }
 
     if (action === 'off') {
@@ -307,26 +317,50 @@ class DevicesService {
     );
     todayStartJakarta.setHours(0, 0, 0, 0);
 
-    const result = await this._pool.query(`
-  SELECT d.id
-  FROM devices d
-  JOIN (
-    SELECT device_id, MIN(start_time) AS first_on,
-           SUM(EXTRACT(EPOCH FROM (COALESCE(end_time, NOW() AT TIME ZONE 'Asia/Jakarta') - start_time)) / 3600) AS used_hours
-    FROM device_usage_logs
-    WHERE start_time >= $1
-    GROUP BY device_id
-  ) AS usage ON d.id = usage.device_id
-  WHERE d.status = 'active' 
-    AND usage.used_hours >= 4 
-    AND (
-      SELECT COUNT(*) 
-      FROM device_usage_logs 
-      WHERE device_id = d.id AND start_time >= $1
-    ) = 1
-`, [todayStartJakarta]);
+    const { rows: logs } = await this._pool.query(`
+    SELECT d.id AS device_id, dul.start_time, dul.end_time
+    FROM devices d
+    JOIN device_usage_logs dul ON d.id = dul.device_id
+    WHERE d.status = 'active' AND dul.start_time >= $1 AND d.first_session_flag = FALSE
+    ORDER BY d.id, dul.start_time
+  `, [todayStartJakarta]);
 
-    return result.rows.map((row) => row.id);
+    const deviceSessions = {};
+    const result = [];
+
+    for (const log of logs) {
+      const deviceId = log.device_id;
+      const start = new Date(log.start_time);
+      const end = log.end_time ? new Date(log.end_time) : new Date(); // log masih aktif?
+
+      if (!deviceSessions[deviceId]) {
+        deviceSessions[deviceId] = {
+          totalHours: 0,
+          done: false,
+        };
+      }
+
+      const session = deviceSessions[deviceId];
+      if (session.done) continue;
+
+      const durationHours = (end - start) / (1000 * 60 * 60); // convert ms to hours
+      session.totalHours += durationHours;
+
+      if (session.totalHours >= 4) {
+        result.push(deviceId);
+        session.done = true; // stop akumulasi untuk device ini
+      }
+    }
+
+    return result;
+  }
+
+  async markFirstSessionHandled(deviceId) {
+    await this._pool.query(`
+    UPDATE devices
+    SET first_session_flag = TRUE
+    WHERE id = $1
+  `, [deviceId]);
   }
 
   async getOverusedActiveDevices() {

@@ -15,6 +15,8 @@ cron.schedule('0 0 * * *', async () => {
       DELETE FROM device_usage_logs
       WHERE start_time < $1
     `, [today]);
+    await this._pool.query(`UPDATE devices 
+      SET first_session_flag = FALSE`);
 
     console.log('[Cron] Reset log harian berhasil.');
   } catch (err) {

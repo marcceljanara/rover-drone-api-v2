@@ -645,7 +645,7 @@ describe('DevicesService', () => {
     let mockQuery;
 
     beforeEach(() => {
-      jest.useFakeTimers('modern').setSystemTime(new Date('2025-06-04T12:00:00Z').getTime());
+      jest.useFakeTimers().setSystemTime(new Date('2025-06-18T12:00:00+07:00').getTime());
 
       mockQuery = jest.fn();
       instance = new DevicesService();
@@ -656,30 +656,48 @@ describe('DevicesService', () => {
       jest.useRealTimers();
     });
 
-    test('should return device IDs that have used >= 4 hours in a single session today', async () => {
+    test('should return device IDs that have used >= 4 hours in total across first session', async () => {
+      const start1 = new Date('2025-06-18T00:00:00+07:00');
+      const end1 = new Date('2025-06-18T02:30:00+07:00'); // 2.5 jam
+
+      const start2 = new Date('2025-06-18T02:30:00+07:00');
+      const end2 = new Date('2025-06-18T04:30:00+07:00'); // 2 jam (total 4.5 jam)
+
       mockQuery.mockResolvedValue({
-        rows: [{ id: 'device-1' }, { id: 'device-2' }],
+        rows: [
+          { device_id: 'device-1', start_time: start1.toISOString(), end_time: end1.toISOString() },
+          { device_id: 'device-1', start_time: start2.toISOString(), end_time: end2.toISOString() },
+        ],
       });
 
       const result = await instance.getDevicesOverFirstSession();
 
+      expect(result).toEqual(['device-1']);
       expect(mockQuery).toHaveBeenCalledTimes(1);
-
-      const [queryText, params] = mockQuery.mock.calls[0];
-      expect(queryText).toContain('SELECT d.id');
-      expect(params[0]).toBeInstanceOf(Date);
-
-      expect(result).toEqual(['device-1', 'device-2']);
     });
 
-    test('should return empty array if no devices match the condition', async () => {
-      mockQuery.mockResolvedValue({ rows: [] });
+    test('should return empty array if total session < 4 hours', async () => {
+      const start = new Date('2025-06-18T00:00:00+07:00');
+      const end = new Date('2025-06-18T02:00:00+07:00'); // hanya 2 jam
+
+      mockQuery.mockResolvedValue({
+        rows: [
+          { device_id: 'device-2', start_time: start.toISOString(), end_time: end.toISOString() },
+        ],
+      });
 
       const result = await instance.getDevicesOverFirstSession();
+      expect(result).toEqual([]);
+    });
 
+    test('should ignore devices that have already been marked as handled', async () => {
+      mockQuery.mockResolvedValue({ rows: [] }); // tidak ada karena sudah first_session_flag = TRUE
+
+      const result = await instance.getDevicesOverFirstSession();
       expect(result).toEqual([]);
     });
   });
+
   describe('getOverusedActiveDevices', () => {
     let instance;
     let mockQuery;
