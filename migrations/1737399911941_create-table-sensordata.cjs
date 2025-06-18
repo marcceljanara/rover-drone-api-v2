@@ -14,7 +14,7 @@ exports.up = (pgm) => {
       onDelete: 'CASCADE', // Jika device dihapus, data sensor terkait ikut dihapus
     },
     timestamp: {
-      type: 'TIMESTAMP',
+      type: 'TIMESTAMPZ',
       notNull: true, // timestamp harus diisi
     },
     temperature: {
