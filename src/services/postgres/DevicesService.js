@@ -285,27 +285,36 @@ class DevicesService {
     );
     todayStartJakarta.setHours(0, 0, 0, 0);
 
-    const { rows } = await this._pool.query(`
-  SELECT 
-    SUM(EXTRACT(EPOCH FROM (end_time - start_time)) / 3600) AS total_hours,
-    MAX(end_time) AS last_usage_end
-  FROM device_usage_logs
-  WHERE device_id = $1 
-    AND start_time >= $2
-`, [deviceId, todayStartJakarta]);
+    const { rows: logs } = await this._pool.query(`
+    SELECT start_time, end_time
+    FROM device_usage_logs
+    WHERE device_id = $1 AND start_time >= $2
+    ORDER BY start_time ASC
+  `, [deviceId, todayStartJakarta]);
 
-    const totalHours = parseFloat(rows[0].total_hours || 0);
-    const lastEnd = rows[0].last_usage_end ? new Date(rows[0].last_usage_end) : null;
+    let totalHours = 0;
+    let firstSessionEnd = null;
 
-    // Aturan 1: maksimal 8 jam per hari
-    if (totalHours >= 8) { // 8
+    for (const log of logs) {
+      const start = new Date(log.start_time);
+      const end = log.end_time ? new Date(log.end_time) : now;
+      const duration = (end - start) / (1000 * 60 * 60); // jam
+
+      totalHours += duration;
+
+      if (!firstSessionEnd && totalHours >= 4) {
+        firstSessionEnd = end;
+      }
+    }
+
+    if (totalHours >= 8) {
       throw new InvariantError('Batas penggunaan perangkat 8 jam per hari telah tercapai');
     }
-    // Aturan 2: jika sudah lebih dari 4 jam, wajib jeda 1 jam sebelum lanjut
-    if (totalHours >= 4 && lastEnd) {
-      const nextAllowed = new Date(lastEnd.getTime() + 60 * 60 * 1000); // jeda 1 jam // 60 *60*1000
-      if (now < nextAllowed) {
-        throw new InvariantError(`Sesi ke-2 hanya dapat dimulai setelah pukul ${nextAllowed.toLocaleTimeString('id-ID')}`);
+
+    if (totalHours >= 4 && firstSessionEnd) {
+      const pauseEnd = new Date(firstSessionEnd.getTime() + 2 * 60 * 1000);
+      if (now < pauseEnd) {
+        throw new InvariantError(`Sesi ke-2 hanya dapat dimulai setelah pukul ${pauseEnd.toLocaleTimeString('id-ID')}`);
       }
     }
   }
