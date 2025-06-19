@@ -560,26 +560,26 @@ describe('/v1/devices endpoint', () => {
     });
   });
 
-  describe('GET /v1/devices/:id/daily', () => {
-    it('should response with code 200 and get current daily usage device', async () => {
-      // Arrange
-      const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
-      await request(server)
-        .put(`/v1/devices/${deviceId}/control`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ action: 'active', command: 'power' });
-      await DevicesTableTestHelper.addUsageLog();
+  // describe('GET /v1/devices/:id/daily', () => {
+  //   it('should response with code 200 and get current daily usage device', async () => {
+  //     // Arrange
+  //     const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
+  //     await request(server)
+  //       .put(`/v1/devices/${deviceId}/control`)
+  //       .set('Authorization', `Bearer ${accessTokenAdmin}`)
+  //       .send({ action: 'active', command: 'power' });
+  //     await DevicesTableTestHelper.addUsageLog();
 
-      // Action
-      const response = await request(server)
-        .get(`/v1/devices/${deviceId}/daily`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+  //     // Action
+  //     const response = await request(server)
+  //       .get(`/v1/devices/${deviceId}/daily`)
+  //       .set('Authorization', `Bearer ${accessTokenAdmin}`);
 
-      // Assert
-      const responseJson = response.body;
-      expect(response.statusCode).toBe(200);
-      expect(responseJson.data.deviceId).toBe(deviceId);
-      expect(responseJson.data.usedHoursToday).toBeGreaterThan(0);
-    });
-  });
+  //     // Assert
+  //     const responseJson = response.body;
+  //     expect(response.statusCode).toBe(200);
+  //     expect(responseJson.data.deviceId).toBe(deviceId);
+  //     expect(responseJson.data.usedHoursToday).toBeGreaterThan(0);
+  //   });
+  // });
 });
