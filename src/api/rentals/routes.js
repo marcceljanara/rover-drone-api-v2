@@ -611,7 +611,7 @@ const rentalRoutes = (handler) => {
  *                   example: "Gagal menghitung ongkir: Tujuan pengiriman tidak ditemukan."
  */
 
-  router.post('/v1/shipping-cost', verifyToken, handler.postShippingCostHandler);
+  router.get('/v1/shipping-cost', verifyToken, handler.getShippingCostHandler);
 
   // Extension
   /**

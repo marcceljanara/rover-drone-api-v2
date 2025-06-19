@@ -546,14 +546,14 @@ describe('/v1/rentals endpoint', () => {
       expect(responseJson.message).toBe('rental tidak ditemukan');
     });
   });
-  describe('POST /v1/shipping-cost', () => {
+  describe('GET /v1/shipping-cost?subdistrictName=', () => {
     it('should return response code 200 and return shipping cost', async () => {
       // Arrange
       const subdistrictName = 'Rejo Binangun';
 
       // Action
       const response = await request(server)
-        .post('/v1/shipping-cost')
+        .get('/v1/shipping-cost?subdistrictName=Rejo Binangun')
         .set('Authorization', `Bearer ${accessTokenUser}`)
         .send({ subdistrictName });
 
