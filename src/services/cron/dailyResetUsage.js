@@ -16,7 +16,7 @@ cron.schedule('0 0 * * *', async () => {
       WHERE end_time IS NOT NULL AND end_time < $1;
 
     `, [today]);
-    await this._pool.query(`UPDATE devices 
+    await pool.query(`UPDATE devices 
       SET first_session_flag = FALSE`);
 
     console.log('[Cron] Reset log harian berhasil.');
