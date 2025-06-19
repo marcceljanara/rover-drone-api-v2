@@ -145,19 +145,26 @@ class RentalsHandler {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async getShippingCostHandler(req, res) {
-    const { subdistrictName } = req.query; // 🠔 ambil dari query
-    if (!subdistrictName) {
-      return res.status(400).json({
-        status: 'fail',
-        message: 'Query param "subdistrictName" is required',
+  async getShippingCostHandler(req, res, next) {
+    try {
+      const { subdistrictName } = req.query;
+      if (!subdistrictName) {
+      // buat error sendiri; tambahkan statusCode agar middleware bisa membedakan
+        const err = new Error('Query param "subdistrictName" is required');
+        err.statusCode = 400;
+        throw err; // ⬅️ langsung dilempar ke catch
+      }
+
+      const shippingInfo = await calculateShippingCost(subdistrictName);
+
+      return res.status(200).json({
+        status: 'success',
+        data: { shippingInfo },
       });
+    } catch (err) {
+    // lempar ke middleware selanjutnya
+      return next(err);
     }
-    const shippingInfo = await calculateShippingCost(subdistrictName);
-    return res.status(200).json({
-      status: 'success',
-      data: { shippingInfo },
-    });
   }
 
   // Beri rabbitMq untuk perpanjangan rental
