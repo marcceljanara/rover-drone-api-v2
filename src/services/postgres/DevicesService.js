@@ -312,7 +312,7 @@ class DevicesService {
     }
 
     if (totalHours >= 4 && firstSessionEnd) {
-      const pauseEnd = new Date(firstSessionEnd.getTime() + 2 * 60 * 1000);
+      const pauseEnd = new Date(firstSessionEnd.getTime() + 60 * 60 * 1000);
       if (now < pauseEnd) {
         throw new InvariantError(`Sesi ke-2 hanya dapat dimulai setelah pukul ${pauseEnd.toLocaleTimeString('id-ID')}`);
       }

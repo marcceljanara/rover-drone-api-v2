@@ -602,19 +602,22 @@ describe('DevicesService', () => {
 
     test('should throw InvariantError if total usage >= 8 hours', async () => {
       mockQuery.mockResolvedValue({
-        rows: [{ total_hours: '8.5', last_usage_end: null }],
+        rows: [
+          { start_time: '2025-06-04T01:00:00Z', end_time: '2025-06-04T05:00:00Z' }, // 4 jam
+          { start_time: '2025-06-04T06:00:00Z', end_time: '2025-06-04T10:00:00Z' }, // 4 jam
+        ],
       });
 
       await expect(instance._checkDailyUsageLimit('device-123'))
         .rejects.toThrow(new InvariantError('Batas penggunaan perangkat 8 jam per hari telah tercapai'));
     });
 
-    test('should throw InvariantError if total usage >= 4 hours and session 2 start time less than 1 hour after last end time', async () => {
-    // last_usage_end = 09:30, now = 10:00, jeda 1 jam = sampai 10:30
-      const lastEndTime = new Date('2025-06-04T09:30:00Z').toISOString();
-
+    test('should throw InvariantError if total usage >= 4 hours and session 2 starts too soon', async () => {
       mockQuery.mockResolvedValue({
-        rows: [{ total_hours: '4.1', last_usage_end: lastEndTime }],
+        rows: [
+          { start_time: '2025-06-04T01:00:00Z', end_time: '2025-06-04T05:00:00Z' }, // 4 jam
+          { start_time: '2025-06-04T05:30:00Z', end_time: null }, // hanya jeda 30 menit
+        ],
       });
 
       await expect(instance._checkDailyUsageLimit('device-123'))
@@ -623,18 +626,20 @@ describe('DevicesService', () => {
 
     test('should NOT throw error if total usage < 4 hours', async () => {
       mockQuery.mockResolvedValue({
-        rows: [{ total_hours: '3.5', last_usage_end: null }],
+        rows: [
+          { start_time: '2025-06-04T07:00:00Z', end_time: '2025-06-04T09:30:00Z' }, // 2.5 jam
+        ],
       });
 
       await expect(instance._checkDailyUsageLimit('device-123')).resolves.not.toThrow();
     });
 
-    test('should NOT throw error if total usage >= 4 but now > nextAllowed', async () => {
-    // last_usage_end = 08:30, now = 10:00, jeda 1 jam selesai di 09:30
-      const lastEndTime = new Date('2025-06-04T08:30:00Z').toISOString();
-
+    test('should NOT throw error if total usage >= 4 hours and session 2 starts after 1 hour pause', async () => {
       mockQuery.mockResolvedValue({
-        rows: [{ total_hours: '4.1', last_usage_end: lastEndTime }],
+        rows: [
+          { start_time: '2025-06-04T01:00:00Z', end_time: '2025-06-04T05:00:00Z' }, // 4 jam
+          { start_time: '2025-06-04T06:30:00Z', end_time: null }, // jeda 1.5 jam, boleh
+        ],
       });
 
       await expect(instance._checkDailyUsageLimit('device-123')).resolves.not.toThrow();
