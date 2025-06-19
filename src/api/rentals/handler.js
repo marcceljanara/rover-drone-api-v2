@@ -16,7 +16,7 @@ class RentalsHandler {
     this.getDetailRentalHandler = this.getDetailRentalHandler.bind(this);
     this.putCancelRentalHandler = this.putCancelRentalHandler.bind(this);
     this.getAllSensorsHandler = this.getAllSensorsHandler.bind(this);
-    this.postShippingCostHandler = this.postShippingCostHandler.bind(this);
+    this.getShippingCostHandler = this.getShippingCostHandler.bind(this);
     this.postExtendRentalHandler = this.postExtendRentalHandler.bind(this);
     this.getAllExtensionsHandler = this.getAllExtensionsHandler.bind(this);
     this.getDetailExtensionHandler = this.getDetailExtensionHandler.bind(this);
@@ -145,8 +145,14 @@ class RentalsHandler {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async postShippingCostHandler(req, res) {
-    const { subdistrictName } = req.body;
+  async getShippingCostHandler(req, res) {
+    const { subdistrictName } = req.query; // 🠔 ambil dari query
+    if (!subdistrictName) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Query param "subdistrictName" is required',
+      });
+    }
     const shippingInfo = await calculateShippingCost(subdistrictName);
     return res.status(200).json({
       status: 'success',
