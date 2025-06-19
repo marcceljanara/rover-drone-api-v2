@@ -60,6 +60,7 @@ jobs:
           npm run migrate up
           npm run test
         env:
+          TZ: Asia/Jakarta
           CI: true
           HOST: localhost
           PORT: 3000
