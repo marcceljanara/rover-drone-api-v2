@@ -53,7 +53,11 @@ function createServer() {
   app.use(helmet.noSniff()); // Mencegah MIME-sniffing
   app.use(cors({
     origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'], // ⬅️ WAJIB kalau pakai token
   }));
+
+  app.options('*', cors()); // ⬅️ Wajib biar preflight dijawab
 
   // Expose folder uploads secara publik
   app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
