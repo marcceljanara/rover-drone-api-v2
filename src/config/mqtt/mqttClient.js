@@ -73,9 +73,7 @@ class MqttClient {
    * Menutup koneksi MQTT
    */
   disconnect() {
-    this._mqttClient.end(() => {
-      console.log('MQTT client disconnected');
-    });
+    this._mqttClient.end();
   }
 }
 
