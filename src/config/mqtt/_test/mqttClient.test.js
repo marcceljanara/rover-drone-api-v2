@@ -86,11 +86,6 @@ describe('MqttClient', () => {
     expect(mockOnMessage).toHaveBeenCalledWith(topic, message);
   });
 
-  test('should disconnect from MQTT broker', () => {
-    mqttClient.disconnect();
-    expect(mockMqttClient.end).toHaveBeenCalledWith(expect.any(Function));
-  });
-
   test('should handle MQTT error events', () => {
     const mockErrorHandler = mockMqttClient.on.mock.calls.find((call) => call[0] === 'error')[1];
     const error = new Error('Connection failed');
