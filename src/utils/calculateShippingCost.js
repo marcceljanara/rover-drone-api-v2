@@ -1,5 +1,8 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import axios from 'axios';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const { KOMERCE_BASE_URL } = process.env;
 const { KOMERCE_API_KEY } = process.env;
