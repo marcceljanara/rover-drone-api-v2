@@ -1,27 +1,14 @@
-import dotenv from 'dotenv';
-import MqttClient from '../../config/mqtt/mqttClient.js';
-
-dotenv.config();
+import mqttService from '../../config/mqtt/mqttSingleton.js';
 
 const PublisherService = {
-  publishMessage: async (topic, message) => {
-    const mqttOptions = {
-      url: process.env.MQTT_URL,
-      username: process.env.MQTT_USERNAME,
-      password: process.env.MQTT_PASSWORD,
-    };
-
-    // Inisialisasi instance MqttClient
-    const mqttService = new MqttClient(mqttOptions);
-
-    // Publikasi pesan ke topik
-    mqttService.publish(topic, message);
-    setTimeout(() => {
-      mqttService.disconnect();
-    }, 1000);
-
-    console.log(`Message published to topic "${topic}":`, message);
+  publishMessage: (topic, message) => {
+    if (mqttService) {
+      mqttService.publish(topic, message);
+      console.log(`Message published to topic "${topic}":`, message);
+    } else {
+      console.log(`[TEST-MODE] Skip publish to ${topic}:`, message);
+    }
   },
-
 };
+
 export default PublisherService;
