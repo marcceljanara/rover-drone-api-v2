@@ -11,7 +11,20 @@ class ShipmentsService {
 
   async getShipmentByRentalId(rentalId) {
     const query = {
-      text: 'SELECT * FROM shipment_orders WHERE rental_id = $1',
+      text: `SELECT so.*,
+      ua.nama_penerima,
+      ua.no_hp,
+      CONCAT_WS(', ',
+        ua.alamat_lengkap,
+        ua.kelurahan,
+        ua.kecamatan,
+        ua.kabupaten_kota,
+        ua.provinsi,
+        ua.kode_pos
+      ) AS full_address 
+      FROM shipment_orders so 
+      LEFT JOIN user_addresses ua on ua.id = so.shipping_address_id AND ua.is_deleted = FALSE
+      WHERE rental_id = $1`,
       values: [rentalId],
     };
 
@@ -158,7 +171,20 @@ class ShipmentsService {
   // 1. Ambil data return berdasarkan rentalId
   async getReturnByRentalId(rentalId) {
     const query = {
-      text: 'SELECT * FROM return_shipping_info WHERE rental_id = $1',
+      text: `SELECT rsi.*,
+      ua.nama_penerima,
+      ua.no_hp,
+      CONCAT_WS(', ',
+        ua.alamat_lengkap,
+        ua.kelurahan,
+        ua.kecamatan,
+        ua.kabupaten_kota,
+        ua.provinsi,
+        ua.kode_pos
+      ) AS full_address 
+      FROM return_shipping_info rsi 
+      LEFT JOIN user_addresses ua on ua.id = rsi.pickup_address_id AND ua.is_deleted = FALSE
+      WHERE rental_id = $1`,
       values: [rentalId],
     };
 
