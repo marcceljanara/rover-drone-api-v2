@@ -15,8 +15,8 @@ describe('HTTP server', () => {
     // Assert
     expect(response.statusCode).toEqual(500);
     expect(response.body).toEqual({
-      status: 'error',
-      message: 'Terjadi kesalahan pada server',
+      status: 'fail',
+      message: 'Unexpected error',
     });
   });
 });
