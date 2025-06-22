@@ -1,6 +1,8 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import axios from 'axios';
 import dotenv from 'dotenv';
+import NotFoundError from '../exceptions/NotFoundError.js';
+import ServerError from '../exceptions/ServerError.js';
 
 dotenv.config();
 
@@ -18,7 +20,7 @@ async function calculateShippingCost(subdistrictName) {
 
     const destinations = searchResp.data.data;
     if (!destinations || destinations.length === 0) {
-      throw new Error('Tujuan pengiriman tidak ditemukan.');
+      throw new NotFoundError('Tujuan pengiriman tidak ditemukan.');
     }
 
     const receiverDestinationId = destinations[0].id;
@@ -33,7 +35,7 @@ async function calculateShippingCost(subdistrictName) {
     const jneOption = cargoOptions.find((opt) => opt.shipping_name === 'JNE');
 
     if (!jneOption) {
-      throw new Error('Ekspedisi JNE tidak tersedia untuk tujuan ini.');
+      throw new NotFoundError('Ekspedisi JNE tidak tersedia untuk tujuan ini.');
     }
 
     return {
@@ -43,7 +45,7 @@ async function calculateShippingCost(subdistrictName) {
       etd: jneOption.etd,
     };
   } catch (error) {
-    throw new Error(`Gagal menghitung ongkir: ${error.message}`);
+    throw new ServerError(`Gagal menghitung ongkir: ${error.message}`);
   }
 }
 
