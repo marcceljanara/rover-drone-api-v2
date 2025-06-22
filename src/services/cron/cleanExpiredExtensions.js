@@ -35,8 +35,7 @@ cron.schedule('*/10 * * * * *', async () => {
     const payFailRes = await client.query(
       `
       UPDATE payments
-      SET    payment_status = 'failed',
-             updated_at     = NOW()
+      SET    payment_status = 'failed'
       WHERE  rental_id      = ANY($1::VARCHAR[])
         AND  payment_status = 'pending'
       `,
