@@ -393,37 +393,58 @@ class RentalsService {
 
     const client = await this._pool.connect();
     try {
-      await client.query('BEGIN'); // Mulai transaksi
+      await client.query('BEGIN'); // ──⭢ mulai transaksi ───────────────
 
-      // Update status rental
-      const query = {
-        text: 'UPDATE rentals SET rental_status = $1 WHERE id = $2 AND user_id = $3 AND is_deleted = FALSE RETURNING rental_status, id',
+      /* 1. Update status rental */
+      const rentalUpdateQuery = {
+        text: `
+        UPDATE rentals
+        SET rental_status = $1
+        WHERE id = $2
+          AND user_id = $3
+          AND is_deleted = FALSE
+        RETURNING id, rental_status
+      `,
         values: [rentalStatus, id, userId],
       };
-      const result = await client.query(query);
+      const rentalRes = await client.query(rentalUpdateQuery);
 
-      if (!result.rowCount) {
+      if (rentalRes.rowCount === 0) {
         throw new NotFoundError('rental tidak ditemukan');
       }
 
-      // Hapus reservasi pada devices jika rental dibatalkan
+      /* 2. Update status pembayaran → failed */
+      const paymentUpdateQuery = {
+        text: `
+        UPDATE payments
+        SET payment_status = 'failed' 
+        WHERE rental_id   = $1
+          AND is_deleted  = FALSE
+      `,
+        values: [id],
+      };
+      await client.query(paymentUpdateQuery);
+
+      /* 3. Kosongkan reservasi device kalau ada */
       const clearDeviceReservationQuery = {
         text: `
-          UPDATE devices 
-          SET reserved_until = NULL, reserved_rental_id = NULL 
-          WHERE reserved_rental_id = $1 AND is_deleted = FALSE
-        `,
+        UPDATE devices
+        SET reserved_until     = NULL,
+            reserved_rental_id = NULL
+        WHERE reserved_rental_id = $1
+          AND is_deleted        = FALSE
+      `,
         values: [id],
       };
       await client.query(clearDeviceReservationQuery);
 
-      await client.query('COMMIT'); // Komit transaksi jika berhasil
-      return result.rows[0];
-    } catch (error) {
-      await client.query('ROLLBACK'); // Rollback jika terjadi kesalahan
-      throw error;
+      await client.query('COMMIT'); // ──⭢ commit jika semua OK ─────────
+      return rentalRes.rows[0];
+    } catch (err) {
+      await client.query('ROLLBACK'); // ──⭢ batalkan bila ada error ────
+      throw err;
     } finally {
-      client.release(); // Lepaskan koneksi client
+      client.release(); // lepas koneksi pool
     }
   }
 
