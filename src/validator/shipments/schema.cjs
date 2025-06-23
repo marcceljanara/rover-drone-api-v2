@@ -36,11 +36,11 @@ const returnNotePayloadSchema = Joi.object({
 });
 
 const updateReturnShippingInfoPayloadSchema = Joi.object({
-  courierName: Joi.string().min(2).max(50),
-  courierService: Joi.string().min(2).max(50),
-  trackingNumber: Joi.string().min(5).max(100),
-  pickupUpAt: Joi.date().iso(),
-  returnedAt: Joi.date().iso(),
+  courierName: Joi.string().min(2).max(50).allow(null, ''),
+  courierService: Joi.string().min(2).max(50).allow(null, ''),
+  trackingNumber: Joi.string().min(5).max(100).allow(null, ''),
+  pickupUpAt: Joi.date().iso().allow(null, ''),
+  returnedAt: Joi.date().iso().allow(null, ''),
 });
 
 module.exports = {
