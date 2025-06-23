@@ -145,7 +145,7 @@ describe('ShipmentsValidator', () => {
         courierName: 'JNE',
         courierService: 'YES',
         trackingNumber: 'JNE1234567890',
-        pickupUpAt: '2025-06-10T10:00:00Z',
+        pickedUpAt: '2025-06-10T10:00:00Z',
         returnedAt: '2025-06-11T14:00:00Z',
       };
       expect(() => ShipmentsValidator.validateUpdateReturnShippingInfoPayload(payload))
