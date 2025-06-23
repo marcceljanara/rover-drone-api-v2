@@ -39,7 +39,7 @@ async function checkAndMarkEndedRentals() {
       const { rows: [addr] } = await client.query(`
         SELECT id FROM user_addresses
         WHERE user_id = $1 AND is_default AND NOT is_deleted
-        ORDER BY is_primary DESC, created_at ASC
+        ORDER BY created_at ASC
         LIMIT 1
       `, [rental.user_id]);
 
