@@ -123,19 +123,19 @@ describe('ShipmentsValidator', () => {
 
     it('should throw error for notes too long', () => {
       const longNote = 'a'.repeat(300);
-      expect(() => ShipmentsValidator.validateReturnNotePayload({ notes: longNote }))
+      expect(() => ShipmentsValidator.validateReturnNotePayload({ note: longNote }))
         .toThrowError(InvariantError);
     });
 
     it('should not throw error for valid notes', () => {
-      expect(() => ShipmentsValidator.validateReturnNotePayload({ notes: 'Sudah dikembalikan dengan aman' }))
+      expect(() => ShipmentsValidator.validateReturnNotePayload({ note: 'Sudah dikembalikan dengan aman' }))
         .not.toThrowError();
     });
 
     it('should not throw error for empty string or null notes', () => {
-      expect(() => ShipmentsValidator.validateReturnNotePayload({ notes: '' }))
+      expect(() => ShipmentsValidator.validateReturnNotePayload({ note: '' }))
         .not.toThrowError();
-      expect(() => ShipmentsValidator.validateReturnNotePayload({ notes: null }))
+      expect(() => ShipmentsValidator.validateReturnNotePayload({ note: null }))
         .not.toThrowError();
     });
   });

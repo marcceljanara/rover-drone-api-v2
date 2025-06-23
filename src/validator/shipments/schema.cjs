@@ -32,7 +32,7 @@ const returnStatusPayloadSchema = Joi.object({
 });
 
 const returnNotePayloadSchema = Joi.object({
-  notes: Joi.string().max(255).allow('', null).required(),
+  note: Joi.string().max(255).allow('', null).required(),
 });
 
 const updateReturnShippingInfoPayloadSchema = Joi.object({

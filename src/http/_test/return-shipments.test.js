@@ -218,7 +218,7 @@ describe('v1/returns endpoints', () => {
       const response = await request(server)
         .patch(`/v1/returns/${returnId}/note`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ notes: 'Catatan penting untuk return ini' });
+        .send({ note: 'Catatan penting untuk return ini' });
 
       // Assert
       expect(response.statusCode).toBe(200);
@@ -231,7 +231,7 @@ describe('v1/returns endpoints', () => {
       const response = await request(server)
         .patch(`/v1/returns/${returnId}/note`)
         .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ notes: 'Catatan penting untuk return ini' });
+        .send({ note: 'Catatan penting untuk return ini' });
       // Assert
       expect(response.statusCode).toBe(404);
       expect(response.body.status).toBe('fail');
