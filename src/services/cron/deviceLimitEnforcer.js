@@ -19,7 +19,7 @@ cron.schedule('*/1 * * * *', async () => {
             action: 'off',
           });
 
-          await PublisherService.publishMessage(response.control_topic, { action: 'off' });
+          await PublisherService.publishMessage(response.control_topic, { command: 'power', action: 'off' });
           await devicesService.markFirstSessionHandled(id);
           console.log(`[Cron] Device ${id} dinonaktifkan otomatis (lebih dari 4 jam sesi pertama)`);
         } catch (err) {
@@ -41,7 +41,7 @@ cron.schedule('*/1 * * * *', async () => {
             action: 'off',
           });
 
-          await PublisherService.publishMessage(response.control_topic, { action: 'off' });
+          await PublisherService.publishMessage(response.control_topic, { command: 'power', action: 'off' });
           console.log(`[Cron] Device ${id} dinonaktifkan otomatis (lebih dari 8 jam total harian)`);
         } catch (err) {
           console.error(`[Cron] Gagal mematikan device ${id} (daily limit):`, err.message);
