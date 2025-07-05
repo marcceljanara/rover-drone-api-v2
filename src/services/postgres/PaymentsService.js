@@ -7,30 +7,65 @@ class PaymentsService {
     this._pool = pool;
   }
 
-  async getAllPayments() {
-    const query = {
-      text: `
-    SELECT id, rental_id, amount, payment_status
-    FROM payments
-    WHERE is_deleted = FALSE
-    ORDER BY created_at DESC
-  `,
-      values: [],
-    };
+  async getAllPayments(role, userId) {
+    let query;
+
+    if (role === 'admin') {
+      query = {
+        text: `
+        SELECT p.id, p.rental_id, p.amount, p.payment_status
+        FROM payments p
+        WHERE p.is_deleted = FALSE
+        ORDER BY p.created_at DESC
+      `,
+        values: [],
+      };
+    } else {
+      query = {
+        text: `
+        SELECT p.id, p.rental_id, p.amount, p.payment_status
+        FROM payments p
+        JOIN rentals r ON p.rental_id = r.id
+        WHERE p.is_deleted = FALSE AND r.user_id = $1
+        ORDER BY p.created_at DESC
+      `,
+        values: [userId],
+      };
+    }
 
     const result = await this._pool.query(query);
     return result.rows;
   }
 
-  async getDetailPayment(id) {
-    const query = {
-      text: 'SELECT * from payments WHERE id = $1 AND is_deleted = FALSE',
-      values: [id],
-    };
-    const result = await this._pool.query(query);
-    if (!result.rowCount) {
-      throw new NotFoundError('pembayaran tidak ditemukan');
+  async getDetailPayment(id, role, userId) {
+    let query;
+
+    if (role === 'admin') {
+      query = {
+        text: `
+        SELECT * FROM payments
+        WHERE id = $1 AND is_deleted = FALSE
+      `,
+        values: [id],
+      };
+    } else {
+      query = {
+        text: `
+        SELECT p.*
+        FROM payments p
+        JOIN rentals r ON p.rental_id = r.id
+        WHERE p.id = $1 AND p.is_deleted = FALSE AND r.user_id = $2
+      `,
+        values: [id, userId],
+      };
     }
+
+    const result = await this._pool.query(query);
+
+    if (!result.rowCount) {
+      throw new NotFoundError('Pembayaran tidak ditemukan atau tidak memiliki akses');
+    }
+
     return result.rows[0];
   }
 

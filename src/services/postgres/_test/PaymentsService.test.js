@@ -80,7 +80,7 @@ describe('PaymentsService', () => {
       const addressId2 = await UsersTableTestHelper.addAddress(user2, { id: 'address-456' });
       await rentalsService.addRental(user2, 6, 'user', addressId2, payload);
       // Action
-      const payment = await paymentsService.getAllPayments();
+      const payment = await paymentsService.getAllPayments('admin', 'admin-123');
 
       // Assert
       expect(payment).toHaveLength(2);
@@ -108,7 +108,7 @@ describe('PaymentsService', () => {
       await rentalsService.addRental(user2, 6, 'user', addressId2, payload);
 
       // Action
-      const payment = await paymentsService.getDetailPayment(payment_id);
+      const payment = await paymentsService.getDetailPayment(payment_id, 'admin', 'admin-123');
 
       // Assert
       expect(payment.id).toBe(payment_id);
