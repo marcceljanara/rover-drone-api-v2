@@ -14,7 +14,9 @@ class PaymentsHandler {
   }
 
   async getAllPaymentsHandler(req, res) {
-    const payments = await this._paymentsService.getAllPayments();
+    const { role } = req;
+    const userId = req.id;
+    const payments = await this._paymentsService.getAllPayments(role, userId);
     return res.status(200).json({
       status: 'success',
       data: { payments },
@@ -23,10 +25,12 @@ class PaymentsHandler {
 
   async getDetailPaymentHandler(req, res, next) {
     try {
+      const { role } = req;
+      const userId = req.id;
       this._validator.validateParamsPayload(req.params);
       const { id } = req.params;
 
-      const payment = await this._paymentsService.getDetailPayment(id);
+      const payment = await this._paymentsService.getDetailPayment(id, role, userId);
       return res.status(200).json({
         status: 'success',
         data: { payment },

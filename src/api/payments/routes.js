@@ -86,7 +86,7 @@ const paymentRoutes = (handler) => {
  *                   example: "Terjadi kesalahan pada server"
  */
 
-  router.get('/v1/payments', verifyToken, verifyAdmin, handler.getAllPaymentsHandler);
+  router.get('/v1/payments', verifyToken, handler.getAllPaymentsHandler);
 
   /**
  * @swagger
@@ -218,7 +218,7 @@ const paymentRoutes = (handler) => {
  *                   type: string
  *                   example: "Terjadi kesalahan pada server"
  */
-  router.get('/v1/payments/:id', verifyToken, verifyAdmin, handler.getDetailPaymentHandler);
+  router.get('/v1/payments/:id', verifyToken, handler.getDetailPaymentHandler);
   /**
  * @swagger
  * /v1/payments/{id}:

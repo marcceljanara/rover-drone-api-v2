@@ -146,7 +146,7 @@ describe('/v1/payments endpoint', () => {
       const responseJson = response.body;
       expect(response.statusCode).toBe(404);
       expect(responseJson.status).toBe('fail');
-      expect(responseJson.message).toBe('pembayaran tidak ditemukan');
+      expect(responseJson.message).toBe('Pembayaran tidak ditemukan atau tidak memiliki akses');
     });
   });
 
