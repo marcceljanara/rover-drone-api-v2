@@ -326,19 +326,28 @@ class RentalsService {
   }
 
   async getAllRental(role, userId) {
-    const baseQuery = `
-    SELECT r.id, r.start_date, r.end_date, r.rental_status, rc.total_cost
-    FROM rentals r
-    LEFT JOIN rental_costs rc ON rc.rental_id = r.id
-    WHERE r.is_deleted = FALSE
-  `;
-
     let query;
+
     if (role === 'admin') {
-      query = { text: baseQuery, values: [] };
+      query = {
+        text: `
+        SELECT r.id, r.start_date, r.end_date, r.rental_status, rc.total_cost
+        FROM rentals r
+        LEFT JOIN rental_costs rc ON rc.rental_id = r.id
+        WHERE r.is_deleted = FALSE
+        ORDER BY r.created_at DESC
+      `,
+        values: [],
+      };
     } else {
       query = {
-        text: `${baseQuery} AND r.user_id = $1`,
+        text: `
+        SELECT r.id, r.start_date, r.end_date, r.rental_status, rc.total_cost
+        FROM rentals r
+        LEFT JOIN rental_costs rc ON rc.rental_id = r.id
+        WHERE r.is_deleted = FALSE AND r.user_id = $1
+        ORDER BY r.created_at DESC
+      `,
         values: [userId],
       };
     }
