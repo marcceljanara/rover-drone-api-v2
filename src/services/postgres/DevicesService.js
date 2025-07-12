@@ -94,10 +94,10 @@ class DevicesService {
             rental_id, 
             status, 
             last_reported_issue, 
-            TO_CHAR(
-              make_interval(secs => last_active), 
-              'DD "Hari" HH24:MI:SS'
-            ) AS last_active
+          TO_CHAR(
+            justify_interval(make_interval(secs => devices.last_active)), 
+            'DD "Hari" HH24:MI:SS'
+          ) AS last_active
           FROM devices 
           WHERE is_deleted = FALSE
           ORDER BY devices.status = 'active' DESC, 
@@ -117,7 +117,7 @@ class DevicesService {
           devices.status, 
           devices.last_reported_issue, 
           TO_CHAR(
-            make_interval(secs => devices.last_active), 
+            justify_interval(make_interval(secs => devices.last_active)), 
             'DD "Hari" HH24:MI:SS'
           ) AS last_active
         FROM devices
@@ -143,7 +143,7 @@ class DevicesService {
             status, 
             last_reported_issue, 
             TO_CHAR(
-              make_interval(secs => last_active), 
+              justify_interval(make_interval(secs => devices.last_active)), 
               'DD "Hari" HH24:MI:SS'
             ) AS last_active
           FROM devices
@@ -163,7 +163,7 @@ class DevicesService {
           devices.*,
           devices.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS created_at, 
           TO_CHAR(
-            make_interval(secs => devices.last_active), 
+            justify_interval(make_interval(secs => devices.last_active)), 
             'DD "Hari" HH24:MI:SS'
           ) AS last_active
         FROM devices
@@ -184,7 +184,7 @@ class DevicesService {
             *,
             devices.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta' AS created_at, 
             TO_CHAR(
-              make_interval(secs => last_active), 
+              justify_interval(make_interval(secs => devices.last_active)), 
               'DD "Hari" HH24:MI:SS'
             ) AS last_active
           FROM devices 
