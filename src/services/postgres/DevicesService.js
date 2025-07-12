@@ -100,6 +100,8 @@ class DevicesService {
             ) AS last_active
           FROM devices 
           WHERE is_deleted = FALSE
+          ORDER BY devices.status = 'active' DESC, 
+            devices.last_active DESC
         `,
       };
       const result = await this._pool.query(query);
@@ -123,6 +125,8 @@ class DevicesService {
         WHERE rentals.user_id = $1 
           AND rentals.rental_status = 'active' 
           AND devices.is_deleted = FALSE
+        ORDER BY devices.status = 'active' DESC, 
+          devices.last_active DESC
       `,
       values: [userId],
     };
