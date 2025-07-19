@@ -439,6 +439,8 @@ class DevicesService {
         '30d': '30 days',
         '60d': '60 days',
         '90d': '90 days',
+        '180d': '180 days',
+        '365d': '365 days',
       };
       const sqlInterval = intervalMap[interval];
 

@@ -5,7 +5,7 @@ const paramsPayloadSchema = Joi.object({
 });
 
 const querySensorPayloadSchema = Joi.object({
-  interval: Joi.string().valid('15m', '1h', '6h', '12h', '24h', '7d', '30d', '60d', '90d'),
+  interval: Joi.string().valid('15m', '1h', '6h', '12h', '24h', '7d', '30d', '60d', '90d', '180d', '365d'),
 });
 
 const querySensorDownloadPayloadSchema = Joi.object({
