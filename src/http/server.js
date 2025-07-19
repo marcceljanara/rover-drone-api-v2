@@ -52,9 +52,10 @@ function createServer() {
   app.use(helmet.hidePoweredBy());
   app.use(helmet.noSniff()); // Mencegah MIME-sniffing
   app.use(cors({
-    origin: '*',
+    origin: ['https://roverhub.xsmartagrichain.com', 'http://localhost:3000'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'], // ⬅️ WAJIB kalau pakai token
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true, // ⬅️ aktifkan kalau pakai cookie / token JWT dengan Auth header
   }));
 
   app.options('*', cors()); // ⬅️ Wajib biar preflight dijawab
