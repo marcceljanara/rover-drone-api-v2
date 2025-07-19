@@ -67,7 +67,7 @@ describe('MqttClient', () => {
     expect(mockMqttClient.publish).toHaveBeenCalledWith(
       topic,
       jsonMessage,
-      { qos: 1 },
+      { qos: 2 },
       expect.any(Function),
     );
   });
@@ -118,7 +118,7 @@ describe('MqttClient', () => {
     mqttClient.publish(topic, payload);
 
     expect(mockMqttClient.publish)
-      .toHaveBeenCalledWith(topic, jsonMessage, { qos: 1 }, expect.any(Function));
+      .toHaveBeenCalledWith(topic, jsonMessage, { qos: 2 }, expect.any(Function));
     expect(console.error).toHaveBeenCalledWith(`Failed to publish to topic ${topic}: ${error.message}`);
   });
 });

@@ -60,7 +60,7 @@ class MqttClient {
    */
   publish(topic, payload) {
     const message = JSON.stringify(payload);
-    this._mqttClient.publish(topic, message, { qos: 1 }, (err) => {
+    this._mqttClient.publish(topic, message, { qos: 2 }, (err) => {
       if (err) {
         console.error(`Failed to publish to topic ${topic}: ${err.message}`);
       } else {
