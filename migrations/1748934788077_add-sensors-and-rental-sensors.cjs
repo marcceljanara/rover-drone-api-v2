@@ -24,7 +24,7 @@ exports.up = (pgm) => {
   // Seed default sensors
   pgm.sql(`
     INSERT INTO sensors (id, name, cost) VALUES
-      ('temperature', 'Temperature Sensor', 50000),
+      ('temperature', 'Temperature Sensor', 0),
       ('humidity', 'Humidity Sensor', 60000),
       ('light_intensity', 'Light Intensity Sensor', 40000)
   `);

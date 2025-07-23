@@ -201,7 +201,7 @@ class RentalsService {
     }
   }
 
-  async addRental(userId, interval, role, shippingAddressId, shippingInfo, sensorIds = []) {
+  async addRental(userId, interval, role, shippingAddressId, shippingInfo, sensorIds = ['temperature']) {
     const client = await this._pool.connect(); // Dapatkan client dari pool untuk transaksi
     try {
       const id = `rental-${nanoid(6)}`;
@@ -460,7 +460,7 @@ class RentalsService {
   async getAllSensors() {
     const query = {
       text: `SELECT id, cost 
-               FROM sensors`,
+               FROM sensors WHERE NOT id = 'temperature'`,
       values: [],
     };
     const result = await this._pool.query(query);
