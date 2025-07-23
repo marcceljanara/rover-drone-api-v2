@@ -240,13 +240,13 @@ describe('RentalsService', () => {
       };
 
       // Action
-      const { id, cost } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental, ['temperature', 'humidity']);
+      const { id, cost } = await rentalsService.addRental(user, 6, 'user', addressId, payloadRental, ['light_intensity', 'humidity']);
 
       // Assert
       const rental = await RentalsTableTestHelper.findRentalById(id);
       expect(rental[0]).toBeDefined();
       expect(rental[0].id).toBe(id);
-      expect(cost).toBe(18710000);
+      expect(cost).toBe(18700000);
       expect(rental[0].rental_status).toBe('pending');
     });
 
@@ -495,7 +495,7 @@ describe('RentalsService', () => {
       const choice = await rentalsService.getAllSensors();
 
       // Assert
-      expect(choice.length).toBe(3);
+      expect(choice.length).toBe(2);
     });
   });
   describe('extensionRental funuction', () => {
