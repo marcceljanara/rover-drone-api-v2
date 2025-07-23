@@ -209,6 +209,17 @@ class RentalsService {
         shippingName, serviceName, shippingCost, etd,
       } = shippingInfo;
 
+      // ✅ Normalisasi sensorIds di sini
+      let normalizedSensorIds = Array.isArray(sensorIds) ? [...sensorIds] : [];
+
+      if (!normalizedSensorIds.includes('temperature')) {
+        normalizedSensorIds.unshift('temperature');
+      }
+
+      if (normalizedSensorIds.length === 0) {
+        normalizedSensorIds = ['temperature'];
+      }
+
       // Tentukan start_date dan end_date berdasarkan interval (bulan)
       const start_date = new Date(); // Waktu saat ini
       const end_date = new Date(start_date);
@@ -255,12 +266,12 @@ class RentalsService {
 
       let sensorCost = 0;
       const setupCost = 1000000;
-      if (sensorIds.length > 0) {
+      if (normalizedSensorIds.length > 0) {
         const sensorQuery = `
         SELECT cost FROM sensors
         WHERE id = ANY($1::text[])
       `;
-        const sensorResult = await client.query(sensorQuery, [sensorIds]);
+        const sensorResult = await client.query(sensorQuery, [normalizedSensorIds]);
         sensorCost = sensorResult.rows.reduce((acc, { cost }) => acc + Number(cost), 0);
       }
 
@@ -278,7 +289,7 @@ class RentalsService {
 
       const rentalResult = await client.query(rentalQuery);
 
-      const sensorInsertPromises = sensorIds.map((sensorId) => client.query(
+      const sensorInsertPromises = normalizedSensorIds.map((sensorId) => client.query(
         'INSERT INTO rental_sensors (rental_id, sensor_id) VALUES ($1, $2)',
         [id, sensorId],
       ));
