@@ -7,6 +7,26 @@ import NotFoundError from '../../exceptions/NotFoundError.js';
 import pool from '../../config/postgres/pool.js';
 import InvariantError from '../../exceptions/InvariantError.js';
 
+function toJakartaTimestampString(dateStr) {
+  const date = new Date(dateStr);
+
+  // Ubah ke WIB
+  const options = { timeZone: 'Asia/Jakarta', hour12: false };
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    ...options,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(date);
+
+  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+
+  return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}:${map.second}`;
+}
+
 class DevicesService {
   constructor() {
     this._pool = pool;
@@ -499,10 +519,7 @@ class DevicesService {
       const dataRes = await client.query(queryText, queryValues);
       return dataRes.rows.map((row) => ({
         ...row,
-        timestamp: new Date(row.timestamp).toLocaleString('id-ID', {
-          timeZone: 'Asia/Jakarta',
-          hour12: false,
-        }),
+        timestamp: toJakartaTimestampString(row.timestamp),
       }));
     } finally {
       client.release();
@@ -564,10 +581,7 @@ class DevicesService {
 
       return dataRes.rows.map((row) => ({
         ...row,
-        timestamp: new Date(row.timestamp).toLocaleString('id-ID', {
-          timeZone: 'Asia/Jakarta',
-          hour12: false,
-        }),
+        timestamp: toJakartaTimestampString(row.timestamp),
       }));
     } finally {
       client.release();
@@ -648,16 +662,13 @@ class DevicesService {
         throw new NotFoundError('Data tidak ditemukan untuk perangkat ini');
       }
 
-      const formattedData = result.rows.map((row) => ({
+      const data = result.rows.map((row) => ({
         ...row,
-        timestamp: new Date(row.timestamp).toLocaleString('id-ID', {
-          timeZone: 'Asia/Jakarta',
-          hour12: false,
-        }),
+        timestamp: toJakartaTimestampString(row.timestamp),
       }));
 
       // Generate CSV
-      const csv = json2csv.parse(formattedData);
+      const csv = json2csv.parse(data);
 
       return csv;
     } finally {
