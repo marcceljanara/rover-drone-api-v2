@@ -636,10 +636,16 @@ class DevicesService {
         throw new NotFoundError('Data tidak ditemukan untuk perangkat ini');
       }
 
-      const data = result.rows;
+      const formattedData = result.rows.map((row) => ({
+        ...row,
+        timestamp: new Date(row.timestamp).toLocaleString('id-ID', {
+          timeZone: 'Asia/Jakarta',
+          hour12: false,
+        }),
+      }));
 
       // Generate CSV
-      const csv = json2csv.parse(data);
+      const csv = json2csv.parse(formattedData);
 
       return csv;
     } finally {
