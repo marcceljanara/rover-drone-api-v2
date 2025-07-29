@@ -497,7 +497,13 @@ class DevicesService {
 
       // Eksekusi query
       const dataRes = await client.query(queryText, queryValues);
-      return dataRes.rows;
+      return dataRes.rows.map((row) => ({
+        ...row,
+        timestamp: new Date(row.timestamp).toLocaleString('id-ID', {
+          timeZone: 'Asia/Jakarta',
+          hour12: false,
+        }),
+      }));
     } finally {
       client.release();
     }
@@ -556,7 +562,13 @@ class DevicesService {
       LIMIT $2
     `, [deviceId, limit]);
 
-      return dataRes.rows;
+      return dataRes.rows.map((row) => ({
+        ...row,
+        timestamp: new Date(row.timestamp).toLocaleString('id-ID', {
+          timeZone: 'Asia/Jakarta',
+          hour12: false,
+        }),
+      }));
     } finally {
       client.release();
     }
