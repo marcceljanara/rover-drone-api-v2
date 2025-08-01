@@ -1,5 +1,6 @@
 # 🚀 Rover-Drone API
 
+[![CI](https://github.com/marcceljanara/rover-drone-api/actions/workflows/ci.yml/badge.svg)](https://github.com/marcceljanara/rover-drone-api/actions/workflows/ci.yml)
 [![Build Status](https://img.shields.io/badge/status-active-brightgreen)](https://github.com/marcceljanara/rover-drone-api)  
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](LICENSE)
 
