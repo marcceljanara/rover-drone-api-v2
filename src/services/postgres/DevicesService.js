@@ -539,7 +539,10 @@ class DevicesService {
         LIMIT $2
       `, [deviceId, limit]);
 
-        return result.rows;
+        return result.rows.map((row) => ({
+          ...row,
+          timestamp: toJakartaTimestampString(row.timestamp),
+        }));
       }
 
       // User biasa: hanya kolom sensor yang disewa
