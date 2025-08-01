@@ -30,34 +30,49 @@ const saveSensorDataAndUpdateTime = async (deviceId, data) => {
     timestamp, temperature, humidity, light_intensity, time_active,
   } = data;
 
+  // Parse timestamp jadi Date
+  const dateObj = new Date(timestamp);
+  if (Number.isNaN(dateObj.getTime())) {
+    // invalid date
+    console.warn(`Dibatalkan: timestamp tidak valid (${timestamp}) untuk device ${deviceId}`);
+    return false;
+  }
+
+  // Tolak jika tahun 2036
+  const year = dateObj.getFullYear();
+  if (year === 2036) {
+    console.warn(`Dibatalkan: timestamp di tahun 2036 (${timestamp}) untuk device ${deviceId}`);
+    return false;
+  }
+
   const client = await dbPool.connect();
   try {
-    await client.query('BEGIN'); // Mulai transaksi
+    await client.query('BEGIN');
 
-    // Membulatkan nilai ke 2 angka di belakang koma
-    const roundedTemperature = temperature !== undefined
-      ? parseFloat(temperature.toFixed(2)) : null;
-    const roundedHumidity = humidity !== undefined
-      ? parseFloat(humidity.toFixed(2)) : null;
-    const roundedLightIntensity = light_intensity !== undefined
-      ? parseFloat(light_intensity.toFixed(2)) : null;
+    // Pembulatan
+    const roundedTemperature = temperature !== undefined && temperature !== null
+      ? parseFloat(Number(temperature).toFixed(2)) : null;
+    const roundedHumidity = humidity !== undefined && humidity !== null
+      ? parseFloat(Number(humidity).toFixed(2)) : null;
+    const roundedLightIntensity = light_intensity !== undefined && light_intensity !== null
+      ? parseFloat(Number(light_intensity).toFixed(2)) : null;
 
-    // Simpan data sensor
+    // Insert sensor data
     const insertQuery = `
       INSERT INTO sensordata (id, device_id, timestamp, temperature, humidity, light_intensity)
       VALUES ($1, $2, $3, $4, $5, $6)
     `;
     const insertValues = [
-      `${nanoid(16)}`,
+      nanoid(16),
       deviceId,
-      new Date(timestamp),
+      dateObj, // pakai Date object
       roundedTemperature,
       roundedHumidity,
       roundedLightIntensity,
     ];
     await client.query(insertQuery, insertValues);
 
-    // Update akumulasi waktu aktif perangkat
+    // Update last_active
     const updateQuery = `
       UPDATE devices
       SET last_active = COALESCE(last_active, 0) + $1
@@ -66,10 +81,12 @@ const saveSensorDataAndUpdateTime = async (deviceId, data) => {
     const updateValues = [time_active, deviceId];
     await client.query(updateQuery, updateValues);
 
-    await client.query('COMMIT'); // Commit transaksi
+    await client.query('COMMIT');
+    return true;
   } catch (error) {
-    await client.query('ROLLBACK'); // Rollback jika ada error
-    console.error(error);
+    await client.query('ROLLBACK');
+    console.error('Gagal menyimpan sensor data:', error);
+    throw error; // atau return false tergantung semantics yang diinginkan
   } finally {
     client.release();
   }
