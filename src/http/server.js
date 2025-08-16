@@ -14,6 +14,7 @@ import devicesPlugin from '../api/devices/index.js';
 import paymentsPlugin from '../api/payments/index.js';
 import reportsPlugin from '../api/reports/index.js';
 import shipmentsPlugin from '../api/shipments/index.js';
+import llmPlugin from '../api/llm/index.js';
 
 // service
 import UserService from '../services/postgres/UserServices.js';
@@ -26,6 +27,7 @@ import ProducerService from '../services/rabbitmq/ProducerService.js';
 import PublisherService from '../services/mqtt/PublisherServiceMqtt.js';
 import ReportsService from '../services/postgres/ReportsService.js';
 import ShipmentsService from '../services/postgres/ShipmentsService.js';
+import LlmService from '../services/llm/LlmService.js';
 
 // validator
 import UsersValidator from '../validator/users/index.js';
@@ -36,6 +38,7 @@ import DevicesValidator from '../validator/devices/index.js';
 import PaymentsValidator from '../validator/payments/index.js';
 import ReportsValidator from '../validator/reports/index.js';
 import ShipmentsValidator from '../validator/shipments/index.js';
+import LlmValidator from '../validator/llm/index.js';
 
 // token manager
 import TokenManager from '../tokenize/TokenManager.js';
@@ -127,6 +130,13 @@ function createServer() {
     shipmentsService,
     rabbitmqService: ProducerService,
     validator: ShipmentsValidator,
+  });
+
+  llmPlugin({
+    app,
+    llmService: LlmService,
+    devicesService,
+    validator: LlmValidator,
   });
 
   // Global Error Handling Middleware
