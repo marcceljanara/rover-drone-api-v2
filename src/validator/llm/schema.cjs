@@ -19,7 +19,12 @@ const sensorPayloadSchema = Joi.object({
   light_intensity: Joi.number().min(0).required(), // lux
 });
 
+const querySensorPayloadSchema = Joi.object({
+  interval: Joi.string().valid('15m', '1h', '6h', '12h', '24h', '7d', '30d', '60d', '90d', '180d', '365d'),
+});
+
 module.exports = {
   chatPayloadSchema,
   sensorPayloadSchema,
+  querySensorPayloadSchema,
 };

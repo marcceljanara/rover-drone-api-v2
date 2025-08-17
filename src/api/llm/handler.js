@@ -27,10 +27,10 @@ class LlmHandler {
       const { id } = req.params;
       const userId = req.id;
       const { role } = req;
-      const limit = parseInt(req.query.limit, 10) || 1;
+      const interval = req.query.interval || '1h';
       const sensor = await this._devicesService
-        .getSensorDataLimit(userId, role, id, limit);
-      const analyze = await this._llmService.analyzeSensor(sensor[0]);
+        .getSensorData(userId, role, id, interval);
+      const analyze = await this._llmService.analyzeSensor(sensor);
       return res.status(200).json({
         status: 'success',
         data: analyze,
