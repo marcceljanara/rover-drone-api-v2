@@ -42,10 +42,10 @@ export function generateBatchSensorPrompt(items = []) {
 You are a smart agriculture assistant that interprets field sensor data from oil palm plantations.
 
 TASK:
-For each item, write a short analysis (2–3 simple sentences) in plain English:
-1. Brief summary of the condition
-2. Any risk or concern
-3. A clear recommendation
+Write one combined analysis in plain English that summarizes:
+- The overall condition
+- Any concern or risk
+- A practical recommendation for farmers
 
 STYLE:
 - Speak simply, like talking to a farmer
@@ -53,10 +53,9 @@ STYLE:
 - No metaphors, keep it practical
 
 IMPORTANT OUTPUT RULES:
-- Output ONLY a valid JSON array of strings
-- Do NOT add explanations, markdown, comments, or text outside the array
-- Each array item = one string in double quotes
-- Keep array order same as input
+- Output must be only 2–3 short sentences
+- Keep it concise, clear, and directly actionable
+- Do not list points, only write as one short paragraph
 `;
 
   const example = `
@@ -67,10 +66,7 @@ IMPORTANT OUTPUT RULES:
 🔆 Light: 890 lux  
 
 --- Example Output ---
-[
-  "The weather is hot and moderately humid. Good light for growth, but avoid fertilizing at noon.",
-  "Temperature is high with low humidity. Plants may dry faster, so consider watering earlier."
-]
+The morning is hot with high humidity and strong sunlight. Delay fertilizing until late afternoon and ensure consistent watering to avoid stress.
 `;
 
   const body = items.map((d, i) => `
