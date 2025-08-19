@@ -26,7 +26,7 @@ const options = {
         description: 'API Server',
       },
     ],
-    tags: [
+    tags: [ // tags untuk mengelompokkan endpoint
       { name: 'Users', description: 'API untuk mengelola pengguna' },
       { name: 'Admins', description: 'API untuk mengelola users oleh admin' },
       { name: 'Authentications', description: 'API untuk mengelola autentikasi' },
