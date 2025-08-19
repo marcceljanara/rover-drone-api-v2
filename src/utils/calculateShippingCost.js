@@ -32,7 +32,7 @@ async function calculateShippingCost(subdistrictName) {
     });
 
     const cargoOptions = calcResp.data.data.calculate_cargo;
-    const jneOption = cargoOptions.find((opt) => opt.shipping_name === 'JNE');
+    const jneOption = cargoOptions.find((opt) => opt.shipping_name === 'SICEPAT');
 
     if (!jneOption) {
       throw new NotFoundError('Ekspedisi JNE tidak tersedia untuk tujuan ini.');
