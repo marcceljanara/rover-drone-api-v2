@@ -55,7 +55,7 @@ function createServer() {
   app.use(helmet.hidePoweredBy());
   app.use(helmet.noSniff()); // Mencegah MIME-sniffing
   app.use(cors({
-    origin: ['https://roverhub.xsmartagrichain.site', 'http://localhost:3000'],
+    origin: ['https://app.xsmartagrichain.site', 'http://localhost:3000'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true, // ⬅️ aktifkan kalau pakai cookie / token JWT dengan Auth header
