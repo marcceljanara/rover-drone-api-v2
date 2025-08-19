@@ -76,6 +76,7 @@ function createServer() {
   const reportsService = new ReportsService();
   const shipmentsService = new ShipmentsService();
 
+  // Register plugins
   usersPlugin({
     app,
     userService,
