@@ -6,7 +6,7 @@ const llmRoutes = (handler) => {
   const router = express.Router();
 
   router.post('/v1/chats', verifyToken, handler.postChatHandler);
-  router.post('/v1/chats/:id/analyze', verifyToken, handler.postAnalyzeSensor);
+  router.get('/v1/chats/:id/analyze', verifyToken, handler.postAnalyzeSensor);
   return router;
 };
 
