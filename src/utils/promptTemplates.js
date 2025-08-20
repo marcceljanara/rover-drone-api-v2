@@ -61,9 +61,9 @@ Use this tone:
   const body = items.map((d, i) => `
 # Item ${i + 1}
 📆 Date & Time: ${d.timestamp}
-🌡️ Temp: ${d.temperature}°C
-💧 Humidity: ${d.humidity}%
-🔆 Light: ${d.light_intensity} lux
+🌡️ Air Temperature: ${d.temperature}°C
+💧 Air Humidity: ${d.humidity}%
+🔆 Light Intensity: ${d.light_intensity} lux
 `).join('\n');
 
   return [body, header].join('\n');
