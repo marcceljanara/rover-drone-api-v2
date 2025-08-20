@@ -52,21 +52,10 @@ STYLE:
 - No technical jargon
 - No metaphors, keep it practical
 
-IMPORTANT OUTPUT RULES:
-- Output must be only 2–3 short sentences
-- Keep it concise, clear, and directly actionable
-- Do not list points, only write as one short paragraph
-`;
-
-  const example = `
---- Example Input ---
-📆 Date & Time: 2025-05-10 09:00  
-🌡️ Temp: 30.5°C  
-💧 Humidity: 75%  
-🔆 Light: 890 lux  
-
---- Example Output ---
-The morning is hot with high humidity and strong sunlight. Delay fertilizing until late afternoon and ensure consistent watering to avoid stress.
+Use this tone:
+- "The soil is a bit dry, consider additional watering."
+- "Light intensity is high, avoid midday fertilization."
+- "Temperature is quite high, monitor for heat stress.",
 `;
 
   const body = items.map((d, i) => `
@@ -77,5 +66,5 @@ The morning is hot with high humidity and strong sunlight. Delay fertilizing unt
 🔆 Light: ${d.light_intensity} lux
 `).join('\n');
 
-  return [body, header, example].join('\n');
+  return [body, header].join('\n');
 }
