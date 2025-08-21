@@ -52,7 +52,7 @@ dotenv.config();
 function createServer() {
   const app = express();
   app.use(cors({
-    origin: ['*'],
+    origin: ['https://app.xsmartagrichain.site', 'http://localhost:3000'], // ⬅️ Ganti dengan URL frontend yang sesuai
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true, // ⬅️ aktifkan kalau pakai cookie / token JWT dengan Auth header
