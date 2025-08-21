@@ -51,17 +51,17 @@ dotenv.config();
 
 function createServer() {
   const app = express();
-  app.use(express.json());
-  app.use(helmet.hidePoweredBy());
-  app.use(helmet.noSniff()); // Mencegah MIME-sniffing
   app.use(cors({
     origin: ['*'],
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    // methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    // allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true, // ⬅️ aktifkan kalau pakai cookie / token JWT dengan Auth header
   }));
 
-  app.options('*', cors()); // ⬅️ Wajib biar preflight dijawab
+  // app.options('*', cors()); // ⬅️ Wajib biar preflight dijawab
+  app.use(express.json());
+  app.use(helmet.hidePoweredBy());
+  app.use(helmet.noSniff()); // Mencegah MIME-sniffing
 
   // Expose folder uploads secara publik
   app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
