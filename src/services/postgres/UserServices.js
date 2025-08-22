@@ -15,19 +15,94 @@ class UserService {
   }) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    const id = `user-${nanoid(16)}`;
+    const userId = `user-${nanoid(16)}`;
+    const providerId = `auth-${nanoid(16)}`;
 
-    const query = {
-      text: 'INSERT INTO users (id, username, password, fullname, email, is_verified) VALUES($1, $2, $3, $4, $5, $6) RETURNING id',
-      values: [id, username, hashedPassword, fullname, email, false],
-    };
+    // Gunakan transaksi biar konsisten
+    const client = await this._pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    const result = await this._pool.query(query);
+      // Insert ke users
+      const userQuery = {
+        text: `INSERT INTO users (id, username, fullname, email, is_verified) 
+             VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        values: [userId, username, fullname, email, false],
+      };
+      const userResult = await client.query(userQuery);
+      if (!userResult.rows.length) {
+        throw new InvariantError('Gagal menambahkan user');
+      }
 
-    if (!result.rows.length) {
-      throw new InvariantError('Gagal menambahkan user');
+      // Insert ke auth_providers
+      const authQuery = {
+        text: `INSERT INTO auth_providers (id, user_id, provider, provider_id, password) 
+             VALUES ($1, $2, $3, $4, $5)`,
+        values: [providerId, userId, 'local', username, hashedPassword],
+      };
+      await client.query(authQuery);
+
+      await client.query('COMMIT');
+      return userId;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
     }
-    return result.rows[0].id;
+  }
+
+  async registerOrLoginGoogle({
+    email, fullname, googleId, aud,
+  }) {
+    const userId = `user-${nanoid(16)}`;
+    const authId = `auth-${nanoid(16)}`;
+
+    const client = await this._pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Cek apakah sudah ada user dengan email ini
+      if (aud !== process.env.GOOGLE_CLIENT_ID) {
+        throw new AuthenticationError('Akun Google tidak valid');
+      }
+
+      // Cek apakah sudah ada auth_providers dengan provider_id Google
+      const checkQuery = {
+        text: `SELECT u.id, u.role, u.is_verified 
+             FROM users u 
+             JOIN auth_providers ap ON ap.user_id = u.id 
+             WHERE ap.provider = $1 AND ap.provider_id = $2`,
+        values: ['google', googleId],
+      };
+      const existing = await client.query(checkQuery);
+      if (existing.rows.length) {
+        await client.query('COMMIT');
+        return existing.rows[0]; // Sudah ada user, langsung return
+      }
+
+      // Insert ke users
+      await client.query(
+        `INSERT INTO users (id, fullname, email, is_verified) 
+       VALUES ($1, $2, $3, $4)`,
+        [userId, fullname, email, true],
+      );
+
+      // Insert ke auth_providers
+      await client.query(
+        `INSERT INTO auth_providers (id, user_id, provider, provider_id) 
+       VALUES ($1, $2, $3, $4)`,
+        [authId, userId, 'google', googleId],
+      );
+
+      await client.query('COMMIT');
+      return { id: userId, role: 'user', is_verified: true };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   async checkExistingUser({ email, username }) {

@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import cookieParser from 'cookie-parser';
 
 // plugin
 import usersPlugin from '../api/users/index.js';
@@ -42,6 +43,7 @@ import LlmValidator from '../validator/llm/index.js';
 
 // token manager
 import TokenManager from '../tokenize/TokenManager.js';
+import OauthManager from '../tokenize/OauthManager.js';
 
 // Exceptions
 import ClientError from '../exceptions/ClientError.js';
@@ -51,6 +53,8 @@ dotenv.config();
 
 function createServer() {
   const app = express();
+
+  app.use(cookieParser());
   app.use(cors({
     origin: ['https://app.xsmartagrichain.site', 'http://localhost:3000'], // ⬅️ Ganti dengan URL frontend yang sesuai
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -75,6 +79,7 @@ function createServer() {
   const paymentsService = new PaymentsService();
   const reportsService = new ReportsService();
   const shipmentsService = new ShipmentsService();
+  const oauthManager = new OauthManager();
 
   // Register plugins
   usersPlugin({
@@ -87,7 +92,9 @@ function createServer() {
   authenticationsPlugin({
     app,
     authenticationsService,
+    userService,
     tokenManager: TokenManager,
+    oauthManager,
     validator: AuthenticationsValidator,
   });
 
