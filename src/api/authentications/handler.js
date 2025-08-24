@@ -83,16 +83,28 @@ class AuthenticationHandler {
 
   async deleteAuthenticationHandler(req, res, next) {
     try {
-      this._validator.validateDeleteAuthenticationPayload(req.body);
       const { refreshToken } = req.cookies;
       await this._authenticationsService.verifyRefreshToken(refreshToken);
       await this._authenticationsService.deleteRefreshToken(refreshToken);
 
+      // Hapus cookie dari browser
+      res.clearCookie('accessToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      });
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      });
+
       return res.status(200).json({
         status: 'success',
-        message: 'Refresh token berhasil dihapus',
+        message: 'Berhasil logout',
       });
     } catch (error) {
+      console.log(error);
       return next(error);
     }
   }
