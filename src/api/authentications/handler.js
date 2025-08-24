@@ -37,20 +37,22 @@ class AuthenticationHandler {
       res.cookie('accessToken', accessToken, {
         httpOnly: true, // tidak bisa diakses dari JS
         secure: process.env.NODE_ENV === 'production', // hanya HTTPS di production
-        sameSite: 'strict', // cegah CSRF
+        sameSite: 'none', // cegah CSRF
         maxAge: 60 * 60 * 1000, // 1 jam (sesuai expiry accessToken)
       });
 
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'none',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 hari
       });
 
       // ✅ Redirect ke frontend, tanpa JSON response
-      const redirectTo = new URL('/dashboard', FRONTEND_URL);
-      return res.redirect(redirectTo.toString());
+      return res.status(200).json({
+        status: 'success',
+        data: { email, role, id },
+      });
     } catch (error) {
       return next(error);
     }
@@ -66,7 +68,7 @@ class AuthenticationHandler {
       res.cookie('accessToken', accessToken, {
         httpOnly: true, // tidak bisa diakses dari JS
         secure: process.env.NODE_ENV === 'production', // hanya HTTPS di production
-        sameSite: 'strict', // cegah CSRF
+        sameSite: 'none', // cegah CSRF
         maxAge: 60 * 60 * 1000, // 1 jam (sesuai expiry accessToken)
       });
       // ✅ Redirect ke frontend, tanpa JSON response
@@ -80,7 +82,7 @@ class AuthenticationHandler {
   async deleteAuthenticationHandler(req, res, next) {
     try {
       this._validator.validateDeleteAuthenticationPayload(req.body);
-      const { refreshToken } = req.body;
+      const { refreshToken } = req.cookies;
       await this._authenticationsService.verifyRefreshToken(refreshToken);
       await this._authenticationsService.deleteRefreshToken(refreshToken);
 
@@ -129,14 +131,14 @@ class AuthenticationHandler {
       res.cookie('accessToken', accessToken, {
         httpOnly: true, // tidak bisa diakses dari JS
         secure: process.env.NODE_ENV === 'production', // hanya HTTPS di production
-        sameSite: 'strict', // cegah CSRF
+        sameSite: 'none', // cegah CSRF
         maxAge: 60 * 60 * 1000, // 1 jam (sesuai expiry accessToken)
       });
 
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'none',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 hari
       });
 

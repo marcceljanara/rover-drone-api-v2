@@ -45,7 +45,12 @@ class AuthenticationsService {
 
   async verifyUserCredential(email, password) {
     const query = {
-      text: 'SELECT id, password, role FROM users WHERE email = $1',
+      text: `SELECT u.id,
+       ap.password,
+       u.role
+      FROM users u
+      JOIN auth_providers ap ON u.id = ap.user_id
+      WHERE u.email = $1 AND ap.provider = 'local'`,
       values: [email],
     };
 
