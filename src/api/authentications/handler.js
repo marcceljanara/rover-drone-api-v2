@@ -19,6 +19,8 @@ class AuthenticationHandler {
     this.getGoogleAuthenticationHandler = this.getGoogleAuthenticationHandler.bind(this);
     this.getGoogleAuthenticationCallbackHandler = this
       .getGoogleAuthenticationCallbackHandler.bind(this);
+
+    this.getLoginStatus = this.getLoginStatus.bind(this);
   }
 
   async postAuthenticationHandler(req, res, next) {
@@ -37,14 +39,14 @@ class AuthenticationHandler {
       res.cookie('accessToken', accessToken, {
         httpOnly: true, // tidak bisa diakses dari JS
         secure: process.env.NODE_ENV === 'production', // hanya HTTPS di production
-        sameSite: 'none', // cegah CSRF
+        sameSite: 'lax', // cegah CSRF
         maxAge: 60 * 60 * 1000, // 1 jam (sesuai expiry accessToken)
       });
 
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'none',
+        sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 hari
       });
 
@@ -68,7 +70,7 @@ class AuthenticationHandler {
       res.cookie('accessToken', accessToken, {
         httpOnly: true, // tidak bisa diakses dari JS
         secure: process.env.NODE_ENV === 'production', // hanya HTTPS di production
-        sameSite: 'none', // cegah CSRF
+        sameSite: 'lax', // cegah CSRF
         maxAge: 60 * 60 * 1000, // 1 jam (sesuai expiry accessToken)
       });
       // ✅ Redirect ke frontend, tanpa JSON response
@@ -131,14 +133,14 @@ class AuthenticationHandler {
       res.cookie('accessToken', accessToken, {
         httpOnly: true, // tidak bisa diakses dari JS
         secure: process.env.NODE_ENV === 'production', // hanya HTTPS di production
-        sameSite: 'none', // cegah CSRF
+        sameSite: 'lax', // cegah CSRF
         maxAge: 60 * 60 * 1000, // 1 jam (sesuai expiry accessToken)
       });
 
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'none',
+        sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 hari
       });
 
@@ -148,6 +150,19 @@ class AuthenticationHandler {
     } catch (error) {
       console.log(error);
       return res.redirect(`${FRONTEND_URL}/login-failed`);
+    }
+  }
+
+  async getLoginStatus(req, res, next) {
+    try {
+      const { id } = req;
+      const user = await this._authenticationsService.checkLoginStatus(id);
+      return res.status(200).json({
+        status: 'success',
+        data: { user },
+      });
+    } catch (error) {
+      return next(error);
     }
   }
 }

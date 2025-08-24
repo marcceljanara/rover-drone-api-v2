@@ -98,6 +98,18 @@ class AuthenticationsService {
     const result = await this._pool.query(query);
     return parseInt(result.rows[0].count, 10) === 0;
   }
+
+  async checkLoginStatus(id) {
+    const query = {
+      text: 'SELECT id, role, fullname, email FROM users WHERE id = $1',
+      values: [id],
+    };
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw NotFoundError('User tidak ditemukan');
+    }
+    return result.rows[0];
+  }
 }
 
 export default AuthenticationsService;

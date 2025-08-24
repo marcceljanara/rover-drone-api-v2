@@ -1,4 +1,5 @@
 import express from 'express';
+import verifyToken from '../../middleware/verifyToken.js';
 
 const authenticationRoutes = (handler) => {
   const router = express.Router();
@@ -217,6 +218,8 @@ const authenticationRoutes = (handler) => {
   router.get('/v1/authentications/google', handler.getGoogleAuthenticationHandler);
 
   router.get('/v1/authentications/google/callback', handler.getGoogleAuthenticationCallbackHandler);
+
+  router.get('/v1/authentications/me', verifyToken, handler.getLoginStatus);
 
   return router;
 };
