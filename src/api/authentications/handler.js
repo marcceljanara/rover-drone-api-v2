@@ -62,7 +62,6 @@ class AuthenticationHandler {
 
   async putAuthenticationHandler(req, res, next) {
     try {
-      this._validator.validatePutAuthenticationPayload(req.body);
       const { refreshToken } = req.body;
       await this._authenticationsService.verifyRefreshToken(refreshToken);
       const { id, role } = this._tokenManager.verifyRefreshToken(refreshToken);
