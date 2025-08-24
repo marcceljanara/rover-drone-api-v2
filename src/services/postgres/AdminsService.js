@@ -15,15 +15,41 @@ class AdminsService {
   }) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    const id = `user-${nanoid(16)}`;
+    const userId = `user-${nanoid(16)}`;
+    const providerId = `auth-${nanoid(16)}`;
 
-    const query = {
-      text: 'INSERT INTO users (id, username, password, fullname, email, is_verified) VALUES($1, $2, $3, $4, $5, $6) RETURNING id',
-      values: [id, username, hashedPassword, fullname, email, true],
-    };
+    // Gunakan transaksi biar konsisten
+    const client = await this._pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    const result = await this._pool.query(query);
-    return result.rows[0].id;
+      // Insert ke users
+      const userQuery = {
+        text: `INSERT INTO users (id, username, fullname, email, is_verified) 
+             VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        values: [userId, username, fullname, email, true],
+      };
+      const userResult = await client.query(userQuery);
+      if (!userResult.rows.length) {
+        throw new InvariantError('Gagal menambahkan user');
+      }
+
+      // Insert ke auth_providers
+      const authQuery = {
+        text: `INSERT INTO auth_providers (id, user_id, provider, provider_id, password) 
+             VALUES ($1, $2, $3, $4, $5)`,
+        values: [providerId, userId, 'local', username, hashedPassword],
+      };
+      await client.query(authQuery);
+
+      await client.query('COMMIT');
+      return userId;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   async getAllUser(searchCondition, limit, offset) {
@@ -66,7 +92,7 @@ class AdminsService {
 
   async getDetailUser(id) {
     const query = {
-      text: 'SELECT id, username, email, fullname, is_verified, otp_code, otp_expiry, role, created_at, updated_at FROM users WHERE id = $1',
+      text: 'SELECT id, username, email, fullname, is_verified, role, created_at, updated_at FROM users WHERE id = $1',
       values: [id],
     };
     const result = await this._pool.query(query);
@@ -95,16 +121,35 @@ class AdminsService {
   }
 
   async deleteUser(id) {
-    // Periksa apakah user yang akan dihapus adalah admin
-    await this.checkIsAdmin(id);
+    const client = await this._pool.connect();
 
-    const query = {
-      text: 'DELETE FROM users WHERE id = $1 RETURNING id',
-      values: [id],
-    };
+    try {
+    // Mulai transaction
+      await client.query('BEGIN');
 
-    const result = await this._pool.query(query);
-    return result.rows;
+      // Periksa apakah user yang akan dihapus adalah admin
+      await this.checkIsAdmin(id);
+
+      // Hapus record di auth_providers
+      await client.query('DELETE FROM auth_providers WHERE user_id = $1', [id]);
+
+      // Hapus user dari tabel users
+      const result = await client.query(
+        'DELETE FROM users WHERE id = $1 RETURNING id',
+        [id],
+      );
+
+      // Commit transaction
+      await client.query('COMMIT');
+
+      return result.rows;
+    } catch (err) {
+    // Rollback jika ada error
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   async changePasswordUser(id, newPassword, confPassword) {
@@ -115,7 +160,7 @@ class AdminsService {
     const salt = await bcrypt.genSalt(10);
     const hashNewPassword = await bcrypt.hash(newPassword, salt);
     const query = {
-      text: 'UPDATE users SET password = $1 WHERE id = $2 RETURNING id',
+      text: 'UPDATE auth_providers SET password = $1 WHERE user_id = $2 RETURNING user_id',
       values: [hashNewPassword, id],
     };
     const result = await this._pool.query(query);
