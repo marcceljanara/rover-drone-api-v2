@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 import { nanoid } from 'nanoid';
 import bcrypt from 'bcrypt';
 import InvariantError from '../../exceptions/InvariantError.js';
@@ -120,7 +121,11 @@ class UserService {
   async generateOtp(email) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const query = {
-      text: 'UPDATE users SET otp_code = $1, otp_expiry = NOW() + INTERVAL \'15 minutes\' WHERE email = $2 AND is_verified = FALSE RETURNING otp_code',
+      text: `UPDATE auth_providers ap 
+      SET otp_code = $1, otp_expiry = NOW() + INTERVAL \'15 minutes\'
+      FROM users u 
+      WHERE u.email = $2 AND u.is_verified = FALSE 
+      RETURNING ap.otp_code`,
       values: [otp, email],
     };
 
@@ -133,7 +138,10 @@ class UserService {
 
   async verifyOtp(email, otp) {
     const query = {
-      text: 'SELECT otp_code, otp_expiry FROM users WHERE email = $1',
+      text: `SELECT ap.otp_code, ap.otp_expiry 
+      FROM auth_providers ap 
+      JOIN users u ON ap.user_id = u.id
+      WHERE u.email = $1`,
       values: [email],
     };
 
@@ -152,12 +160,30 @@ class UserService {
       throw new AuthenticationError('Kode OTP telah kadaluarsa');
     }
 
-    const updateQuery = {
-      text: 'UPDATE users SET is_verified = $1, otp_code = NULL, otp_expiry = NULL WHERE email = $2',
-      values: [true, email],
-    };
-
-    await this._pool.query(updateQuery);
+    const client = await this._pool.connect();
+    try {
+      await client.query('BEGIN');
+      const updateQueryAuth = {
+        text: `UPDATE auth_providers ap
+        SET otp_code = NULL, otp_expiry = NULL
+        FROM users u
+        WHERE u.email = $1`,
+        values: [email],
+      };
+      await client.query(updateQueryAuth);
+      const updateQueryUser = {
+        text: `UPDATE users
+        SET is_verified = $1
+        WHERE email = $2`,
+        values: [true, email],
+      };
+      await client.query(updateQueryUser);
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+    } finally {
+      client.release();
+    }
   }
 
   async addAddress(userId, {

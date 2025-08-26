@@ -77,7 +77,7 @@ const UsersTableTestHelper = {
 
   async findOtpUserById(id) {
     const query = {
-      text: 'SELECT otp_code FROM auth_providers WHERE id = $1',
+      text: 'SELECT otp_code FROM auth_providers WHERE user_id = $1',
       values: [id],
     };
     const result = await pool.query(query);
