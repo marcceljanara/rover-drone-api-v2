@@ -22,8 +22,8 @@ const registerAndLoginAdmin = async (server) => {
   const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
-  const { accessToken } = login.body.data;
-  return accessToken;
+  const adminCookie = login.headers['set-cookie'];
+  return adminCookie;
 };
 
 const registerAndLoginUser = async (server) => {
@@ -38,8 +38,8 @@ const registerAndLoginUser = async (server) => {
   const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
-  const { accessToken } = login.body.data;
-  return accessToken;
+  const userCookie = login.headers['set-cookie'];
+  return userCookie;
 };
 
 jest.mock('../../utils/calculateShippingCost.js', () => ({
@@ -49,16 +49,16 @@ jest.mock('../../utils/calculateShippingCost.js', () => ({
 
 describe('v1/returns endpoints', () => {
   let server;
-  let accessTokenAdmin;
-  let accessTokenUser;
+  let adminCookie;
+  let userCookie;
 
   beforeAll(async () => {
     server = createServer();
   });
 
   beforeEach(async () => {
-    accessTokenAdmin = await registerAndLoginAdmin(server);
-    accessTokenUser = await registerAndLoginUser(server);
+    adminCookie = await registerAndLoginAdmin(server);
+    userCookie = await registerAndLoginUser(server);
     calculateShippingCost.mockResolvedValue({
       shippingName: 'JNE',
       serviceName: 'JTR23',
@@ -92,13 +92,13 @@ describe('v1/returns endpoints', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       await ReturnShippingTableTestHelper.addReturnShippingInfo({
@@ -112,7 +112,7 @@ describe('v1/returns endpoints', () => {
       // Action
       const response = await request(server)
         .get(`/v1/returns/${rentalId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       expect(response.statusCode).toBe(200);
@@ -126,7 +126,7 @@ describe('v1/returns endpoints', () => {
       // Action
       const response = await request(server)
         .get(`/v1/returns/${rentalId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       expect(response.statusCode).toBe(404);
@@ -145,13 +145,13 @@ describe('v1/returns endpoints', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       const returnId = await ReturnShippingTableTestHelper.addReturnShippingInfo({
@@ -165,7 +165,7 @@ describe('v1/returns endpoints', () => {
       // Action
       const response = await request(server)
         .patch(`/v1/returns/${returnId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ status: 'returning' });
 
       // Assert
@@ -178,7 +178,7 @@ describe('v1/returns endpoints', () => {
       // Action
       const response = await request(server)
         .patch(`/v1/returns/${returnId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ status: 'returning' });
       // Assert
       expect(response.statusCode).toBe(404);
@@ -197,13 +197,13 @@ describe('v1/returns endpoints', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       const returnId = await ReturnShippingTableTestHelper.addReturnShippingInfo({
@@ -217,7 +217,7 @@ describe('v1/returns endpoints', () => {
       // Action
       const response = await request(server)
         .patch(`/v1/returns/${returnId}/note`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ note: 'Catatan penting untuk return ini' });
 
       // Assert
@@ -230,7 +230,7 @@ describe('v1/returns endpoints', () => {
       // Action
       const response = await request(server)
         .patch(`/v1/returns/${returnId}/note`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ note: 'Catatan penting untuk return ini' });
       // Assert
       expect(response.statusCode).toBe(404);
@@ -249,13 +249,13 @@ describe('v1/returns endpoints', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       const returnId = await ReturnShippingTableTestHelper.addReturnShippingInfo({
@@ -269,7 +269,7 @@ describe('v1/returns endpoints', () => {
       // Action
       const response = await request(server)
         .put(`/v1/returns/${returnId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({
           courierName: 'JNE',
           courierService: 'JTR23',
@@ -286,7 +286,7 @@ describe('v1/returns endpoints', () => {
       // Action
       const response = await request(server)
         .put(`/v1/returns/${returnId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({
           courierName: 'JNE',
           courierService: 'JTR23',
@@ -309,13 +309,13 @@ describe('v1/returns endpoints', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       await ReturnShippingTableTestHelper.addReturnShippingInfo({
@@ -329,7 +329,7 @@ describe('v1/returns endpoints', () => {
       // Action
       const response = await request(server)
         .get('/v1/returns')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       expect(response.statusCode).toBe(200);
@@ -341,7 +341,7 @@ describe('v1/returns endpoints', () => {
       // Action
       const response = await request(server)
         .get('/v1/returns')
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
       // Assert
       expect(response.statusCode).toBe(403);
       expect(response.body.status).toBe('fail');
@@ -359,13 +359,13 @@ describe('v1/returns endpoints', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       await ReturnShippingTableTestHelper.addReturnShippingInfo({
@@ -379,7 +379,7 @@ describe('v1/returns endpoints', () => {
       // Action
       const response = await request(server)
         .get(`/v1/returns/${rentalId}`)
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       expect(response.statusCode).toBe(200);
@@ -393,7 +393,7 @@ describe('v1/returns endpoints', () => {
       // Action
       const response = await request(server)
         .get(`/v1/returns/${rentalId}`)
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       expect(response.statusCode).toBe(404);
@@ -413,13 +413,13 @@ describe('v1/returns endpoints', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       await ReturnShippingTableTestHelper.addReturnShippingInfo({
@@ -433,7 +433,7 @@ describe('v1/returns endpoints', () => {
       // Action
       const response = await request(server)
         .patch(`/v1/returns/${rentalId}/address`)
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send({ newAddressId });
 
       // Assert
@@ -447,7 +447,7 @@ describe('v1/returns endpoints', () => {
       // Action
       const response = await request(server)
         .patch(`/v1/returns/${rentalId}/address`)
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send({ newAddressId });
       // Assert
       expect(response.statusCode).toBe(404);
