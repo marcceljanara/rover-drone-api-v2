@@ -50,7 +50,6 @@ class AuthenticationHandler {
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 hari
       });
 
-      // ✅ Redirect ke frontend, tanpa JSON response
       return res.status(200).json({
         status: 'success',
         data: { email, role, id },
@@ -62,7 +61,7 @@ class AuthenticationHandler {
 
   async putAuthenticationHandler(req, res, next) {
     try {
-      const { refreshToken } = req.body;
+      const { refreshToken } = req.cookies;
       await this._authenticationsService.verifyRefreshToken(refreshToken);
       const { id, role } = this._tokenManager.verifyRefreshToken(refreshToken);
       const accessToken = this._tokenManager.generateAccessToken({ id, role });
@@ -73,8 +72,10 @@ class AuthenticationHandler {
         maxAge: 60 * 60 * 1000, // 1 jam (sesuai expiry accessToken)
       });
       // ✅ Redirect ke frontend, tanpa JSON response
-      const redirectTo = new URL('/dashboard', FRONTEND_URL);
-      return res.redirect(redirectTo.toString());
+      return res.status(200).json({
+        status: 'success',
+        message: 'Access Token berhasil diperbarui',
+      });
     } catch (error) {
       return next(error);
     }
