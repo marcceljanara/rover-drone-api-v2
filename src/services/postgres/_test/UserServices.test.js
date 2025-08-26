@@ -139,8 +139,11 @@ describe('UserService', () => {
 
   describe('generateOtp', () => {
     it('should generate OTP and update it in the database', async () => {
-      // Arrange
-      pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [{ otp_code: '123456' }] });
+    // Arrange
+      pool.query.mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ otp_code: '123456' }],
+      });
 
       // Act
       const otp = await userService.generateOtp('test@example.com');
@@ -148,48 +151,99 @@ describe('UserService', () => {
       // Assert
       expect(otp).toHaveLength(6);
       expect(pool.query).toHaveBeenCalledWith({
-        text: 'UPDATE users SET otp_code = $1, otp_expiry = NOW() + INTERVAL \'15 minutes\' WHERE email = $2 AND is_verified = FALSE RETURNING otp_code',
+        text: `UPDATE auth_providers ap 
+      SET otp_code = $1, otp_expiry = NOW() + INTERVAL '15 minutes'
+      FROM users u 
+      WHERE u.email = $2 AND u.is_verified = FALSE 
+      RETURNING ap.otp_code`,
         values: [expect.any(String), 'test@example.com'],
       });
     });
 
-    it('should throw InvariantError if email is not found', async () => {
+    it('should throw InvariantError if email is not found or verified', async () => {
+    // Arrange
       pool.query.mockResolvedValueOnce({ rowCount: 0 });
 
-      await expect(userService.generateOtp('unknown@example.com')).rejects.toThrow(InvariantError);
+      // Act & Assert
+      await expect(userService.generateOtp('unknown@example.com'))
+        .rejects
+        .toThrow(InvariantError);
     });
   });
 
   describe('verifyOtp', () => {
+    let mockClient;
+
+    beforeEach(() => {
+    // Mock client untuk transaksi
+      mockClient = {
+        query: jest.fn(),
+        release: jest.fn(),
+      };
+      pool.connect = jest.fn().mockResolvedValue(mockClient);
+    });
+
     it('should verify OTP successfully', async () => {
-      // Arrange
-      pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [{ otp_code: '123456', otp_expiry: new Date(Date.now() + 1000) }] });
-      pool.query.mockResolvedValueOnce({});
+    // Arrange: SELECT OTP cocok dan belum expired
+      pool.query.mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ otp_code: '123456', otp_expiry: new Date(Date.now() + 1000) }],
+      });
 
       // Act
       await userService.verifyOtp('test@example.com', '123456');
 
       // Assert
-      expect(pool.query).toHaveBeenCalledTimes(2);
+      expect(pool.query).toHaveBeenCalledWith({
+        text: `SELECT ap.otp_code, ap.otp_expiry 
+      FROM auth_providers ap 
+      JOIN users u ON ap.user_id = u.id
+      WHERE u.email = $1`,
+        values: ['test@example.com'],
+      });
+
+      expect(mockClient.query).toHaveBeenCalledWith('BEGIN');
+      expect(mockClient.query).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('UPDATE auth_providers'),
+        }),
+      );
+      expect(mockClient.query).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('UPDATE users'),
+        }),
+      );
+      expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
     });
 
     it('should throw AuthenticationError if OTP is invalid', async () => {
-      pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [{ otp_code: '654321', otp_expiry: new Date() }] });
+      pool.query.mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ otp_code: '654321', otp_expiry: new Date(Date.now() + 1000) }],
+      });
 
-      await expect(userService.verifyOtp('test@example.com', '123456')).rejects.toThrow(AuthenticationError);
+      await expect(
+        userService.verifyOtp('test@example.com', '123456'),
+      ).rejects.toThrow(AuthenticationError);
     });
 
     it('should throw AuthenticationError if OTP is expired', async () => {
-      pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [{ otp_code: '123456', otp_expiry: new Date(Date.now() - 1000) }] });
+      pool.query.mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ otp_code: '123456', otp_expiry: new Date(Date.now() - 1000) }],
+      });
 
-      await expect(userService.verifyOtp('test@example.com', '123456')).rejects.toThrow(AuthenticationError);
+      await expect(
+        userService.verifyOtp('test@example.com', '123456'),
+      ).rejects.toThrow(AuthenticationError);
     });
 
-    it('should throw NotFoundError when email are not found', async () => {
-      // Arrange
+    it('should throw NotFoundError when email is not found', async () => {
       pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
-      // Act & Assert
-      await expect(userService.verifyOtp('notfound@gmail.com', '123456')).rejects.toThrow(NotFoundError);
+
+      await expect(
+        userService.verifyOtp('notfound@gmail.com', '123456'),
+      ).rejects.toThrow(NotFoundError);
     });
   });
 });
