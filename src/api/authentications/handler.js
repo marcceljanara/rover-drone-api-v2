@@ -159,7 +159,6 @@ class AuthenticationHandler {
       const redirectTo = new URL('/dashboard', FRONTEND_URL);
       return res.redirect(redirectTo.toString());
     } catch (error) {
-      console.log(error);
       return res.redirect(`${FRONTEND_URL}/login-failed`);
     }
   }
