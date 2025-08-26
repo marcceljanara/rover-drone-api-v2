@@ -19,20 +19,20 @@ const registerAndLoginUser = async (server) => {
   const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
-  const { accessToken } = login.body.data;
-  return accessToken;
+  const userCookie = login.headers['set-cookie'];
+  return userCookie;
 };
 
 describe('/v1/users endpoints', () => {
   let server;
-  let accessTokenUser;
+  let userCookie;
 
   beforeAll(async () => {
     server = createServer();
   });
 
   beforeEach(async () => {
-    accessTokenUser = await registerAndLoginUser(server);
+    userCookie = await registerAndLoginUser(server);
   });
 
   afterAll(async () => {
@@ -207,8 +207,7 @@ describe('/v1/users endpoints', () => {
       // Action
       const response = await request(server)
         .post('/v1/users/addresses')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send(requestPayload);
+        .set('Cookie', userCookie).send(requestPayload);
 
       // Assert
       const responseJson = response.body;
@@ -233,8 +232,7 @@ describe('/v1/users endpoints', () => {
       // Action
       const response = await request(server)
         .post('/v1/users/addresses')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send(requestPayload);
+        .set('Cookie', userCookie).send(requestPayload);
 
       // Assert
       const responseJson = response.body;
@@ -253,7 +251,7 @@ describe('/v1/users endpoints', () => {
       // Action
       const response = await request(server)
         .get('/v1/users/addresses')
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -265,7 +263,7 @@ describe('/v1/users endpoints', () => {
       // Action
       const response = await request(server)
         .get('/v1/users/addresses')
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -284,7 +282,7 @@ describe('/v1/users endpoints', () => {
       // Action
       const response = await request(server)
         .get(`/v1/users/addresses/${addressId}`)
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -299,7 +297,7 @@ describe('/v1/users endpoints', () => {
       // Action
       const response = await request(server)
         .get(`/v1/users/addresses/${addressId}`)
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -328,8 +326,7 @@ describe('/v1/users endpoints', () => {
       // Action
       const response = await request(server)
         .put(`/v1/users/addresses/${addressId}`)
-        .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send(requestPayload);
+        .set('Cookie', userCookie).send(requestPayload);
 
       // Assert
       const responseJson = response.body;
@@ -355,8 +352,7 @@ describe('/v1/users endpoints', () => {
       // Action
       const response = await request(server)
         .put(`/v1/users/addresses/${addressId}`)
-        .set('Authorization', `Bearer ${accessTokenUser}`)
-        .send(requestPayload);
+        .set('Cookie', userCookie).send(requestPayload);
 
       // Assert
       const responseJson = response.body;
@@ -374,7 +370,7 @@ describe('/v1/users endpoints', () => {
       // Action
       const response = await request(server)
         .patch(`/v1/users/addresses/${addressId}`)
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -386,7 +382,7 @@ describe('/v1/users endpoints', () => {
       // Action
       const response = await request(server)
         .patch('/v1/users/addresses/notfound')
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -404,7 +400,7 @@ describe('/v1/users endpoints', () => {
       // Action
       const response = await request(server)
         .delete(`/v1/users/addresses/${addressId}`)
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -416,7 +412,7 @@ describe('/v1/users endpoints', () => {
       // Action
       const response = await request(server)
         .delete('/v1/users/addresses/notfound')
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;

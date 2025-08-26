@@ -45,7 +45,12 @@ class AuthenticationsService {
 
   async verifyUserCredential(email, password) {
     const query = {
-      text: 'SELECT id, password, role FROM users WHERE email = $1',
+      text: `SELECT u.id,
+       ap.password,
+       u.role
+      FROM users u
+      JOIN auth_providers ap ON u.id = ap.user_id
+      WHERE u.email = $1 AND ap.provider = 'local'`,
       values: [email],
     };
 
@@ -92,6 +97,18 @@ class AuthenticationsService {
     };
     const result = await this._pool.query(query);
     return parseInt(result.rows[0].count, 10) === 0;
+  }
+
+  async checkLoginStatus(id) {
+    const query = {
+      text: 'SELECT id, role, fullname, email FROM users WHERE id = $1',
+      values: [id],
+    };
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw NotFoundError('User tidak ditemukan');
+    }
+    return result.rows[0];
   }
 }
 

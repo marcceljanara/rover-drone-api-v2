@@ -38,8 +38,8 @@ const registerAndLoginAdmin = async (server) => {
   const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
-  const { accessToken } = login.body.data;
-  return accessToken;
+  const adminCookie = login.headers['set-cookie'];
+  return adminCookie;
 };
 
 const registerAndLoginUser = async (server) => {
@@ -54,8 +54,8 @@ const registerAndLoginUser = async (server) => {
   const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
-  const { accessToken } = login.body.data;
-  return accessToken;
+  const userCookie = login.headers['set-cookie'];
+  return userCookie;
 };
 
 jest.mock('../../utils/calculateShippingCost.js', () => ({
@@ -65,8 +65,8 @@ jest.mock('../../utils/calculateShippingCost.js', () => ({
 
 describe('/v1/reports endpoint', () => {
   let server;
-  let accessTokenAdmin;
-  let accessTokenUser;
+  let adminCookie;
+  let userCookie;
 
   beforeAll(async () => {
     calculateShippingCost.mockResolvedValue({
@@ -76,8 +76,8 @@ describe('/v1/reports endpoint', () => {
       etd: '4',
     });
     server = createServer();
-    accessTokenAdmin = await registerAndLoginAdmin(server);
-    accessTokenUser = await registerAndLoginUser(server);
+    adminCookie = await registerAndLoginAdmin(server);
+    userCookie = await registerAndLoginUser(server);
     const requestPayload = {
       paymentStatus: 'completed',
       paymentMethod: 'BRI',
@@ -93,12 +93,12 @@ describe('/v1/reports endpoint', () => {
     };
     const response1 = (await request(server)
       .post('/v1/rentals')
-      .set('Authorization', `Bearer ${accessTokenUser}`)
+      .set('Cookie', userCookie)
       .send(payload));
 
     const response2 = (await request(server)
       .post('/v1/rentals')
-      .set('Authorization', `Bearer ${accessTokenUser}`)
+      .set('Cookie', userCookie)
       .send(payload));
 
     const paymentId1 = response1.body.data.paymentId;
@@ -106,12 +106,12 @@ describe('/v1/reports endpoint', () => {
 
     await request(server)
       .put(`/v1/payments/${paymentId1}`)
-      .set('Authorization', `Bearer ${accessTokenAdmin}`)
+      .set('Cookie', adminCookie)
       .send(requestPayload);
 
     await request(server)
       .put(`/v1/payments/${paymentId2}`)
-      .set('Authorization', `Bearer ${accessTokenAdmin}`)
+      .set('Cookie', adminCookie)
       .send(requestPayload);
   });
 
@@ -134,7 +134,7 @@ describe('/v1/reports endpoint', () => {
       // Arrange and Action
       const response = await request(server)
         .post('/v1/reports')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({
           startDate,
           endDate,
@@ -149,7 +149,7 @@ describe('/v1/reports endpoint', () => {
       // Arrange and Action
       const response = await request(server)
         .post('/v1/reports')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({
           startDate: '2025-03-13',
           endDate: '2025-03-11',
@@ -166,7 +166,7 @@ describe('/v1/reports endpoint', () => {
       // Arrange
       await request(server)
         .post('/v1/reports')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({
           startDate,
           endDate,
@@ -174,7 +174,7 @@ describe('/v1/reports endpoint', () => {
 
       await request(server)
         .post('/v1/reports')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({
           startDate,
           endDate,
@@ -182,7 +182,7 @@ describe('/v1/reports endpoint', () => {
       // Action
       const response = await request(server)
         .get('/v1/reports')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -197,7 +197,7 @@ describe('/v1/reports endpoint', () => {
       // Arrange
       const reports = await request(server)
         .post('/v1/reports')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({
           startDate,
           endDate,
@@ -207,7 +207,7 @@ describe('/v1/reports endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/reports/${reportId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -225,7 +225,7 @@ describe('/v1/reports endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/reports/${reportId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -238,7 +238,7 @@ describe('/v1/reports endpoint', () => {
       // Arrange
       const reports = await request(server)
         .post('/v1/reports')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({
           startDate,
           endDate,
@@ -248,7 +248,7 @@ describe('/v1/reports endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/reports/${reportId}/download`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       expect(response.statusCode).toBe(200);
@@ -261,7 +261,7 @@ describe('/v1/reports endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/reports/${reportId}/download`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -275,7 +275,7 @@ describe('/v1/reports endpoint', () => {
       // Arrange
       const reports = await request(server)
         .post('/v1/reports')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({
           startDate,
           endDate,
@@ -285,7 +285,7 @@ describe('/v1/reports endpoint', () => {
       // Action
       const response = await request(server)
         .delete(`/v1/reports/${reportId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -299,7 +299,7 @@ describe('/v1/reports endpoint', () => {
       // Action
       const response = await request(server)
         .delete(`/v1/reports/${reportId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;

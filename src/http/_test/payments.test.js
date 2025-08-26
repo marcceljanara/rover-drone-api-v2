@@ -22,8 +22,8 @@ const registerAndLoginAdmin = async (server) => {
   const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
-  const { accessToken } = login.body.data;
-  return accessToken;
+  const adminCookie = login.headers['set-cookie'];
+  return adminCookie;
 };
 
 const registerAndLoginUser = async (server) => {
@@ -38,8 +38,8 @@ const registerAndLoginUser = async (server) => {
   const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
-  const { accessToken } = login.body.data;
-  return accessToken;
+  const userCookie = login.headers['set-cookie'];
+  return userCookie;
 };
 
 jest.mock('../../utils/calculateShippingCost.js', () => ({
@@ -49,16 +49,16 @@ jest.mock('../../utils/calculateShippingCost.js', () => ({
 
 describe('/v1/payments endpoint', () => {
   let server;
-  let accessTokenAdmin;
-  let accessTokenUser;
+  let adminCookie;
+  let userCookie;
 
   beforeAll(async () => {
     server = createServer();
   });
 
   beforeEach(async () => {
-    accessTokenAdmin = await registerAndLoginAdmin(server);
-    accessTokenUser = await registerAndLoginUser(server);
+    adminCookie = await registerAndLoginAdmin(server);
+    userCookie = await registerAndLoginUser(server);
     calculateShippingCost.mockResolvedValue({
       shippingName: 'JNE',
       serviceName: 'JTR23',
@@ -92,13 +92,13 @@ describe('/v1/payments endpoint', () => {
       };
       await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
 
       // Action
       const response = await request(server)
         .get('/v1/payments')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -119,13 +119,13 @@ describe('/v1/payments endpoint', () => {
       };
       const { paymentId } = (await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload)).body.data;
 
       // Action
       const response = await request(server)
         .get(`/v1/payments/${paymentId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -140,7 +140,7 @@ describe('/v1/payments endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/payments/${paymentId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -167,13 +167,13 @@ describe('/v1/payments endpoint', () => {
       };
       const { paymentId } = (await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload)).body.data;
 
       // Action
       const response = await request(server)
         .put(`/v1/payments/${paymentId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send(requestPayload);
 
       // Assert
@@ -197,17 +197,17 @@ describe('/v1/payments endpoint', () => {
       };
       const { id } = (await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload)).body.data;
 
       await request(server)
         .put(`/v1/rentals/${id}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       const extension = await request(server)
         .post('/v1/extensions')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send({ rentalId: id, interval: 6 });
 
       const { paymentId } = extension.body.data;
@@ -215,7 +215,7 @@ describe('/v1/payments endpoint', () => {
       // Action
       const response = await request(server)
         .put(`/v1/payments/${paymentId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send(requestPayload);
 
       // Assert
@@ -235,7 +235,7 @@ describe('/v1/payments endpoint', () => {
       // Action
       const response = await request(server)
         .put(`/v1/payments/${paymentId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send(requestPayload);
 
       // Assert
@@ -257,13 +257,13 @@ describe('/v1/payments endpoint', () => {
       };
       const { paymentId } = (await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload)).body.data;
 
       // Action
       const response = await request(server)
         .patch(`/v1/payments/${paymentId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -277,7 +277,7 @@ describe('/v1/payments endpoint', () => {
       // Action
       const response = await request(server)
         .patch(`/v1/payments/${paymentId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;

@@ -55,7 +55,7 @@ Use this tone:
     ];
 
     const completion = await openai.chat.completions.create({
-      model: 'qwen3:1.7b',
+      model: 'deepseek-r1:1.5b',
       messages: fullMessages,
       temperature: 0.3,
     });
@@ -113,7 +113,7 @@ Your job is to:
       ];
 
       const completion = await openai.chat.completions.create({
-        model: 'qwen3:1.7b',
+        model: 'deepseek-r1:1.5b',
         messages,
         temperature: 0.3,
       });
@@ -162,7 +162,7 @@ Your job is to:
     ];
 
     const completion = await openai.chat.completions.create({
-      model: 'qwen3:1.7b',
+      model: 'deepseek-r1:1.5b',
       messages,
       temperature: 0.3,
     });

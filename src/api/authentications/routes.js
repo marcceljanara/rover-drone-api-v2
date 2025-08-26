@@ -1,4 +1,5 @@
 import express from 'express';
+import verifyToken from '../../middleware/verifyToken.js';
 
 const authenticationRoutes = (handler) => {
   const router = express.Router();
@@ -49,7 +50,7 @@ const authenticationRoutes = (handler) => {
    *                 data:
    *                   type: object
    *                   properties:
-   *                     accessToken:
+   *                     :
    *                       type: string
    *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9....."
    *                     refreshToken:
@@ -213,6 +214,12 @@ const authenticationRoutes = (handler) => {
    *                   example: \"refreshToken\" is required atau Refresh token tidak valid
    */
   router.delete('/v1/authentications', handler.deleteAuthenticationHandler);
+
+  router.get('/v1/authentications/google', handler.getGoogleAuthenticationHandler);
+
+  router.get('/v1/authentications/google/callback', handler.getGoogleAuthenticationCallbackHandler);
+
+  router.get('/v1/authentications/me', verifyToken, handler.getLoginStatus);
 
   return router;
 };

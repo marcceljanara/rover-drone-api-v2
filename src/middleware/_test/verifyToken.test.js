@@ -2,6 +2,7 @@ import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import verifyToken from '../verifyToken.js';
 
 dotenv.config();
@@ -9,6 +10,8 @@ dotenv.config();
 // Setup Express App
 const app = express();
 app.use(express.json());
+app.use(cookieParser()); // <- WAJIB biar cookie bisa dibaca di middleware
+
 app.get('/protected', verifyToken, (req, res) => {
   res.status(200).json({
     status: 'success',
@@ -17,9 +20,17 @@ app.get('/protected', verifyToken, (req, res) => {
   });
 });
 
-describe('verifyToken Middleware', () => {
-  const validToken = jwt.sign({ id: 'user123', role: 'admin' }, process.env.ACCESS_TOKEN_KEY, { expiresIn: '1h' });
-  const expiredToken = jwt.sign({ id: 'user123', role: 'admin' }, process.env.ACCESS_TOKEN_KEY, { expiresIn: '-1s' });
+describe('verifyToken Middleware (pakai cookie)', () => {
+  const validToken = jwt.sign(
+    { id: 'user123', role: 'admin' },
+    process.env.ACCESS_TOKEN_KEY,
+    { expiresIn: '1h' },
+  );
+  const expiredToken = jwt.sign(
+    { id: 'user123', role: 'admin' },
+    process.env.ACCESS_TOKEN_KEY,
+    { expiresIn: '-1s' },
+  );
   const invalidToken = 'invalidtokenstring';
 
   it('should return 401 if token is not provided', async () => {
@@ -34,7 +45,8 @@ describe('verifyToken Middleware', () => {
   it('should return 401 if token is expired', async () => {
     const response = await request(app)
       .get('/protected')
-      .set('Authorization', `Bearer ${expiredToken}`);
+      .set('Cookie', [`accessToken=${expiredToken}`]);
+
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
       status: 'fail',
@@ -45,7 +57,8 @@ describe('verifyToken Middleware', () => {
   it('should return 403 if token is invalid', async () => {
     const response = await request(app)
       .get('/protected')
-      .set('Authorization', `Bearer ${invalidToken}`);
+      .set('Cookie', [`accessToken=${invalidToken}`]);
+
     expect(response.status).toBe(403);
     expect(response.body).toEqual({
       status: 'fail',
@@ -61,23 +74,22 @@ describe('verifyToken Middleware', () => {
 
     const response = await request(app)
       .get('/protected')
-      .set('Authorization', `Bearer ${validToken}`);
+      .set('Cookie', [`accessToken=${validToken}`]);
 
-    // Verifikasi response
     expect(response.status).toBe(500);
     expect(response.body).toEqual({
       status: 'error',
       message: 'Terjadi kesalahan pada server',
     });
 
-    // Kembalikan fungsi asli
     jwt.verify.mockRestore();
   });
 
   it('should call next middleware and set req.id and req.role if token is valid', async () => {
     const response = await request(app)
       .get('/protected')
-      .set('Authorization', `Bearer ${validToken}`);
+      .set('Cookie', [`accessToken=${validToken}`]);
+
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       status: 'success',

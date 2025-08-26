@@ -64,6 +64,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "google-auth-library": "^10.2.1",
     "helmet": "^8.0.0",
     "joi": "^17.13.3",
     "json2csv": "^6.0.0-alpha.2",
