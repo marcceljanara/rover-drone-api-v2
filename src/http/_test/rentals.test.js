@@ -21,8 +21,8 @@ const registerAndLoginAdmin = async (server) => {
   const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
-  const { accessToken } = login.body.data;
-  return accessToken;
+  const adminCookie = login.headers['set-cookie'];
+  return adminCookie;
 };
 
 const registerAndLoginUser = async (server) => {
@@ -37,8 +37,8 @@ const registerAndLoginUser = async (server) => {
   const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
-  const { accessToken } = login.body.data;
-  return accessToken;
+  const userCookie = login.headers['set-cookie'];
+  return userCookie;
 };
 
 jest.mock('../../utils/calculateShippingCost.js', () => ({
@@ -48,16 +48,16 @@ jest.mock('../../utils/calculateShippingCost.js', () => ({
 
 describe('/v1/rentals endpoint', () => {
   let server;
-  let accessTokenAdmin;
-  let accessTokenUser;
+  let adminCookie;
+  let userCookie;
 
   beforeAll(async () => {
     server = createServer();
   });
 
   beforeEach(async () => {
-    accessTokenAdmin = await registerAndLoginAdmin(server);
-    accessTokenUser = await registerAndLoginUser(server);
+    adminCookie = await registerAndLoginAdmin(server);
+    userCookie = await registerAndLoginUser(server);
     calculateShippingCost.mockResolvedValue({
       shippingName: 'JNE',
       serviceName: 'JTR23',
@@ -91,14 +91,14 @@ describe('/v1/rentals endpoint', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       // Action
       const response = await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       // Assert
@@ -114,7 +114,7 @@ describe('/v1/rentals endpoint', () => {
       // Action
       const response = await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       // Assert
@@ -137,14 +137,14 @@ describe('/v1/rentals endpoint', () => {
         subdistrictName: 'Rejo Binangun',
       }; const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       // Action
       const response = await request(server)
         .put(`/v1/rentals/${rentalId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -159,7 +159,7 @@ describe('/v1/rentals endpoint', () => {
       // Action
       const response = await request(server)
         .put(`/v1/rentals/${rentalId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -181,13 +181,13 @@ describe('/v1/rentals endpoint', () => {
       };
       await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
 
       // Action
       const response = await request(server)
         .get('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -209,14 +209,14 @@ describe('/v1/rentals endpoint', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       // Action
       const response = await request(server)
         .get(`/v1/rentals/${rentalId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -233,7 +233,7 @@ describe('/v1/rentals endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/rentals/${rentalId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -255,25 +255,25 @@ describe('/v1/rentals endpoint', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       const responseExtension = await request(server)
         .post('/v1/extensions')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send({ rentalId, interval: 6 });
       const extensionId = responseExtension.body.data.id;
 
       // Action
       const response = await request(server)
         .get(`/v1/extensions/${extensionId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -288,7 +288,7 @@ describe('/v1/rentals endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/extensions/${extensionId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -309,24 +309,24 @@ describe('/v1/rentals endpoint', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       await request(server)
         .post('/v1/extensions')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send({ rentalId, interval: 6 });
 
       // Action
       const response = await request(server)
         .get(`/v1/rentals/${rentalId}/extensions`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -350,7 +350,7 @@ describe('/v1/rentals endpoint', () => {
       // Action
       const response = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
 
       // Assert
@@ -370,7 +370,7 @@ describe('/v1/rentals endpoint', () => {
       // Action
       const response = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(
           payload,
         );
@@ -393,7 +393,7 @@ describe('/v1/rentals endpoint', () => {
       // Action
       const response = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send(payload);
 
       // Assert
@@ -416,14 +416,14 @@ describe('/v1/rentals endpoint', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       // Action
       const response = await request(server)
         .put(`/v1/rentals/${rentalId}/cancel`)
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send({ rentalStatus: 'cancelled' });
 
       // Assert
@@ -439,7 +439,7 @@ describe('/v1/rentals endpoint', () => {
       // Action
       const response = await request(server)
         .put(`/v1/rentals/${rentalId}/cancel`)
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send({ rentalStatus: 'cancelled' });
 
       // Assert
@@ -461,19 +461,19 @@ describe('/v1/rentals endpoint', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', userCookie)
         .send({ rentalStatus: 'active' });
 
       // Action
       const response = await request(server)
         .get('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -487,7 +487,7 @@ describe('/v1/rentals endpoint', () => {
       // Action
       const response = await request(server)
         .get('/v1/sensors/available')
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -508,19 +508,19 @@ describe('/v1/rentals endpoint', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       // Action
       const response = await request(server)
         .get(`/v1/rentals/${rentalId}`)
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -537,7 +537,7 @@ describe('/v1/rentals endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/rentals/${rentalId}`)
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -554,7 +554,7 @@ describe('/v1/rentals endpoint', () => {
       // Action
       const response = await request(server)
         .get('/v1/shipping-cost?subdistrictName=Rejo Binangun')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send({ subdistrictName });
 
       // Assert
@@ -580,19 +580,19 @@ describe('/v1/rentals endpoint', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       // Action
       const response = await request(server)
         .post('/v1/extensions')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send({ rentalId, interval: 6 });
 
       // Assert
@@ -608,7 +608,7 @@ describe('/v1/rentals endpoint', () => {
       // Action
       const response = await request(server)
         .post('/v1/extensions')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send({ rentalId, interval: 6 });
 
       // Assert
@@ -629,25 +629,25 @@ describe('/v1/rentals endpoint', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       const responseExtension = await request(server)
         .post('/v1/extensions')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send({ rentalId, interval: 6 });
       const extensionId = responseExtension.body.data.id;
 
       // Action
       const response = await request(server)
         .get(`/v1/extensions/${extensionId}`)
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -662,7 +662,7 @@ describe('/v1/rentals endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/extensions/${extensionId}`)
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -682,24 +682,24 @@ describe('/v1/rentals endpoint', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       await request(server)
         .post('/v1/extensions')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send({ rentalId, interval: 6 });
 
       // Action
       const response = await request(server)
         .get(`/v1/rentals/${rentalId}/extensions`)
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
