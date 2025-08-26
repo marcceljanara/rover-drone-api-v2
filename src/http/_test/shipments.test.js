@@ -23,8 +23,8 @@ const registerAndLoginAdmin = async (server) => {
   const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
-  const { accessToken } = login.body.data;
-  return accessToken;
+  const adminCookie = login.headers['set-cookie'];
+  return adminCookie;
 };
 
 const registerAndLoginUser = async (server) => {
@@ -39,8 +39,8 @@ const registerAndLoginUser = async (server) => {
   const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
-  const { accessToken } = login.body.data;
-  return accessToken;
+  const userCookie = login.headers['set-cookie'];
+  return userCookie;
 };
 
 jest.mock('../../utils/calculateShippingCost.js', () => ({
@@ -50,16 +50,16 @@ jest.mock('../../utils/calculateShippingCost.js', () => ({
 
 describe('/v1/shipments endpoints', () => {
   let server;
-  let accessTokenAdmin;
-  let accessTokenUser;
+  let adminCookie;
+  let userCookie;
 
   beforeAll(async () => {
     server = createServer();
   });
 
   beforeEach(async () => {
-    accessTokenAdmin = await registerAndLoginAdmin(server);
-    accessTokenUser = await registerAndLoginUser(server);
+    adminCookie = await registerAndLoginAdmin(server);
+    userCookie = await registerAndLoginUser(server);
     calculateShippingCost.mockResolvedValue({
       shippingName: 'JNE',
       serviceName: 'JTR23',
@@ -92,19 +92,18 @@ describe('/v1/shipments endpoints', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ rentalStatus: 'active' });
+        .set('Cookie', adminCookie).send({ rentalStatus: 'active' });
 
       // Action
       const response = await request(server)
         .get(`/v1/shipments/${rentalId}`)
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       expect(response.statusCode).toBe(200);
@@ -116,7 +115,7 @@ describe('/v1/shipments endpoints', () => {
       // Action
       const response = await request(server)
         .get(`/v1/shipments/${nonExistentRentalId}`)
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       expect(response.statusCode).toBe(404);
@@ -138,15 +137,14 @@ describe('/v1/shipments endpoints', () => {
 
       const rentalResponse = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(rentalPayload);
 
       const rentalId = rentalResponse.body.data.id;
 
       const verifyResponse = await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ rentalStatus: 'active' });
+        .set('Cookie', adminCookie).send({ rentalStatus: 'active' });
 
       return verifyResponse.body.data.shipmentId;
     };
@@ -156,12 +154,11 @@ describe('/v1/shipments endpoints', () => {
 
       await request(server)
         .post(`/v1/shipments/${shipmentId}/delivery-proof`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .attach('photo', '__tests__/assets/delivery-proof.jpg');
+        .set('Cookie', adminCookie).attach('photo', '__tests__/assets/delivery-proof.jpg');
 
       const response = await request(server)
         .get(`/v1/shipments/${shipmentId}/delivery-proof`)
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       expect(response.statusCode).toBe(200);
       expect(response.body.status).toBe('success');
@@ -204,19 +201,18 @@ describe('/v1/shipments endpoints', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ rentalStatus: 'active' });
+        .set('Cookie', adminCookie).send({ rentalStatus: 'active' });
 
       // Action
       const response = await request(server)
         .get('/v1/shipments')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       expect(response.statusCode).toBe(200);
@@ -228,7 +224,7 @@ describe('/v1/shipments endpoints', () => {
       // Action
       const response = await request(server)
         .get('/v1/shipments')
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       expect(response.statusCode).toBe(403);
@@ -246,22 +242,20 @@ describe('/v1/shipments endpoints', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       const responseVerify = await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ rentalStatus: 'active' });
+        .set('Cookie', adminCookie).send({ rentalStatus: 'active' });
 
       const { shipmentId } = responseVerify.body.data;
 
       // Action
       const response = await request(server)
         .put(`/v1/shipments/${shipmentId}/info`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({
+        .set('Cookie', adminCookie).send({
           courierName: 'JNE',
           trackingNumber: 'JNE123456789',
           courierService: 'JTR23',
@@ -280,8 +274,7 @@ describe('/v1/shipments endpoints', () => {
       // Action
       const response = await request(server)
         .put(`/v1/shipments/${nonExistentRentalId}/info`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({
+        .set('Cookie', adminCookie).send({
           courierName: 'JNE',
           trackingNumber: 'JNE123456789',
           courierService: 'JTR23',
@@ -304,22 +297,20 @@ describe('/v1/shipments endpoints', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       const responseVerify = await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ rentalStatus: 'active' });
+        .set('Cookie', adminCookie).send({ rentalStatus: 'active' });
 
       const { shipmentId } = responseVerify.body.data;
 
       // Action
       const response = await request(server)
         .patch(`/v1/shipments/${shipmentId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ status: 'shipped' });
+        .set('Cookie', adminCookie).send({ status: 'shipped' });
 
       // Assert
       expect(response.statusCode).toBe(200);
@@ -333,8 +324,7 @@ describe('/v1/shipments endpoints', () => {
       // Action
       const response = await request(server)
         .patch(`/v1/shipments/${nonExistentShipmentId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ status: 'shipped' });
+        .set('Cookie', adminCookie).send({ status: 'shipped' });
 
       // Assert
       expect(response.statusCode).toBe(404);
@@ -352,22 +342,20 @@ describe('/v1/shipments endpoints', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       const responseVerify = await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ rentalStatus: 'active' });
+        .set('Cookie', adminCookie).send({ rentalStatus: 'active' });
 
       const { shipmentId } = responseVerify.body.data;
 
       // Action
       const response = await request(server)
         .patch(`/v1/shipments/${shipmentId}/actual-shipping`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ date: '2023-10-01T10:00:00Z' });
+        .set('Cookie', adminCookie).send({ date: '2023-10-01T10:00:00Z' });
 
       // Assert
       expect(response.statusCode).toBe(200);
@@ -381,8 +369,7 @@ describe('/v1/shipments endpoints', () => {
       // Action
       const response = await request(server)
         .patch(`/v1/shipments/${nonExistentShipmentId}/actual-shipping`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ date: '2023-10-01T10:00:00Z' });
+        .set('Cookie', adminCookie).send({ date: '2023-10-01T10:00:00Z' });
 
       // Assert
       expect(response.statusCode).toBe(404);
@@ -400,22 +387,20 @@ describe('/v1/shipments endpoints', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       const responseVerify = await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ rentalStatus: 'active' });
+        .set('Cookie', adminCookie).send({ rentalStatus: 'active' });
 
       const { shipmentId } = responseVerify.body.data;
 
       // Action
       const response = await request(server)
         .patch(`/v1/shipments/${shipmentId}/actual-delivery`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ date: '2023-10-02T10:00:00Z' });
+        .set('Cookie', adminCookie).send({ date: '2023-10-02T10:00:00Z' });
 
       // Assert
       expect(response.statusCode).toBe(200);
@@ -429,8 +414,7 @@ describe('/v1/shipments endpoints', () => {
       // Action
       const response = await request(server)
         .patch(`/v1/shipments/${nonExistentShipmentId}/actual-delivery`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ date: '2023-10-02T10:00:00Z' });
+        .set('Cookie', adminCookie).send({ date: '2023-10-02T10:00:00Z' });
 
       // Assert
       expect(response.statusCode).toBe(404);
@@ -451,15 +435,14 @@ describe('/v1/shipments endpoints', () => {
 
       const rentalResponse = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(rentalPayload);
 
       const rentalId = rentalResponse.body.data.id;
 
       const verifyResponse = await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ rentalStatus: 'active' });
+        .set('Cookie', adminCookie).send({ rentalStatus: 'active' });
 
       return verifyResponse.body.data.shipmentId;
     };
@@ -469,8 +452,7 @@ describe('/v1/shipments endpoints', () => {
 
       const response = await request(server)
         .post(`/v1/shipments/${shipmentId}/delivery-proof`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .attach('photo', '__tests__/assets/delivery-proof.jpg');
+        .set('Cookie', adminCookie).attach('photo', '__tests__/assets/delivery-proof.jpg');
 
       expect(response.statusCode).toBe(201);
       expect(response.body.status).toBe('success');
@@ -516,15 +498,14 @@ describe('/v1/shipments endpoints', () => {
 
       const rentalResponse = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(rentalPayload);
 
       const rentalId = rentalResponse.body.data.id;
 
       const verifyResponse = await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ rentalStatus: 'active' });
+        .set('Cookie', adminCookie).send({ rentalStatus: 'active' });
 
       return verifyResponse.body.data.shipmentId;
     };
@@ -534,12 +515,11 @@ describe('/v1/shipments endpoints', () => {
 
       await request(server)
         .post(`/v1/shipments/${shipmentId}/delivery-proof`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .attach('photo', '__tests__/assets/delivery-proof.jpg');
+        .set('Cookie', adminCookie).attach('photo', '__tests__/assets/delivery-proof.jpg');
 
       const response = await request(server)
         .get(`/v1/shipments/${shipmentId}/delivery-proof`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       expect(response.statusCode).toBe(200);
       expect(response.body.status).toBe('success');
@@ -582,19 +562,18 @@ describe('/v1/shipments endpoints', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
-        .send({ rentalStatus: 'active' });
+        .set('Cookie', adminCookie).send({ rentalStatus: 'active' });
 
       // Action
       const response = await request(server)
         .get(`/v1/shipments/${rentalId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       expect(response.statusCode).toBe(200);
@@ -606,7 +585,7 @@ describe('/v1/shipments endpoints', () => {
       // Action
       const response = await request(server)
         .get(`/v1/shipments/${nonExistentRentalId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       expect(response.statusCode).toBe(404);
