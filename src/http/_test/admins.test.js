@@ -18,12 +18,12 @@ const registerAndLoginAdmin = async (server) => {
   const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
-  const { accessToken } = login.body.data;
-  return accessToken;
+  const adminCookie = login.headers['set-cookie'];
+  return adminCookie;
 };
 describe('/v1/admin endpoint', () => {
   let server;
-  let accessToken;
+  let adminCookie;
 
   afterAll(async () => {
     await pool.end();
@@ -34,7 +34,7 @@ describe('/v1/admin endpoint', () => {
   });
 
   beforeEach(async () => {
-    accessToken = await registerAndLoginAdmin(server);
+    adminCookie = await registerAndLoginAdmin(server);
   });
 
   afterEach(async () => {
@@ -65,7 +65,7 @@ describe('/v1/admin endpoint', () => {
 
       const response = await request(server)
         .post('/v1/admin')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Cookie', adminCookie)
         .send(requestPayload);
 
       const responseJson = response.body;
@@ -85,7 +85,7 @@ describe('/v1/admin endpoint', () => {
 
       const response = await request(server)
         .post('/v1/admin')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Cookie', adminCookie)
         .send(requestPayload);
 
       const responseJson = response.body;
@@ -107,7 +107,7 @@ describe('/v1/admin endpoint', () => {
     it('should respond with 200 and get all users and admins with default limit and page', async () => {
       const response = await request(server)
         .get('/v1/admin')
-        .set('Authorization', `Bearer ${accessToken}`);
+        .set('Cookie', adminCookie);
 
       const responseJson = response.body;
       expect(response.statusCode).toBe(200);
@@ -120,7 +120,7 @@ describe('/v1/admin endpoint', () => {
     it('should respond with 200 and paginated users when page and limit are provided', async () => {
       const response = await request(server)
         .get('/v1/admin?page=1&limit=2') // Testing pagination
-        .set('Authorization', `Bearer ${accessToken}`);
+        .set('Cookie', adminCookie);
 
       const responseJson = response.body;
       expect(response.statusCode).toBe(200);
@@ -134,7 +134,7 @@ describe('/v1/admin endpoint', () => {
     it('should respond with 200 and filtered users when search query is provided', async () => {
       const response = await request(server)
         .get('/v1/admin?search=admin') // Testing search feature
-        .set('Authorization', `Bearer ${accessToken}`);
+        .set('Cookie', adminCookie);
 
       const responseJson = response.body;
       expect(response.statusCode).toBe(200);
@@ -147,7 +147,7 @@ describe('/v1/admin endpoint', () => {
     it('should respond with 200 and empty users when search query does not match any user', async () => {
       const response = await request(server)
         .get('/v1/admin?search=nonexistent') // Search for non-existent data
-        .set('Authorization', `Bearer ${accessToken}`);
+        .set('Cookie', adminCookie);
 
       const responseJson = response.body;
       expect(response.statusCode).toBe(200);
@@ -164,7 +164,7 @@ describe('/v1/admin endpoint', () => {
 
       const response = await request(server)
         .get(`/v1/admin/${userId}`)
-        .set('Authorization', `Bearer ${accessToken}`);
+        .set('Cookie', adminCookie);
 
       const responseJson = response.body;
       expect(response.statusCode).toBe(200);
@@ -175,7 +175,7 @@ describe('/v1/admin endpoint', () => {
     it('should respond with 404 if user not found', async () => {
       const response = await request(server)
         .get('/v1/admin/notfound')
-        .set('Authorization', `Bearer ${accessToken}`);
+        .set('Cookie', adminCookie);
 
       const responseJson = response.body;
       expect(response.statusCode).toBe(404);
@@ -190,7 +190,7 @@ describe('/v1/admin endpoint', () => {
 
       const response = await request(server)
         .delete(`/v1/admin/${userId}`)
-        .set('Authorization', `Bearer ${accessToken}`);
+        .set('Cookie', adminCookie);
 
       const responseJson = response.body;
       expect(response.statusCode).toBe(200);
@@ -200,7 +200,7 @@ describe('/v1/admin endpoint', () => {
     it('should respond with 404 if user not found', async () => {
       const response = await request(server)
         .delete('/v1/admin/notfound')
-        .set('Authorization', `Bearer ${accessToken}`);
+        .set('Cookie', adminCookie);
 
       const responseJson = response.body;
       expect(response.statusCode).toBe(404);
@@ -219,7 +219,7 @@ describe('/v1/admin endpoint', () => {
 
       const response = await request(server)
         .put(`/v1/admin/${userId}`)
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Cookie', adminCookie)
         .send(requestPayload);
 
       const responseJson = response.body;
@@ -236,7 +236,7 @@ describe('/v1/admin endpoint', () => {
 
       const response = await request(server)
         .put(`/v1/admin/${userId}`)
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Cookie', adminCookie)
         .send(requestPayload);
 
       const responseJson = response.body;

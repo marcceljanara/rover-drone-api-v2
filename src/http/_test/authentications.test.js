@@ -18,7 +18,7 @@ describe('/v1/authentications endpoint', () => {
   });
 
   describe('(User) POST /v1/authentications', () => {
-    it('should response 201 and new authentication', async () => {
+    it('should response 200 and new authentication', async () => {
       // Arrange
       const requestPayload = {
         email: 'email@gmail.com',
@@ -32,10 +32,8 @@ describe('/v1/authentications endpoint', () => {
 
       // Assert
       const responseJson = response.body;
-      expect(response.statusCode).toEqual(201);
+      expect(response.statusCode).toEqual(200);
       expect(responseJson.status).toEqual('success');
-      expect(responseJson.data.accessToken).toBeDefined();
-      expect(responseJson.data.refreshToken).toBeDefined();
     });
 
     it('should response 404 if email not found', async () => {
@@ -95,7 +93,7 @@ describe('/v1/authentications endpoint', () => {
     });
   });
   describe('(Admin) POST /v1/authentications', () => {
-    it('should response 201 and new authentication', async () => {
+    it('should response 200 and new authentication', async () => {
       // Arrange
       const payload = {
         id: 'admin-12345',
@@ -114,10 +112,8 @@ describe('/v1/authentications endpoint', () => {
 
       // Assert
       const responseJson = response.body;
-      expect(response.statusCode).toEqual(201);
+      expect(response.statusCode).toEqual(200);
       expect(responseJson.status).toEqual('success');
-      expect(responseJson.data.accessToken).toBeDefined();
-      expect(responseJson.data.refreshToken).toBeDefined();
     });
 
     it('should response 404 if email not found', async () => {
@@ -186,40 +182,46 @@ describe('/v1/authentications endpoint', () => {
       const server = createServer();
       await UsersTableTestHelper.addUser('user-12345');
       const loginResponse = await request(server).post('/v1/authentications').send(requestLoginPayload);
-      const { refreshToken } = loginResponse.body.data;
+      const userCookie = loginResponse.headers['set-cookie'];
 
       // Action
-      const response = await request(server).put('/v1/authentications').send({ refreshToken });
+      const response = await request(server).put('/v1/authentications')
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
       expect(response.statusCode).toEqual(200);
       expect(responseJson.status).toEqual('success');
-      expect(responseJson.data.accessToken).toBeDefined();
     });
     it('should return 400 payload not contain refresh token', async () => {
       // Arrange
       const server = createServer();
 
       // Actions
-      const response = await request(server).put('/v1/authentications').send({});
+      const response = await request(server).put('/v1/authentications');
 
       // Assert
       const responseJson = response.body;
       expect(response.statusCode).toEqual(400);
       expect(responseJson.status).toEqual('fail');
-      expect(responseJson.message).toEqual('"refreshToken" is required');
+      expect(responseJson.message).toEqual('Refresh token tidak valid');
     });
   });
   describe('DELETE /v1/authentications', () => {
     it('should response 200 if refresh token valid', async () => {
       // Arrange
+      const requestLoginPayload = {
+        email: 'email@gmail.com',
+        password: 'superpassword',
+      };
       const server = createServer();
-      const refreshToken = 'refresh_token';
-      await AuthenticationsTableTestHelper.addToken(refreshToken);
+      await UsersTableTestHelper.addUser('user-12345');
+      const loginResponse = await request(server).post('/v1/authentications').send(requestLoginPayload);
+      const userCookie = loginResponse.headers['set-cookie'];
 
       // Action
-      const response = (await request(server).delete('/v1/authentications').send({ refreshToken }));
+      const response = await request(server).delete('/v1/authentications')
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -231,13 +233,13 @@ describe('/v1/authentications endpoint', () => {
       const server = createServer();
 
       // Actions
-      const response = await request(server).delete('/v1/authentications').send({});
+      const response = await request(server).delete('/v1/authentications');
 
       // Assert
       const responseJson = response.body;
       expect(response.statusCode).toEqual(400);
       expect(responseJson.status).toEqual('fail');
-      expect(responseJson.message).toEqual('"refreshToken" is required');
+      expect(responseJson.message).toEqual('Refresh token tidak valid');
     });
   });
 });
