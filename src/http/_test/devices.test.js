@@ -21,8 +21,8 @@ const registerAndLoginAdmin = async (server) => {
   const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
-  const { accessToken } = login.body.data;
-  return accessToken;
+  const adminCookie = login.headers['set-cookie'];
+  return adminCookie;
 };
 
 const registerAndLoginUser = async (server) => {
@@ -37,8 +37,8 @@ const registerAndLoginUser = async (server) => {
   const login = await request(server).post('/v1/authentications')
     .send({ email: payload.email, password: payload.password });
 
-  const { accessToken } = login.body.data;
-  return accessToken;
+  const userCookie = login.headers['set-cookie'];
+  return userCookie;
 };
 jest.mock('../../utils/calculateShippingCost.js', () => ({
   __esModule: true,
@@ -47,16 +47,16 @@ jest.mock('../../utils/calculateShippingCost.js', () => ({
 
 describe('/v1/devices endpoint', () => {
   let server;
-  let accessTokenAdmin;
-  let accessTokenUser;
+  let adminCookie;
+  let userCookie;
 
   beforeAll(async () => {
     server = createServer();
   });
 
   beforeEach(async () => {
-    accessTokenAdmin = await registerAndLoginAdmin(server);
-    accessTokenUser = await registerAndLoginUser(server);
+    adminCookie = await registerAndLoginAdmin(server);
+    userCookie = await registerAndLoginUser(server);
     calculateShippingCost.mockResolvedValue({
       shippingName: 'JNE',
       serviceName: 'JTR23',
@@ -82,7 +82,7 @@ describe('/v1/devices endpoint', () => {
       // Arrange and Actions
       const response = await request(server)
         .post('/v1/devices')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -100,7 +100,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .put(`/v1/devices/${deviceId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -112,7 +112,7 @@ describe('/v1/devices endpoint', () => {
       // Arrange and Action
       const response = await request(server)
         .put('/v1/devices/notfound')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -132,7 +132,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .put(`/v1/devices/${deviceId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send(requestPayload);
 
       // Assert
@@ -146,7 +146,7 @@ describe('/v1/devices endpoint', () => {
       // Arrange and Action
       const response = await request(server)
         .put('/v1/devices/notfound/status')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ status: 'active' });
 
       // Assert
@@ -164,7 +164,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .put(`/v1/devices/${deviceId}/mqttsensor`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -177,7 +177,7 @@ describe('/v1/devices endpoint', () => {
       // Arrange and Action
       const response = await request(server)
         .put('/v1/devices/notfound/mqttsensor')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -194,7 +194,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .put(`/v1/devices/${deviceId}/mqttcontrol`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -207,7 +207,7 @@ describe('/v1/devices endpoint', () => {
       // Arrange and Action
       const response = await request(server)
         .put('/v1/devices/notfound/mqttcontrol')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -225,7 +225,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .get('/v1/devices')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -243,7 +243,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .get('/v1/devices?scope=available')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -262,7 +262,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/devices/${deviceId}`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -274,7 +274,7 @@ describe('/v1/devices endpoint', () => {
       // Arrange and Action
       const response = await request(server)
         .get('/v1/devices/notfound')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -296,19 +296,19 @@ describe('/v1/devices endpoint', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       // Action
       const response = await request(server)
         .get('/v1/devices')
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -330,19 +330,19 @@ describe('/v1/devices endpoint', () => {
       };
       const responseRental = await request(server)
         .post('/v1/rentals')
-        .set('Authorization', `Bearer ${accessTokenUser}`)
+        .set('Cookie', userCookie)
         .send(payload);
       const rentalId = responseRental.body.data.id;
 
       await request(server)
         .put(`/v1/rentals/${rentalId}/status`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ rentalStatus: 'active' });
 
       // Action
       const response = await request(server)
         .get(`/v1/devices/${deviceId}`)
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -354,7 +354,7 @@ describe('/v1/devices endpoint', () => {
       // Arrange and Action
       const response = await request(server)
         .get('/v1/devices/notfound')
-        .set('Authorization', `Bearer ${accessTokenUser}`);
+        .set('Cookie', userCookie);
 
       // Assert
       const responseJson = response.body;
@@ -371,7 +371,7 @@ describe('/v1/devices endpoint', () => {
       // Actions
       const response = await request(server)
         .put(`/v1/devices/${deviceId}/control`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ action: 'on', command: 'power' });
 
       // Assert
@@ -383,7 +383,7 @@ describe('/v1/devices endpoint', () => {
       // Arrange and Action
       const response = await request(server)
         .put('/v1/devices/notfound/control')
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ action: 'on', command: 'power' });
 
       // Assert
@@ -398,7 +398,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .put(`/v1/devices/${deviceId}/control`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`)
+        .set('Cookie', adminCookie)
         .send({ action: 'active', command: 'power' });
 
       // Assert
@@ -416,7 +416,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/devices/${deviceId}/sensors/intervals?interval=12h`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -432,7 +432,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/devices/${deviceId}/sensors/intervals`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -448,7 +448,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/devices/${deviceId}/sensors/intervals?interval=9h`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -470,7 +470,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/devices/${deviceId}/sensors/limits?limit=5`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -490,7 +490,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/devices/${deviceId}/sensors/limits`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -506,7 +506,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/devices/${deviceId}/sensors/limits?limit=7`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -523,7 +523,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/devices/${deviceId}/sensors/downloads?interval=12h`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       expect(response.statusCode).toBe(200);
@@ -537,7 +537,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/devices/${deviceId}/sensors/downloads`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       expect(response.statusCode).toBe(200);
@@ -551,7 +551,7 @@ describe('/v1/devices endpoint', () => {
       // Action
       const response = await request(server)
         .get(`/v1/devices/${deviceId}/sensors/downloads?interval=9h`)
-        .set('Authorization', `Bearer ${accessTokenAdmin}`);
+        .set('Cookie', adminCookie);
 
       // Assert
       const responseJson = response.body;
@@ -566,14 +566,14 @@ describe('/v1/devices endpoint', () => {
   //     const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
   //     await request(server)
   //       .put(`/v1/devices/${deviceId}/control`)
-  //       .set('Authorization', `Bearer ${accessTokenAdmin}`)
+  //       .set('Authorization', `Bearer ${adminCookie}`)
   //       .send({ action: 'active', command: 'power' });
   //     await DevicesTableTestHelper.addUsageLog();
 
   //     // Action
   //     const response = await request(server)
   //       .get(`/v1/devices/${deviceId}/daily`)
-  //       .set('Authorization', `Bearer ${accessTokenAdmin}`);
+  //       .set('Authorization', `Bearer ${adminCookie}`);
 
   //     // Assert
   //     const responseJson = response.body;
