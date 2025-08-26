@@ -104,7 +104,6 @@ class AuthenticationHandler {
         message: 'Berhasil logout',
       });
     } catch (error) {
-      console.log(error);
       return next(error);
     }
   }
