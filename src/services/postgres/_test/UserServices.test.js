@@ -30,8 +30,18 @@ describe('UserService', () => {
   });
 
   describe('registerUser', () => {
+    let mockClient;
+
+    beforeEach(() => {
+      mockClient = {
+        query: jest.fn(),
+        release: jest.fn(),
+      };
+      pool.connect = jest.fn().mockResolvedValue(mockClient);
+    });
+
     it('should register a user successfully', async () => {
-      // Arrange
+    // Arrange
       const mockPayload = {
         username: 'testuser',
         password: 'password123',
@@ -40,30 +50,47 @@ describe('UserService', () => {
       };
 
       const hashedPassword = 'hashedpassword123';
-      bcrypt.hash.mockResolvedValue(hashedPassword);
+      bcrypt.genSalt = jest.fn().mockResolvedValue('salt');
+      bcrypt.hash = jest.fn().mockResolvedValue(hashedPassword);
 
-      pool.query.mockResolvedValueOnce({ rows: [{ id: 'user-123' }] });
+      // Mock query behaviour
+      mockClient.query
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }] }) // Insert users
+        .mockResolvedValueOnce({}) // Insert auth_providers
+        .mockResolvedValueOnce({}); // COMMIT
 
       // Act
       const result = await userService.registerUser(mockPayload);
 
       // Assert
-      expect(pool.query).toHaveBeenCalledWith({
-        text: 'INSERT INTO users (id, username, password, fullname, email, is_verified) VALUES($1, $2, $3, $4, $5, $6) RETURNING id',
+      expect(mockClient.query).toHaveBeenCalledWith('BEGIN');
+      expect(mockClient.query).toHaveBeenCalledWith({
+        text: expect.stringContaining('INSERT INTO users'),
         values: expect.arrayContaining([
           expect.stringContaining('user-'),
           mockPayload.username,
-          hashedPassword,
           mockPayload.fullname,
           mockPayload.email,
           false,
         ]),
       });
-      expect(result).toEqual('user-123');
+      expect(mockClient.query).toHaveBeenCalledWith({
+        text: expect.stringContaining('INSERT INTO auth_providers'),
+        values: expect.arrayContaining([
+          expect.stringContaining('auth-'),
+          expect.stringContaining('user-'),
+          'local',
+          mockPayload.username,
+          hashedPassword,
+        ]),
+      });
+      expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
+      expect(result).toEqual(expect.stringContaining('user-'));
     });
 
-    it('should throw InvariantError when user registration fails', async () => {
-      // Arrange
+    it('should throw InvariantError when insert users fails', async () => {
+    // Arrange
       const mockPayload = {
         username: 'testuser',
         password: 'password123',
@@ -71,11 +98,17 @@ describe('UserService', () => {
         email: 'test@example.com',
       };
 
-      bcrypt.hash.mockResolvedValue('hashedpassword123');
-      pool.query.mockResolvedValueOnce({ rows: [] });
+      bcrypt.genSalt = jest.fn().mockResolvedValue('salt');
+      bcrypt.hash = jest.fn().mockResolvedValue('hashedpassword123');
+
+      mockClient.query
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rows: [] }) // Insert users gagal
+        .mockResolvedValueOnce({}); // ROLLBACK
 
       // Act & Assert
       await expect(userService.registerUser(mockPayload)).rejects.toThrow(InvariantError);
+      expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
     });
   });
 

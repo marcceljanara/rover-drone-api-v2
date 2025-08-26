@@ -41,7 +41,7 @@ describe('ReportsService', () => {
     admin = await UsersTableTestHelper.addAdmin({ id: 'admin-123' });
     const rentalsService = new RentalsService();
     const paymentsService = new PaymentsService();
-    const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
+    const user1 = await UsersTableTestHelper.addUser({ id: 'user-123', username: 'user123', email: 'user123@gmail.com' });
     const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'user456', email: 'user456@gmail.com' });
     await DevicesTableTestHelper.addDevice({ id: 'device-123' });
     await DevicesTableTestHelper.addDevice({ id: 'device-456' });

@@ -37,14 +37,13 @@ describe('Admins Service', () => {
       expect(user[0].fullname).toBe(payload.fullname);
       expect(user[0].email).toBe(payload.email);
       expect(user[0].is_verified).toBe(true);
-      expect(user[0].otp_code).toBe(null);
       expect(user).toHaveLength(1);
     });
   });
   describe('getAllUser function', () => {
     it('should show all user', async () => {
       // Arrange
-      await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await UsersTableTestHelper.addUser({ id: 'user-123', username: 'user123', email: 'user123@gmail.com' });
       await UsersTableTestHelper.addUser({ id: 'user-456', username: 'halo', email: 'hehe@gmail.com' });
       await UsersTableTestHelper.addAdmin({ id: 'admin-123' });
       const adminsService = new AdminsService();
@@ -62,7 +61,7 @@ describe('Admins Service', () => {
   describe('getCountData function', () => {
     it('should get count data correctly', async () => {
       // Arrange
-      await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await UsersTableTestHelper.addUser({ id: 'user-123', username: 'user123', email: 'user123@gmail.com' });
       await UsersTableTestHelper.addUser({ id: 'user-456', username: 'halo', email: 'hehe@gmail.com' });
       await UsersTableTestHelper.addAdmin({ id: 'admin-123' });
       const adminsService = new AdminsService();
