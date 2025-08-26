@@ -1,34 +1,68 @@
 /* istanbul ignore file */
-
 import bcrypt from 'bcrypt';
+import { nanoid } from 'nanoid';
 import pool from '../src/config/postgres/pool.js';
 
 const UsersTableTestHelper = {
 
   async addUser({
-    id = 'user-123', username = 'marccel', email = 'email@gmail.com', fullname = 'Marccel Janara', password = 'superpassword', is_verified = true, otp_code = null, otp_expiry = null, role = 'user',
+    id = 'user-123', username = 'marccel', email = 'email@gmail.com', fullname = 'Marccel Janara', password = 'superpassword', is_verified = true, role = 'user',
   }) {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const query = {
-      text: 'INSERT INTO users VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id',
-      values: [id, username, email, fullname, hashedPassword,
-        is_verified, otp_code, otp_expiry, role],
-    };
-    const result = await pool.query(query);
-    return result.rows[0].id;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      // Insert ke users
+      const userQuery = {
+        text: 'INSERT INTO users (id, username, email, fullname, is_verified, role) VALUES ($1, $2, $3, $4, $5, $6)',
+        values: [id, username, email, fullname, is_verified, role],
+      };
+      await client.query(userQuery);
+
+      // Insert ke auth_providers
+      const authQuery = {
+        text: 'INSERT INTO auth_providers (id, user_id, provider, provider_id, password) VALUES ($1, $2, $3, $4, $5)',
+        values: [nanoid(22), id, 'local', username, hashedPassword],
+      };
+      await client.query(authQuery);
+      await client.query('COMMIT');
+      return id;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   async addAdmin({
-    id = 'user-54321', username = 'adminkeren', email = 'admin@gmail.com', fullname = 'Admin Ganteng', password = 'superpassword', is_verified = true, otp_code = null, otp_expiry = null, role = 'admin',
+    id = 'admin-54321', username = 'admin', email = 'email@gmail.com', fullname = 'Marccel Janara', password = 'superpassword', is_verified = true, role = 'admin',
   }) {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const query = {
-      text: 'INSERT INTO users VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id',
-      values: [id, username, email, fullname, hashedPassword,
-        is_verified, otp_code, otp_expiry, role],
-    };
-    const result = await pool.query(query);
-    return result.rows[0].id;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      // Insert ke users
+      const userQuery = {
+        text: 'INSERT INTO users (id, username, email, fullname, is_verified, role) VALUES ($1, $2, $3, $4, $5, $6)',
+        values: [id, username, email, fullname, is_verified, role],
+      };
+      await client.query(userQuery);
+
+      // Insert ke auth_providers
+      const authQuery = {
+        text: 'INSERT INTO auth_providers (id, user_id, provider, provider_id, password) VALUES ($1, $2, $3, $4, $5)',
+        values: [nanoid(22), id, 'local', username, hashedPassword],
+      };
+      await client.query(authQuery);
+      await client.query('COMMIT');
+      return id;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   async findUsersById(id) {
@@ -43,7 +77,7 @@ const UsersTableTestHelper = {
 
   async findOtpUserById(id) {
     const query = {
-      text: 'SELECT otp_code FROM users WHERE id = $1',
+      text: 'SELECT otp_code FROM auth_providers WHERE id = $1',
       values: [id],
     };
     const result = await pool.query(query);
@@ -88,6 +122,7 @@ const UsersTableTestHelper = {
   },
 
   async cleanTable() {
+    await pool.query('DELETE FROM auth_providers WHERE 1 =1');
     await pool.query('DELETE FROM users WHERE 1=1');
     await pool.query('DELETE FROM user_addresses WHERE 1=1');
   },
