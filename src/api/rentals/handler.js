@@ -1,3 +1,4 @@
+import autoBind from 'auto-bind';
 import calculateShippingCost from '../../utils/calculateShippingCost.js';
 
 class RentalsHandler {
@@ -6,20 +7,7 @@ class RentalsHandler {
     this._rabbitmqService = rabbitmqService;
     this._validator = validator;
 
-    // Admin
-    this.putStatusRentalHandler = this.putStatusRentalHandler.bind(this);
-    this.deleteRentalHandler = this.deleteRentalHandler.bind(this);
-
-    // User (same id)
-    this.postAddRentalHandler = this.postAddRentalHandler.bind(this);
-    this.getAllRentalHandler = this.getAllRentalHandler.bind(this);
-    this.getDetailRentalHandler = this.getDetailRentalHandler.bind(this);
-    this.putCancelRentalHandler = this.putCancelRentalHandler.bind(this);
-    this.getAllSensorsHandler = this.getAllSensorsHandler.bind(this);
-    this.getShippingCostHandler = this.getShippingCostHandler.bind(this);
-    this.postExtendRentalHandler = this.postExtendRentalHandler.bind(this);
-    this.getAllExtensionsHandler = this.getAllExtensionsHandler.bind(this);
-    this.getDetailExtensionHandler = this.getDetailExtensionHandler.bind(this);
+    autoBind(this);
   }
 
   async putStatusRentalHandler(req, res, next) {

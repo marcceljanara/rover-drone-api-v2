@@ -1,18 +1,12 @@
+import autoBind from 'auto-bind';
+
 class UserHandler {
   constructor({ userService, rabbitmqService, validator }) {
     this._userService = userService;
     this._rabbitmqService = rabbitmqService;
     this._validator = validator;
 
-    this.postRegisterUserHandler = this.postRegisterUserHandler.bind(this);
-    this.postVerifyOtpHandler = this.postVerifyOtpHandler.bind(this);
-    this.postResendOtpHandler = this.postResendOtpHandler.bind(this);
-    this.postAddressHandler = this.postAddressHandler.bind(this);
-    this.getAllAddressHandler = this.getAllAddressHandler.bind(this);
-    this.getDetailAddressHandler = this.getDetailAddressHandler.bind(this);
-    this.putAddressHandler = this.putAddressHandler.bind(this);
-    this.patchSetDefaultAddress = this.patchSetDefaultAddress.bind(this);
-    this.deleteAddressHandler = this.deleteAddressHandler.bind(this);
+    autoBind(this);
   }
 
   async postRegisterUserHandler(req, res, next) {

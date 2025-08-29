@@ -1,24 +1,12 @@
+import autoBind from 'auto-bind';
+
 class DevicesHandler {
   constructor({ devicesService, mqttPublisher, validator }) {
     this._devicesService = devicesService;
     this._mqttPublisher = mqttPublisher;
     this._validator = validator;
 
-    // Admin
-    this.postAddDeviceHandler = this.postAddDeviceHandler.bind(this);
-    this.deleteDeviceHandler = this.deleteDeviceHandler.bind(this);
-    this.putStatusDeviceHandler = this.putStatusDeviceHandler.bind(this);
-    this.putMqttSensorHandler = this.putMqttSensorHandler.bind(this);
-    this.putMqttControlHandler = this.putMqttControlHandler.bind(this);
-
-    // User and admin
-    this.getAllDeviceHandler = this.getAllDeviceHandler.bind(this);
-    this.getDeviceHandler = this.getDeviceHandler.bind(this);
-    this.putDeviceControlHandler = this.putDeviceControlHandler.bind(this);
-    this.getSensorDataHandler = this.getSensorDataHandler.bind(this);
-    this.getSensorDataLimitHandler = this.getSensorDataLimitHandler.bind(this);
-    this.getSensorDataDownloadHandler = this.getSensorDataDownloadHandler.bind(this);
-    this.getDailyUsedHoursHandler = this.getDailyUsedHoursHandler.bind(this);
+    autoBind(this);
   }
 
   async postAddDeviceHandler(req, res) {

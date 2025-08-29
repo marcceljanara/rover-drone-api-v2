@@ -1,11 +1,12 @@
+import autoBind from 'auto-bind';
+
 class LlmHandler {
   constructor({ llmService, devicesService, validator }) {
     this._llmService = llmService;
     this._devicesService = devicesService;
     this._validator = validator;
 
-    this.postChatHandler = this.postChatHandler.bind(this);
-    this.postAnalyzeSensor = this.postAnalyzeSensor.bind(this);
+    autoBind(this);
   }
 
   async postChatHandler(req, res, next) {
