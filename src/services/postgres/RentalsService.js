@@ -7,8 +7,9 @@ import calculateRentalCost from '../../utils/calculatorUtils.js';
 import pool from '../../config/postgres/pool.js';
 
 class RentalsService {
-  constructor() {
+  constructor(cacheService) {
     this._pool = pool;
+    this._cacheService = cacheService;
   }
 
   async changeStatusRental(id, rentalStatus) {
@@ -327,6 +328,10 @@ class RentalsService {
       await client.query('COMMIT'); // Commit transaksi jika sukses
       rentalResult.rows[0].payment_id = paymentId;
       rentalResult.rows[0].cost = totalCost;
+      await this._cacheService.delete('rentals:all');
+      await this._cacheService.delete(`rentals:user:${userId}`);
+      await this._cacheService.delete('payments:all');
+      await this._cacheService.delete(`payments:user:${userId}`);
       return rentalResult.rows[0];
     } catch (error) {
       await client.query('ROLLBACK'); // Rollback jika ada kesalahan
@@ -338,33 +343,39 @@ class RentalsService {
 
   async getAllRental(role, userId) {
     let query;
-
-    if (role === 'admin') {
-      query = {
-        text: `
+    const cacheKey = role === 'admin' ? 'rentals:all' : `rentals:user:${userId}`;
+    try {
+      const cached = await this._cacheService.get(cacheKey);
+      return JSON.parse(cached);
+    } catch (error) {
+      if (role === 'admin') {
+        query = {
+          text: `
         SELECT r.id, r.start_date, r.end_date, r.rental_status, rc.total_cost
         FROM rentals r
         LEFT JOIN rental_costs rc ON rc.rental_id = r.id
         WHERE r.is_deleted = FALSE
         ORDER BY r.created_at DESC
       `,
-        values: [],
-      };
-    } else {
-      query = {
-        text: `
+          values: [],
+        };
+      } else {
+        query = {
+          text: `
         SELECT r.id, r.start_date, r.end_date, r.rental_status, rc.total_cost
         FROM rentals r
         LEFT JOIN rental_costs rc ON rc.rental_id = r.id
         WHERE r.is_deleted = FALSE AND r.user_id = $1
         ORDER BY r.created_at DESC
       `,
-        values: [userId],
-      };
-    }
+          values: [userId],
+        };
+      }
 
-    const result = await this._pool.query(query);
-    return result.rows;
+      const result = await this._pool.query(query);
+      await this._cacheService.set(cacheKey, JSON.stringify(result.rows), 60);
+      return result.rows;
+    }
   }
 
   async getDetailRental(id, role, userId) {
@@ -459,6 +470,8 @@ class RentalsService {
       await client.query(clearDeviceReservationQuery);
 
       await client.query('COMMIT'); // ──⭢ commit jika semua OK ─────────
+      await this._cacheService.delete(`rentals:user:${userId}`);
+      await this._cacheService.delete('rentals:all');
       return rentalRes.rows[0];
     } catch (err) {
       await client.query('ROLLBACK'); // ──⭢ batalkan bila ada error ────
@@ -469,13 +482,19 @@ class RentalsService {
   }
 
   async getAllSensors() {
-    const query = {
-      text: `SELECT id, cost 
+    try {
+      const result = await this._cacheService.get('sensors:all');
+      return JSON.parse(result);
+    } catch (error) {
+      const query = {
+        text: `SELECT id, cost 
                FROM sensors WHERE NOT id = 'temperature'`,
-      values: [],
-    };
-    const result = await this._pool.query(query);
-    return result.rows;
+        values: [],
+      };
+      const result = await this._pool.query(query);
+      await this._cacheService.set('sensors:all', JSON.stringify(result.rows));
+      return result.rows;
+    }
   }
 
   async extensionRental(userId, rentalId, interval, role) {
@@ -527,6 +546,7 @@ class RentalsService {
       );
 
       await client.query('COMMIT');
+      await this._cacheService.delete(`extensions:rental:${rentalId}`);
       return { ...extensionResult.rows[0], paymentId };
     } catch (err) {
       await client.query('ROLLBACK');
@@ -571,6 +591,7 @@ class RentalsService {
       );
 
       await client.query('COMMIT');
+      await this._cacheService.delete(`extensions:rental:${rentalId}`);
       return { success: true };
     } catch (error) {
       await client.query('ROLLBACK');
@@ -582,7 +603,12 @@ class RentalsService {
 
   async getAllRentalExtensions(rentalId, userId, role) {
     const values = [rentalId];
-    let queryText = `
+    const cacheKey = role === 'admin' ? `extensions:rental:${rentalId}:all` : `extensions:rental:${rentalId}:user:${userId}`;
+    try {
+      const cached = await this._cacheService.get(cacheKey);
+      return JSON.parse(cached);
+    } catch (error) {
+      let queryText = `
     SELECT re.id, re.duration_months, re.new_end_date, re.amount, 
            re.status, re.created_at, re.updated_at
     FROM rental_extensions re
@@ -590,20 +616,22 @@ class RentalsService {
     WHERE re.rental_id = $1
   `;
 
-    if (role !== 'admin') {
-      queryText += ' AND r.user_id = $2';
-      values.push(userId);
+      if (role !== 'admin') {
+        queryText += ' AND r.user_id = $2';
+        values.push(userId);
+      }
+
+      queryText += ' ORDER BY re.created_at DESC';
+
+      const query = {
+        text: queryText,
+        values,
+      };
+
+      const result = await this._pool.query(query);
+      await this._cacheService.set(cacheKey, JSON.stringify(result.rows), 60);
+      return result.rows;
     }
-
-    queryText += ' ORDER BY re.created_at DESC';
-
-    const query = {
-      text: queryText,
-      values,
-    };
-
-    const result = await this._pool.query(query);
-    return result.rows;
   }
 
   async getRentalExtensionById(extensionId, userId, role) {
