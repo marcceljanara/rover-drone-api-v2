@@ -3,38 +3,46 @@ import NotFoundError from '../../exceptions/NotFoundError.js';
 import pool from '../../config/postgres/pool.js';
 
 class PaymentsService {
-  constructor() {
+  constructor(cacheService) {
     this._pool = pool;
+    this._cacheService = cacheService;
   }
 
   async getAllPayments(role, userId) {
     let query;
+    const cacheKey = role === 'admin' ? 'payments:all' : `payments:user:${userId}`;
+    try {
+      const cached = await this._cacheService.get(cacheKey);
 
-    if (role === 'admin') {
-      query = {
-        text: `
+      return JSON.parse(cached);
+    } catch (error) {
+      if (role === 'admin') {
+        query = {
+          text: `
         SELECT p.id, p.rental_id, p.amount, p.payment_status
         FROM payments p
         WHERE p.is_deleted = FALSE
         ORDER BY p.created_at DESC
       `,
-        values: [],
-      };
-    } else {
-      query = {
-        text: `
+          values: [],
+        };
+      } else {
+        query = {
+          text: `
         SELECT p.id, p.rental_id, p.amount, p.payment_status
         FROM payments p
         JOIN rentals r ON p.rental_id = r.id
         WHERE p.is_deleted = FALSE AND r.user_id = $1
         ORDER BY p.created_at DESC
       `,
-        values: [userId],
-      };
-    }
+          values: [userId],
+        };
+      }
 
-    const result = await this._pool.query(query);
-    return result.rows;
+      const result = await this._pool.query(query);
+      await this._cacheService.set(cacheKey, JSON.stringify(result.rows), 30);
+      return result.rows;
+    }
   }
 
   async getDetailPayment(id, role, userId) {
@@ -145,6 +153,7 @@ class PaymentsService {
     if (!result.rowCount) {
       throw new NotFoundError('pembayaran tidak ditemukan');
     }
+    this._cacheService.delete('payments:all');
     return result.rows[0];
   }
 
