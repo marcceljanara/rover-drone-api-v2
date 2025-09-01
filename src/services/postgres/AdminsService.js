@@ -6,8 +6,9 @@ import AuthorizationError from '../../exceptions/AuthorizationError.js';
 import pool from '../../config/postgres/pool.js';
 
 class AdminsService {
-  constructor() {
+  constructor(cacheService) {
     this._pool = pool;
+    this._cacheService = cacheService;
   }
 
   async registerUser({
@@ -91,15 +92,21 @@ class AdminsService {
   }
 
   async getDetailUser(id) {
-    const query = {
-      text: 'SELECT id, username, email, fullname, is_verified, role, created_at, updated_at FROM users WHERE id = $1',
-      values: [id],
-    };
-    const result = await this._pool.query(query);
-    if (!result.rowCount) {
-      throw new NotFoundError('User tidak ditemukan');
+    try {
+      const result = await this._cacheService.get(`user:${id}`);
+      return JSON.parse(result);
+    } catch (error) {
+      const query = {
+        text: 'SELECT id, username, email, fullname, is_verified, role, created_at, updated_at FROM users WHERE id = $1',
+        values: [id],
+      };
+      const result = await this._pool.query(query);
+      if (!result.rowCount) {
+        throw new NotFoundError('User tidak ditemukan');
+      }
+      await this._cacheService.set(`user:${id}`, JSON.stringify(result.rows[0]));
+      return result.rows[0];
     }
-    return result.rows[0];
   }
 
   async checkIsAdmin(id) {
@@ -141,7 +148,7 @@ class AdminsService {
 
       // Commit transaction
       await client.query('COMMIT');
-
+      await this._cacheService.delete(`user:${id}`);
       return result.rows;
     } catch (err) {
     // Rollback jika ada error
