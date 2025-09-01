@@ -8,10 +8,23 @@ import InvariantError from '../../../exceptions/InvariantError';
 import NotFoundError from '../../../exceptions/NotFoundError';
 import pool from '../../../config/postgres/pool';
 import ReturnShippingTableTestHelper from '../../../../tests/ReturnShippingTableTestHelper';
+import CacheService from '../../redis/CacheService';
 
 dotenv.config();
 
+jest.mock('redis', () => ({
+  createClient: jest.fn(() => ({
+    connect: jest.fn().mockResolvedValue(),
+    disconnect: jest.fn().mockResolvedValue(),
+    on: jest.fn(),
+    set: jest.fn().mockResolvedValue('OK'),
+    get: jest.fn().mockResolvedValue(null),
+    del: jest.fn().mockResolvedValue(1),
+  })),
+}));
+
 describe('ShipmentsService', () => {
+  const cacheService = new CacheService();
   afterAll(async () => {
     await pool.end();
   });
@@ -26,7 +39,7 @@ describe('ShipmentsService', () => {
   describe('getShipmentByRentalId', () => {
     it('should get shipment correctly', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const shipmentsService = new ShipmentsService();
       const user = await UsersTableTestHelper.addUser({
         id: 'user-123', email: 'emailunik@gmail.com', username: 'usernameunik', password: 'password',
@@ -74,7 +87,7 @@ describe('ShipmentsService', () => {
   describe('updateShippingInfo', () => {
     it('should update shipping info correctly', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const shipmentsService = new ShipmentsService();
       const user = await UsersTableTestHelper.addUser({
         id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
@@ -119,7 +132,7 @@ describe('ShipmentsService', () => {
   describe('updateShippingStatus function', () => {
     it('should update shipping status correctly', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const shipmentsService = new ShipmentsService();
       const user = await UsersTableTestHelper.addUser({
         id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
@@ -144,7 +157,7 @@ describe('ShipmentsService', () => {
     });
     it('should throw InvariantError for invalid status', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const shipmentsService = new ShipmentsService();
       const user = await UsersTableTestHelper.addUser({
         id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
@@ -176,7 +189,7 @@ describe('ShipmentsService', () => {
   describe('confirmActualShipping function', () => {
     it('should confirm actual shipping correctly', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const shipmentsService = new ShipmentsService();
       const user = await UsersTableTestHelper.addUser({
         id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
@@ -214,7 +227,7 @@ describe('ShipmentsService', () => {
   describe('confirmDelivery function', () => {
     it('should confirm delivery correctly', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const shipmentsService = new ShipmentsService();
       const user = await UsersTableTestHelper.addUser({
         id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
@@ -251,7 +264,7 @@ describe('ShipmentsService', () => {
   });
   describe('getAllShipments function', () => {
     const shipmentsService = new ShipmentsService();
-    const rentalsService = new RentalsService();
+    const rentalsService = new RentalsService(cacheService);
     beforeEach(async () => {
       // Arrange
       const user = await UsersTableTestHelper.addUser({
@@ -318,7 +331,7 @@ describe('ShipmentsService', () => {
   describe('getReturnByRentalId function', () => {
     it('should get return shipment by rental ID', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const shipmentsService = new ShipmentsService();
       const user = await UsersTableTestHelper.addUser({
         id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
@@ -364,7 +377,7 @@ describe('ShipmentsService', () => {
   describe('updateReturnAddress function', () => {
     it('should update return address correctly', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const shipmentsService = new ShipmentsService();
       const user = await UsersTableTestHelper.addUser({
         id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
@@ -405,7 +418,7 @@ describe('ShipmentsService', () => {
     });
     it('should throw InvariantError when trying to update return address after 2 days', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const shipmentsService = new ShipmentsService();
       const user = await UsersTableTestHelper.addUser({
         id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
@@ -441,7 +454,7 @@ describe('ShipmentsService', () => {
   describe('updateReturnStatus function', () => {
     it('should update return status correctly', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const shipmentsService = new ShipmentsService();
       const user = await UsersTableTestHelper.addUser({
         id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
@@ -473,7 +486,7 @@ describe('ShipmentsService', () => {
     });
     it('should throw InvariantError for invalid status', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const shipmentsService = new ShipmentsService();
       const user = await UsersTableTestHelper.addUser({
         id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
@@ -513,7 +526,7 @@ describe('ShipmentsService', () => {
   describe('addReturnNote function', () => {
     it('should add return note correctly', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const shipmentsService = new ShipmentsService();
       const user = await UsersTableTestHelper.addUser({
         id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
@@ -553,7 +566,7 @@ describe('ShipmentsService', () => {
   describe('updateReturnShippingInfo function', () => {
     it('should update return shipping info correctly', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const shipmentsService = new ShipmentsService();
       const user = await UsersTableTestHelper.addUser({
         id: 'user-123', email: 'emailunik2@gmail.com', username: 'usernameunik2', password: 'password2',
@@ -606,7 +619,7 @@ describe('ShipmentsService', () => {
   });
   describe('getAllReturns function', () => {
     const shipmentsService = new ShipmentsService();
-    const rentalsService = new RentalsService();
+    const rentalsService = new RentalsService(cacheService);
 
     beforeEach(async () => {
     // Arrange
@@ -693,7 +706,7 @@ describe('ShipmentsService', () => {
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-456' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
 
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const payloadRental = {
         shippingName: 'JNE',
         serviceName: 'YES',
@@ -737,7 +750,7 @@ describe('ShipmentsService', () => {
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-789' });
       await DevicesTableTestHelper.addDevice({ id: 'device-789' });
 
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const payloadRental = {
         shippingName: 'JNE',
         serviceName: 'REG',
