@@ -6,8 +6,9 @@ import InvariantError from '../../exceptions/InvariantError.js';
 import pool from '../../config/postgres/pool.js';
 
 class ReportsService {
-  constructor() {
+  constructor(cacheService) {
     this._pool = pool;
+    this._cacheService = cacheService;
   }
 
   async addReport(userId, start_date, end_date) {
@@ -52,42 +53,53 @@ class ReportsService {
     };
 
     const result = await this._pool.query(query);
+    await this._cacheService.delete('reports:all');
     return result.rows[0].id;
   }
 
   async getAllReport() {
-    const query = {
-      text: `SELECT id,
+    try {
+      const result = await this._cacheService.get('reports:all');
+      return JSON.parse(result);
+    } catch (error) {
+      const query = {
+        text: `SELECT id,
       report_date, 
       total_transactions, 
       start_date, 
       end_date
       FROM reports`,
-      values: [],
-    };
-    const result = await this._pool.query(query);
-    return result.rows;
+        values: [],
+      };
+      const result = await this._pool.query(query);
+      await this._cacheService.set('reports:all', JSON.stringify(result.rows));
+      return result.rows;
+    }
   }
 
   async getReport(id) {
-    const query = {
-      text: `SELECT *,
+    try {
+      const result = await this._cacheService.get(`report:${id}`);
+      return JSON.parse(result);
+    } catch (error) {
+      const query = {
+        text: `SELECT *,
       report_date
       FROM reports WHERE id = $1`,
-      values: [id],
-    };
-    const result = await this._pool.query(query);
+        values: [id],
+      };
+      const result = await this._pool.query(query);
 
-    if (!result.rowCount) {
-      throw new NotFoundError('Laporan tidak ditemukan');
-    }
+      if (!result.rowCount) {
+        throw new NotFoundError('Laporan tidak ditemukan');
+      }
 
-    const startDate = result.rows[0].start_date;
-    const endDate = result.rows[0].end_date;
-    const report = result.rows[0];
+      const startDate = result.rows[0].start_date;
+      const endDate = result.rows[0].end_date;
+      const report = result.rows[0];
 
-    const paymentQuery = {
-      text: `SELECT id,
+      const paymentQuery = {
+        text: `SELECT id,
        rental_id,
         amount,
         payment_date,
@@ -97,20 +109,30 @@ class ReportsService {
         WHERE payment_date BETWEEN $1 AND $2 
         AND payment_status = 'completed' 
         AND is_deleted = FALSE`,
-      values: [startDate, endDate],
-    };
+        values: [startDate, endDate],
+      };
 
-    const paymentResult = await this._pool.query(paymentQuery);
+      const paymentResult = await this._pool.query(paymentQuery);
+      await this._cacheService.set(`report:${id}`, JSON.stringify({
+        id: report.id,
+        user_id: report.user_id,
+        report_interval: `Laporan ${report.start_date} - ${report.end_date}`,
+        total_transactions: report.total_transactions,
+        total_amount: report.total_amount,
+        report_date: report.report_date,
+        payments: paymentResult.rows,
+      }));
 
-    return {
-      id: report.id,
-      user_id: report.user_id,
-      report_interval: `Laporan ${report.start_date} - ${report.end_date}`,
-      total_transactions: report.total_transactions,
-      total_amount: report.total_amount,
-      report_date: report.report_date,
-      payments: paymentResult.rows,
-    };
+      return {
+        id: report.id,
+        user_id: report.user_id,
+        report_interval: `Laporan ${report.start_date} - ${report.end_date}`,
+        total_transactions: report.total_transactions,
+        total_amount: report.total_amount,
+        report_date: report.report_date,
+        payments: paymentResult.rows,
+      };
+    }
   }
 
   async downloadReportPdf(id, res) {
@@ -159,6 +181,8 @@ class ReportsService {
     if (!result.rowCount) {
       throw new NotFoundError('Laporan tidak ditemukan');
     }
+    await this._cacheService.delete('reports:all');
+    await this._cacheService.delete(`reports:${id}`);
     return result.rows[0].id;
   }
 }
