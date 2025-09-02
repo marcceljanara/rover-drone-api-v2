@@ -63,7 +63,7 @@ function createServer() {
     credentials: true, // ⬅️ aktifkan kalau pakai cookie / token JWT dengan Auth header
   }));
 
-  app.options('*', cors()); // ⬅️ Wajib biar preflight dijawab
+  // app.options('*', cors()); // ⬅️ Wajib biar preflight dijawab
   app.use(express.json());
   app.use(helmet.hidePoweredBy());
   app.use(helmet.noSniff()); // Mencegah MIME-sniffing
