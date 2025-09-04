@@ -1,5 +1,6 @@
 import express from 'express';
 import verifyToken from '../../middleware/verifyToken.js';
+import validateContentType from '../../middleware/validateContentType.js';
 
 const authenticationRoutes = (handler) => {
   const router = express.Router();
@@ -111,7 +112,7 @@ const authenticationRoutes = (handler) => {
    *                   example: Email tidak ditemukan
    *
    */
-  router.post('/v1/authentications', handler.postAuthenticationHandler);
+  router.post('/v1/authentications', validateContentType('application/json'), handler.postAuthenticationHandler);
   /**
    * @swagger
    * /v1/authentications:

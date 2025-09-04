@@ -2,6 +2,7 @@
 import express from 'express';
 import verifyAdmin from '../../middleware/verifyAdmin.js';
 import verifyToken from '../../middleware/verifyToken.js';
+import validateContentType from '../../middleware/validateContentType.js';
 
 const adminRoutes = (handler) => {
   const router = express.Router();
@@ -110,7 +111,7 @@ const adminRoutes = (handler) => {
  *                   type: string
  *                   example: "Terjadi kesalahan pada server"
  */
-  router.post('/v1/admin', verifyToken, verifyAdmin, handler.postRegisterUserByAdminHandler);
+  router.post('/v1/admin', verifyToken, verifyAdmin, validateContentType('application/json'), handler.postRegisterUserByAdminHandler);
   /**
  * @swagger
  * /v1/admin:
@@ -557,7 +558,7 @@ const adminRoutes = (handler) => {
  *                   example: "Terjadi kesalahan pada server"
  */
 
-  router.put('/v1/admin/:id', verifyToken, verifyAdmin, handler.putPasswordUserHandler);
+  router.put('/v1/admin/:id', verifyToken, verifyAdmin, validateContentType('application/json'), handler.putPasswordUserHandler);
 
   return router;
 };

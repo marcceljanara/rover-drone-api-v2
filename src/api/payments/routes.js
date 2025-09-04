@@ -2,6 +2,7 @@
 import express from 'express';
 import verifyToken from '../../middleware/verifyToken.js';
 import verifyAdmin from '../../middleware/verifyAdmin.js';
+import validateContentType from '../../middleware/validateContentType.js';
 
 const paymentRoutes = (handler) => {
   const router = express.Router();
@@ -412,7 +413,7 @@ const paymentRoutes = (handler) => {
  *                   example: "Terjadi kesalahan pada server"
  */
 
-  router.patch('/v1/payments/:id', verifyToken, verifyAdmin, handler.deletePaymentHandler);
+  router.patch('/v1/payments/:id', verifyToken, verifyAdmin, validateContentType('application/json'), handler.deletePaymentHandler);
 
   return router;
 };

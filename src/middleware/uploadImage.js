@@ -5,15 +5,18 @@ import fs from 'fs';
 import InvariantError from '../exceptions/InvariantError.js';
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = './uploads/delivery-proofs';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+  destination: async (req, file, cb) => {
+    const uploadDir = path.resolve('./uploads/delivery-proofs');
+    try {
+      await fs.promises.mkdir(uploadDir, { recursive: true });
+      cb(null, uploadDir);
+    } catch (err) {
+      cb(err);
     }
-    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
+    const safeName = path.basename(file.originalname);
+    const uniqueName = `${Date.now()}-${safeName}`;
     cb(null, uniqueName);
   },
 });
