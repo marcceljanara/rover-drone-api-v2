@@ -68,6 +68,16 @@ function createServer() {
   app.use(helmet.hidePoweredBy());
   app.use(helmet.noSniff()); // Mencegah MIME-sniffing
   app.use(helmet.frameguard({ action: 'deny' })); // prevent clickjacking
+  app.use(helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+      styleSrc: ["'self'", 'https://fonts.googleapis.com'],
+      imgSrc: ["'self'", 'data:'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      frameAncestors: ["'none'"],
+    },
+  }));
   if (process.env.NODE_ENV === 'production') {
     app.use(rateLimiter(15, 100)); // 100 requests per 15 minutes
   }
