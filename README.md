@@ -4,59 +4,60 @@
 [![Build Status](https://img.shields.io/badge/status-active-brightgreen)](https://github.com/marcceljanara/rover-drone-api)  
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](LICENSE)
 
-Backend API untuk mendukung sistem **Rover Drone** dengan penyewaan perangkat IoT, kontrol MQTT, manajemen rental, pengiriman, dan pelaporan.
+Backend API to support the **Rover Drone** system with IoT device rental, MQTT control, rental management, dispatching, and reporting.
 
-## 🧩 Fitur Utama
+## 🧩 Main Features
 
-### Autentikasi & Otorisasi
-- Login / logout dengan refresh token.  
-- Pembaruan access token via refresh token.
+### Authentication and Authorization
+- Login/logout.
+- Access token update via refresh token.
+- Login & Register using Google OAuth2.0
 
-### Pengguna
-- Registrasi pengguna baru.  
-- Verifikasi OTP.  
-- Kirim ulang kode OTP.  
-- Manajemen alamat pengguna (CRUD + default).
+### Users
+- New user registration.
+- OTP verification.  
+- Resend the OTP code.  
+- User address management (CRUD + default).
 
 ### Admin
-- Buat user baru oleh admin.  
-- Daftar semua pengguna.  
-- Detail, ubah password, dan hapus pengguna.
+- Create new user by admin.  
+- List all users.  
+- Details, change password, and delete users.
 
-### Perangkat (Devices)
-- Tambah, lihat, dan ubah detail perangkat (admin).  
-- Kontrol perangkat (user/admin) via endpoint control.  
-- Konfigurasi topik MQTT untuk control/sensor.  
-- Mendapatkan data sensor (interval / limit / download).  
-- Monitoring penggunaan harian (total jam).
+### Devices
+- Add, view, and change device details (admin).
+- Control devices (user/admin) via endpoint control.
+- Configure MQTT topics for control/sensors.
+- Get sensor data (interval/limit/download).
+- Monitor daily usage (total hours).
 
-### Rental & Ekstensi
-- Pengajuan rental oleh user.  
-- Pengelolaan status rental oleh admin.  
-- Pembatalan rental oleh user.  
-- Pengajuan dan pengelolaan perpanjangan sewa.
+### Rental & Extensions
+- Rental submission by users.
+- Rental status management by admin.
+- Rental cancellation by users.
+- Rental extension submission and management.
 
-### Pembayaran
-- Daftar dan detail pembayaran.  
-- Verifikasi pembayaran.  
-- Soft delete pembayaran.
+### Payments
+- Payment list and details.
+- Payment verification.
+- Soft delete payments.
 
-### Laporan
-- Buat laporan transaksi per rentang tanggal.  
-- Daftar dan detail laporan.  
-- Download laporan PDF.  
-- Hapus laporan.
+### Reports
+- Create transaction reports per date range.
+- Report list and details.
+- Download PDF reports.
+- Delete reports.
 
-### Pengiriman (Shipments) & Pengembalian (Returns)
-- Detail dan daftar pengiriman.  
-- Update info/status pengiriman.  
-- Konfirmasi actual shipping / delivery.  
-- Upload & ambil bukti pengiriman.  
-- Manajemen return: alamat, status, catatan.
+### Shipments & Returns
+- Shipment details and list.
+- Update shipping info/status.
+- Confirm actual shipping/delivery.
+- Upload and retrieve proof of delivery.
+- Return management: address, status, notes.
 
-### Sensor & Shipping
-- Daftar sensor tersedia.  
-- Hitung biaya pengiriman ke tujuan (integrasi dengan Komerce).
+### Sensors & Shipping
+- List of available sensors.
+- Calculate shipping costs to destination (integrated with Komerce).
 
 ## 🛠️ Tech Stack
 
@@ -70,16 +71,17 @@ Backend API untuk mendukung sistem **Rover Drone** dengan penyewaan perangkat Io
 - **Testing:** Jest, Supertest  
 - **API Docs:** Swagger (swagger-jsdoc + swagger-ui-express)
 
-## ⚙️ Prasyarat
+## ⚙️ Prerequisite
 
-- Node.js (>=18)  
-- PostgreSQL  
-- RabbitMQ  
-- MQTT broker  
-- (Opsional) SMTP server untuk email  
-- `git` untuk clone repository
+- Node.js (>=18)
+- PostgreSQL
+- RabbitMQ
+- MQTT broker
+- (Optional) SMTP server for email
+- `git` for repository cloning
+- Redis
 
-## 📥 Instalasi
+## 📥 Installation
 
 1. Clone repository  
    ```bash
@@ -88,7 +90,7 @@ Backend API untuk mendukung sistem **Rover Drone** dengan penyewaan perangkat Io
 2. Install dependencies
    ```bash
    npm install
-3. Buat file .env dengan menyalin .env.example (atau isi manual) dan isi variabelnya. Contoh minimal:
+3. Create a .env file by copying .env.example (or manually entering it) and filling in the variables. A minimal example:
    ```bash
    PORT=5000
    HOST=localhost
@@ -120,32 +122,37 @@ Backend API untuk mendukung sistem **Rover Drone** dengan penyewaan perangkat Io
   
    KOMERCE_BASE_URL=https://api-sandbox.collaborator.komerce.id/tariff/api/v1
    KOMERCE_API_KEY=your_komerce_key
-4. Jalankan migrasi database
+   # OAUTH 2.0
+   GOOGLE_CLIENT_ID = 271xxxx.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET = GOCxxx-xxxxx
+   # REDIS 
+   REDIS_SERVER=localhost
+4. Run database migration
    ```bash
    npm run migrate
-5. (Opsional) Buat admin default
+5. (Optional) Create a default admin
    ```bash
    npm run generate-admin
-6. Jalankan server
+6. Run the server
    ```bash
    npm run start:dev
    
-## ▶️ Skrip yang Tersedia
+## ▶️ Available Scripts
 
-| Script              | Deskripsi                                         |
-|---------------------|---------------------------------------------------|
-| `npm run start`     | Jalankan server production                        |
-| `npm run start:dev` | Jalankan server development dengan nodemon        |
-| `npm run test`      | Jalankan semua test sekali                        |
-| `npm run test:watch`| Jalankan test dalam mode watch + coverage         |
-| `npm run test:export` | Jalankan test dan export hasil ke JSON          |
-| `npm run lint`      | Cek style dengan ESLint                           |
-| `npm run lint-fix`  | Perbaiki otomatis style                           |
-| `npm run migrate`   | Migrasi database (default environment)            |
-| `npm run migrate:test` | Migrasi database untuk environment test        |
-| `npm run clean-table` | Utility untuk membersihkan tabel tertentu       |
+| Script | Description |
+|--------------------|----------------------------------------------------------------|
+| `npm run start` | Start the production server |
+| `npm run start:dev` | Start the development server with nodemon |
+| `npm run test` | Run all tests once |
+| `npm run test:watch` | Run tests in watch mode + coverage |
+| `npm run test:export` | Run tests and export results to JSON |
+| `npm run lint` | Check styles with ESLint |
+| `npm run lint-fix` | Automatically fix styles |
+| `npm run migrate` | Database migration (default environment) |
+| `npm run migrate:test` | Database migration for the test environment |
+| `npm run clean-table` | Utility to clean a specific table |
 
-## 📦 Contoh Penggunaan API
+## 📦 API Usage Examples
 
 ### Login
 ```bash
@@ -154,35 +161,36 @@ curl -X POST http://localhost:5000/v1/authentications \
   -d '{"email":"user@example.com","password":"secret"}'
 ```
 
-### Registrasi User
+### User Registration
 ```bash
 curl -X POST http://localhost:5000/v1/users/register \
   -H "Content-Type: application/json" \
   -d '{"email":"newuser@example.com","password":"secret", "username":"newuser", "fullname": "New User"}'
 ```
 
-## 📚 Dokumentasi API
+## 📚 API Documentation
 
-Swagger UI tersedia (jika ENABLE_SWAGGER=true) di:
+Swagger UI is available (if ENABLE_SWAGGER=true) in:
 ```bash
 http://localhost:5000/v1/api-docs/#/
 ```
-(Atau path sesuai konfigurasi di src — cek implementasi swagger setup.)
+(Or the path as configured in src — check the implementation of swagger setup.)
 
-## 🤝 Kontribusi
-Kontribusi disambut.
+## 🤝 Contributions
+Contributions are welcome.
 
-1. Fork repository
+1. Fork the repository
 
-2. Buat branch fitur: `git checkout -b feature/your-feature`
+2. Create a feature branch: `git checkout -b feature/your-feature`
 
-3. Commit perubahan: `git commit -m "Deskripsi"`
+3. Commit changes: `git commit -m "Description"`
 
 4. Push: `git push origin feature/your-feature`
 
-5. Buka Pull Request
+5. Open a Pull Request
 
-## 📫 Kontak
-Dibuat oleh: I Nengah Marccel JBC
+## 📫 Contact
+Created by: I Nengah Marccel JBC
 - Repo: https://github.com/marcceljanara/rover-drone-api
 - Issues: https://github.com/marcceljanara/rover-drone-api/issues
+
