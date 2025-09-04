@@ -86,7 +86,7 @@ const deviceRoutes = (handler) => {
  *                   type: string
  *                   example: device tidak ditemukan
  */
-  router.put('/v1/devices/:id', verifyToken, verifyAdmin, validateContentType('application/json'), handler.deleteDeviceHandler);
+  router.put('/v1/devices/:id', verifyToken, verifyAdmin, handler.deleteDeviceHandler);
   /**
 * @swagger
 * /v1/devices/{id}/status:

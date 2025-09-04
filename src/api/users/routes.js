@@ -641,7 +641,7 @@ const userRoutes = (handler) => {
  *                   example: Terjadi kesalahan pada server
  */
 
-  router.patch('/addresses/:id', verifyToken, validateContentType('application/json'), handler.patchSetDefaultAddress);
+  router.patch('/addresses/:id', verifyToken, handler.patchSetDefaultAddress);
 
   /**
  * @swagger
