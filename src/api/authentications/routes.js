@@ -1,6 +1,7 @@
 import express from 'express';
 import verifyToken from '../../middleware/verifyToken.js';
 import validateContentType from '../../middleware/validateContentType.js';
+import rateLimiter from '../../middleware/rateLimiter.js';
 
 const authenticationRoutes = (handler) => {
   const router = express.Router();
@@ -112,7 +113,7 @@ const authenticationRoutes = (handler) => {
    *                   example: Email tidak ditemukan
    *
    */
-  router.post('/v1/authentications', validateContentType('application/json'), handler.postAuthenticationHandler);
+  router.post('/v1/authentications', validateContentType('application/json'), rateLimiter(15, 10), handler.postAuthenticationHandler);
   /**
    * @swagger
    * /v1/authentications:
@@ -216,9 +217,9 @@ const authenticationRoutes = (handler) => {
    */
   router.delete('/v1/authentications', handler.deleteAuthenticationHandler);
 
-  router.get('/v1/authentications/google', handler.getGoogleAuthenticationHandler);
+  router.get('/v1/authentications/google', rateLimiter(15, 10), handler.getGoogleAuthenticationHandler);
 
-  router.get('/v1/authentications/google/callback', handler.getGoogleAuthenticationCallbackHandler);
+  router.get('/v1/authentications/google/callback', rateLimiter(15, 10), handler.getGoogleAuthenticationCallbackHandler);
 
   router.get('/v1/authentications/me', verifyToken, handler.getLoginStatus);
 

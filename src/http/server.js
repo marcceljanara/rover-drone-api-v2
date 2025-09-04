@@ -5,6 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import cookieParser from 'cookie-parser';
+import rateLimiter from '../middleware/rateLimiter.js';
 
 // plugin
 import usersPlugin from '../api/users/index.js';
@@ -64,9 +65,12 @@ function createServer() {
   }));
 
   // app.options('*', cors()); // ⬅️ Wajib biar preflight dijawab
-  app.use(express.json());
   app.use(helmet.hidePoweredBy());
   app.use(helmet.noSniff()); // Mencegah MIME-sniffing
+  if (process.env.NODE_ENV === 'production') {
+    app.use(rateLimiter(15, 100)); // 100 requests per 15 minutes
+  }
+  app.use(express.json());
 
   // Expose folder uploads secara publik
   app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
