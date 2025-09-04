@@ -67,6 +67,7 @@ function createServer() {
   // app.options('*', cors()); // ⬅️ Wajib biar preflight dijawab
   app.use(helmet.hidePoweredBy());
   app.use(helmet.noSniff()); // Mencegah MIME-sniffing
+  app.use(helmet.frameguard({ action: 'deny' })); // prevent clickjacking
   if (process.env.NODE_ENV === 'production') {
     app.use(rateLimiter(15, 100)); // 100 requests per 15 minutes
   }
