@@ -4,12 +4,13 @@ const FRONTEND_URL = 'http://localhost:3000';
 
 class AuthenticationHandler {
   constructor({
-    authenticationsService, userService, tokenManager, oauthManager, validator,
+    authenticationsService, userService, tokenManager, oauthManager, cacheService, validator,
   }) {
     this._authenticationsService = authenticationsService;
     this._userService = userService;
     this._tokenManager = tokenManager;
     this._oauthManager = oauthManager;
+    this._cacheService = cacheService;
     this._validator = validator;
 
     autoBind(this);
@@ -111,9 +112,23 @@ class AuthenticationHandler {
 
   async getGoogleAuthenticationCallbackHandler(req, res) {
     try {
-      const { code } = req.query;
+      const { code, state } = req.query;
+
+      // ✅ validasi state di Redis
+      const cacheKey = `oauth_state:${state}`;
+      const savedState = await this._cacheService.get(cacheKey).catch(() => null);
+      if (!savedState) {
+        return res.status(400).json({
+          status: 'fail',
+          message: 'Invalid or expired state (possible CSRF attack)',
+        });
+      }
+
+      // hapus state agar tidak bisa replay
+      await this._cacheService.delete(cacheKey);
+
       const tokens = await this._oauthManager.getTokenInfo(code);
-      const ticket = await this._oauthManager.verfyGoogleToken(tokens.id_token);
+      const ticket = await this._oauthManager.verifyGoogleToken(tokens.id_token);
       const payload = ticket.getPayload();
       const {
         email, name: fullname, sub: googleId, aud,

@@ -96,7 +96,7 @@ function createServer() {
   const paymentsService = new PaymentsService(cacheService);
   const reportsService = new ReportsService(cacheService);
   const shipmentsService = new ShipmentsService();
-  const oauthManager = new OauthManager();
+  const oauthManager = new OauthManager(cacheService);
 
   // Register plugins
   usersPlugin({
@@ -112,6 +112,7 @@ function createServer() {
     userService,
     tokenManager: TokenManager,
     oauthManager,
+    cacheService,
     validator: AuthenticationsValidator,
   });
 
