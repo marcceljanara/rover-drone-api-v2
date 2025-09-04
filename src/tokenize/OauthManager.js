@@ -1,6 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { OAuth2Client } from 'google-auth-library';
 import crypto from 'crypto';
+import InvariantError from '../exceptions/InvariantError.js';
 
 class OauthManager {
   constructor(cacheService) {
@@ -32,6 +33,11 @@ class OauthManager {
 
   async getTokenInfo(code) {
     const { tokens } = await this.client.getToken(code);
+    if (!tokens.scope.includes('openid')
+    || !tokens.scope.includes('email')
+    || !tokens.scope.includes('profile')) {
+      throw new InvariantError('Invalid scope returned');
+    }
     return tokens;
   }
 
