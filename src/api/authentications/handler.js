@@ -1,3 +1,5 @@
+import autoBind from 'auto-bind';
+
 const FRONTEND_URL = 'http://localhost:3000';
 
 class AuthenticationHandler {
@@ -10,17 +12,7 @@ class AuthenticationHandler {
     this._oauthManager = oauthManager;
     this._validator = validator;
 
-    // Local
-    this.postAuthenticationHandler = this.postAuthenticationHandler.bind(this);
-    this.putAuthenticationHandler = this.putAuthenticationHandler.bind(this);
-    this.deleteAuthenticationHandler = this.deleteAuthenticationHandler.bind(this);
-
-    // Google
-    this.getGoogleAuthenticationHandler = this.getGoogleAuthenticationHandler.bind(this);
-    this.getGoogleAuthenticationCallbackHandler = this
-      .getGoogleAuthenticationCallbackHandler.bind(this);
-
-    this.getLoginStatus = this.getLoginStatus.bind(this);
+    autoBind(this);
   }
 
   async postAuthenticationHandler(req, res, next) {

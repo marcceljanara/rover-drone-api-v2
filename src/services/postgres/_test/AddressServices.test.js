@@ -5,10 +5,23 @@ import NotFoundError from '../../../exceptions/NotFoundError.js';
 import UsersTableTestHelper from '../../../../tests/UserTableHelper.js';
 import UserService from '../UserServices.js';
 import pool from '../../../config/postgres/pool.js';
+import CacheService from '../../redis/CacheService.js';
 
 dotenv.config();
 
+jest.mock('redis', () => ({
+  createClient: jest.fn(() => ({
+    connect: jest.fn().mockResolvedValue(),
+    disconnect: jest.fn().mockResolvedValue(),
+    on: jest.fn(),
+    set: jest.fn().mockResolvedValue('OK'),
+    get: jest.fn().mockResolvedValue(null),
+    del: jest.fn().mockResolvedValue(1),
+  })),
+}));
+
 describe('Address Service', () => {
+  const cacheService = new CacheService();
   afterAll(async () => {
     await pool.end();
   });
@@ -21,7 +34,7 @@ describe('Address Service', () => {
     it('should add newAddress correctly', async () => {
       // Arrange
       const user = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
-      const userService = new UserService();
+      const userService = new UserService(cacheService);
       const payload = {
         namaPenerima: 'I Nengah Marccel',
         noHp: '085212345678',
@@ -44,7 +57,7 @@ describe('Address Service', () => {
   describe('getAllAddress function', () => {
     it('should get all address correctly', async () => {
       // Arrange
-      const userService = new UserService();
+      const userService = new UserService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
       await UsersTableTestHelper.addAddress(user, { id: 'address-345' });
@@ -57,7 +70,7 @@ describe('Address Service', () => {
     });
     it('should throw not found error if address not exist', async () => {
     // Arrange
-      const userService = new UserService();
+      const userService = new UserService(cacheService);
       const userId = 'notfound';
 
       // Action and Asert
@@ -68,7 +81,7 @@ describe('Address Service', () => {
   describe('getDetailAddress function', () => {
     it('should get detail address correctly', async () => {
       // Arrange
-      const userService = new UserService();
+      const userService = new UserService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
 
@@ -80,7 +93,7 @@ describe('Address Service', () => {
     });
     it('should throw not found error if address not exist', async () => {
     // Arrange
-      const userService = new UserService();
+      const userService = new UserService(cacheService);
       const userId = 'notfound';
 
       // Action and Asert
@@ -93,7 +106,7 @@ describe('Address Service', () => {
       // Arrange
       const user = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       const id = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
-      const userService = new UserService();
+      const userService = new UserService(cacheService);
       const payload = {
         namaPenerima: 'I Nengah Marccel',
         noHp: '085212345678',
@@ -115,7 +128,7 @@ describe('Address Service', () => {
     });
     it('should throw not found error if address not exist', async () => {
     // Arrange
-      const userService = new UserService();
+      const userService = new UserService(cacheService);
       const userId = 'notfound';
       const payload = {
         namaPenerima: 'I Nengah Marccel',
@@ -139,7 +152,7 @@ describe('Address Service', () => {
       // Arrange
       const user = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       const id = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
-      const userService = new UserService();
+      const userService = new UserService(cacheService);
 
       // Action
       const addressId = await userService.setDefaultAddress(user, id);
@@ -150,7 +163,7 @@ describe('Address Service', () => {
     });
     it('should throw not found error if address not exist', async () => {
     // Arrange
-      const userService = new UserService();
+      const userService = new UserService(cacheService);
       const userId = 'notfound';
 
       // Action and Asert
@@ -163,7 +176,7 @@ describe('Address Service', () => {
       // Arrange
       const user = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       const id = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
-      const userService = new UserService();
+      const userService = new UserService(cacheService);
 
       // Action
       await userService.deleteAddress(user, id);
@@ -174,7 +187,7 @@ describe('Address Service', () => {
     });
     it('should throw not found error if address not exist', async () => {
     // Arrange
-      const userService = new UserService();
+      const userService = new UserService(cacheService);
       const userId = 'notfound';
 
       // Action and Asert

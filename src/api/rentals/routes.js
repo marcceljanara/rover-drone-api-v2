@@ -2,6 +2,7 @@
 import express from 'express';
 import verifyToken from '../../middleware/verifyToken.js';
 import verifyAdmin from '../../middleware/verifyAdmin.js';
+import validateContentType from '../../middleware/validateContentType.js';
 
 const rentalRoutes = (handler) => {
   const router = express.Router();
@@ -86,7 +87,7 @@ const rentalRoutes = (handler) => {
  *                   example: "rental tidak ditemukan"
  */
 
-  router.put('/v1/rentals/:id/status', verifyToken, verifyAdmin, handler.putStatusRentalHandler);
+  router.put('/v1/rentals/:id/status', verifyToken, verifyAdmin, validateContentType('application/json'), handler.putStatusRentalHandler);
 
   /**
  * @swagger
@@ -265,7 +266,7 @@ const rentalRoutes = (handler) => {
  *                   example: "Tidak ada perangkat yang tersedia untuk disewakan"
  */
 
-  router.post('/v1/rentals', verifyToken, handler.postAddRentalHandler);
+  router.post('/v1/rentals', verifyToken, validateContentType('application/json'), handler.postAddRentalHandler);
   /**
  * @swagger
  * /v1/rentals:
@@ -505,7 +506,7 @@ const rentalRoutes = (handler) => {
  *                   example: "rental tidak ditemukan"
  */
 
-  router.put('/v1/rentals/:id/cancel', verifyToken, handler.putCancelRentalHandler);
+  router.put('/v1/rentals/:id/cancel', verifyToken, validateContentType('application/json'), handler.putCancelRentalHandler);
 
   /**
  * @swagger

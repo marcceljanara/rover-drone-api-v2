@@ -7,6 +7,17 @@ import pool from '../../config/postgres/pool.js';
 
 dotenv.config();
 
+jest.mock('redis', () => ({
+  createClient: jest.fn(() => ({
+    connect: jest.fn().mockResolvedValue(),
+    disconnect: jest.fn().mockResolvedValue(),
+    on: jest.fn(),
+    set: jest.fn().mockResolvedValue('OK'),
+    get: jest.fn().mockResolvedValue(null),
+    del: jest.fn().mockResolvedValue(1),
+  })),
+}));
+
 const registerAndLoginAdmin = async (server) => {
   const payload = {
     id: 'admin-12345',

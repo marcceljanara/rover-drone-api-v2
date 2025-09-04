@@ -1,6 +1,17 @@
 import request from 'supertest';
 import createServer from '../server.js'; // Sesuaikan path ke file createServer.js
 
+jest.mock('redis', () => ({
+  createClient: jest.fn(() => ({
+    connect: jest.fn().mockResolvedValue(),
+    disconnect: jest.fn().mockResolvedValue(),
+    on: jest.fn(),
+    set: jest.fn().mockResolvedValue('OK'),
+    get: jest.fn().mockResolvedValue(null),
+    del: jest.fn().mockResolvedValue(1),
+  })),
+}));
+
 let app;
 
 beforeAll(() => {

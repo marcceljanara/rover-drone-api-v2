@@ -2,6 +2,7 @@
 import express from 'express';
 import verifyToken from '../../middleware/verifyToken.js';
 import verifyAdmin from '../../middleware/verifyAdmin.js';
+import validateContentType from '../../middleware/validateContentType.js';
 
 const deviceRoutes = (handler) => {
   const router = express.Router();
@@ -145,7 +146,7 @@ const deviceRoutes = (handler) => {
 *                   example: device tidak ditemukan
 */
 
-  router.put('/v1/devices/:id/status', verifyToken, verifyAdmin, handler.putStatusDeviceHandler);
+  router.put('/v1/devices/:id/status', verifyToken, verifyAdmin, validateContentType('application/json'), handler.putStatusDeviceHandler);
   /**
  * @swagger
  * /v1/devices/{id}/mqttsensor:
@@ -511,7 +512,7 @@ const deviceRoutes = (handler) => {
  *                   example: "Device tidak ditemukan atau Anda tidak memiliki akses"
  */
 
-  router.put('/v1/devices/:id/control', verifyToken, handler.putDeviceControlHandler);
+  router.put('/v1/devices/:id/control', verifyToken, validateContentType('application/json'), handler.putDeviceControlHandler);
   /**
  * @swagger
  * /v1/devices/{id}/sensors/intervals:

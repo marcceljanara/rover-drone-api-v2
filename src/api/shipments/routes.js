@@ -3,6 +3,7 @@ import express from 'express';
 import verifyToken from '../../middleware/verifyToken.js';
 import verifyAdmin from '../../middleware/verifyAdmin.js';
 import uploadSingleImage from '../../middleware/uploadImage.js';
+import validateContentType from '../../middleware/validateContentType.js';
 
 const shipmentRoutes = (handler) => {
   const router = express.Router();
@@ -305,7 +306,7 @@ const shipmentRoutes = (handler) => {
  *                   example: Terjadi kesalahan pada server
  */
 
-  router.put('/v1/shipments/:id/info', verifyToken, verifyAdmin, handler.putShippingInfoHandler);
+  router.put('/v1/shipments/:id/info', verifyToken, verifyAdmin, validateContentType('application/json'), handler.putShippingInfoHandler);
 
   // Update status pengiriman (waiting, packed, shipped, delivered, failed)
   /**
@@ -404,7 +405,7 @@ const shipmentRoutes = (handler) => {
  *                   example: Terjadi kesalahan pada server
  */
 
-  router.patch('/v1/shipments/:id/status', verifyToken, verifyAdmin, handler.patchShippingStatusHandler);
+  router.patch('/v1/shipments/:id/status', verifyToken, verifyAdmin, validateContentType('application/json'), handler.patchShippingStatusHandler);
 
   // Konfirmasi tanggal aktual pengiriman (tanggal barang dikirim)
   /**
@@ -505,7 +506,7 @@ const shipmentRoutes = (handler) => {
  *                   example: Terjadi kesalahan pada server
  */
 
-  router.patch('/v1/shipments/:id/actual-shipping', verifyToken, verifyAdmin, handler.patchConfirmActualShippingHandler);
+  router.patch('/v1/shipments/:id/actual-shipping', verifyToken, verifyAdmin, validateContentType('application/json'), handler.patchConfirmActualShippingHandler);
 
   // Konfirmasi tanggal aktual diterima (tanggal barang sampai)
   /**
@@ -606,7 +607,7 @@ const shipmentRoutes = (handler) => {
  *                   example: Terjadi kesalahan pada server
  */
 
-  router.patch('/v1/shipments/:id/actual-delivery', verifyToken, verifyAdmin, handler.patchConfirmDeliveryHandler);
+  router.patch('/v1/shipments/:id/actual-delivery', verifyToken, verifyAdmin, validateContentType('application/json'), handler.patchConfirmDeliveryHandler);
 
   // Upload bukti pengiriman (foto)
   /**
@@ -1004,7 +1005,7 @@ const shipmentRoutes = (handler) => {
  *         description: Terjadi kesalahan pada server
  */
 
-  router.patch('/v1/returns/:id/address', verifyToken, handler.patchReturnAddressHandler);
+  router.patch('/v1/returns/:id/address', verifyToken, validateContentType('application/json'), handler.patchReturnAddressHandler);
 
   // Update informasi pengembalian (kurir, nomor resi, estimasi penjemputan)
   /**
@@ -1076,7 +1077,7 @@ const shipmentRoutes = (handler) => {
  *         description: Terjadi kesalahan pada server
  */
 
-  router.put('/v1/returns/:id', verifyToken, verifyAdmin, handler.putReturnShippingInfoHandler);
+  router.put('/v1/returns/:id', verifyToken, verifyAdmin, validateContentType('application/json'), handler.putReturnShippingInfoHandler);
 
   // Update status pengembalian
   /**
@@ -1131,7 +1132,7 @@ const shipmentRoutes = (handler) => {
  *         description: Terjadi kesalahan pada server
  */
 
-  router.patch('/v1/returns/:id/status', verifyToken, verifyAdmin, handler.patchReturnStatusHandler);
+  router.patch('/v1/returns/:id/status', verifyToken, verifyAdmin, validateContentType('application/json'), handler.patchReturnStatusHandler);
 
   // Tambah catatan pengembalian
   /**
@@ -1183,7 +1184,7 @@ const shipmentRoutes = (handler) => {
  *         description: Terjadi kesalahan pada server
  */
 
-  router.patch('/v1/returns/:id/note', verifyToken, verifyAdmin, handler.patchReturnNoteHandler);
+  router.patch('/v1/returns/:id/note', verifyToken, verifyAdmin, validateContentType('application/json'), handler.patchReturnNoteHandler);
 
   return router;
 };

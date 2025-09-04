@@ -7,8 +7,9 @@ import NotFoundError from '../../exceptions/NotFoundError.js';
 import pool from '../../config/postgres/pool.js';
 
 class UserService {
-  constructor() {
+  constructor(cacheService) {
     this._pool = pool;
+    this._cacheService = cacheService;
   }
 
   async registerUser({
@@ -221,6 +222,7 @@ class UserService {
       const result = await client.query(insertQuery);
 
       await client.query('COMMIT');
+      await this._cacheService.delete(`addresses:user:${userId}`);
       return result.rows[0].id;
     } catch (error) {
       await client.query('ROLLBACK');
@@ -231,31 +233,41 @@ class UserService {
   }
 
   async getAllAddress(userId) {
-    const query = {
-      text: 'SELECT id, nama_penerima, no_hp, alamat_lengkap, kelurahan, is_default FROM user_addresses WHERE user_id = $1 AND is_deleted = $2 ORDER BY updated_at DESC',
-      values: [userId, false],
-    };
-    const result = await this._pool.query(query);
-    if (!result.rowCount) {
-      throw new NotFoundError('Belum ada alamat pengiriman!');
+    try {
+      const result = await this._cacheService.get(`addresses:user:${userId}`);
+      return JSON.parse(result);
+    } catch (error) {
+      const query = {
+        text: 'SELECT id, nama_penerima, no_hp, alamat_lengkap, kelurahan, is_default FROM user_addresses WHERE user_id = $1 AND is_deleted = $2 ORDER BY updated_at DESC',
+        values: [userId, false],
+      };
+      const result = await this._pool.query(query);
+      if (!result.rowCount) {
+        throw new NotFoundError('Belum ada alamat pengiriman!');
+      }
+      await this._cacheService.set(`addresses:user:${userId}`, JSON.stringify(result.rows));
+      return result.rows;
     }
-
-    return result.rows;
   }
 
   async getDetailAddress(userId, id) {
-    const query = {
-      text: `SELECT id, nama_penerima, no_hp, alamat_lengkap, provinsi, kabupaten_kota, kecamatan, kelurahan, kode_pos, is_default 
+    try {
+      const result = await this._cacheService.get(`address:user:${userId}:address:${id}`);
+      return JSON.parse(result);
+    } catch (error) {
+      const query = {
+        text: `SELECT id, nama_penerima, no_hp, alamat_lengkap, provinsi, kabupaten_kota, kecamatan, kelurahan, kode_pos, is_default 
       FROM user_addresses WHERE user_id = $1 AND id = $2 AND is_deleted = $3`,
-      values: [userId, id, false],
-    };
+        values: [userId, id, false],
+      };
 
-    const result = await this._pool.query(query);
-    if (!result.rowCount) {
-      throw new NotFoundError('Pengguna atau alamat tidak ditemukan');
+      const result = await this._pool.query(query);
+      if (!result.rowCount) {
+        throw new NotFoundError('Pengguna atau alamat tidak ditemukan');
+      }
+      await this._cacheService.set(`address:user:${userId}:address:${id}`, JSON.stringify(result.rows[0]));
+      return result.rows[0];
     }
-
-    return result.rows[0];
   }
 
   async updateAddress(userId, id, {
@@ -305,6 +317,8 @@ class UserService {
       }
 
       await client.query('COMMIT');
+      await this._cacheService.delete(`addresses:user:${userId}`);
+      await this._cacheService.delete(`address:user:${userId}:address:${id}`);
       return result.rows[0].id;
     } catch (error) {
       await client.query('ROLLBACK');
@@ -339,6 +353,8 @@ class UserService {
         throw new NotFoundError('Gagal memperbarui alamat. Alamat tidak ditemukan atau bukan milik user.');
       }
       await client.query('COMMIT');
+      await this._cacheService.delete(`addresses:user:${userId}`);
+      await this._cacheService.delete(`address:user:${userId}:address:${id}`);
       return result.rows[0].id;
     } catch (error) {
       await client.query('ROLLBACK');
@@ -363,6 +379,8 @@ class UserService {
     if (!result.rowCount) {
       throw new NotFoundError('Gagal menghapus alamat. Alamat tidak ditemukan atau bukan milik user.');
     }
+    await this._cacheService.delete(`addresses:user:${userId}`);
+    await this._cacheService.delete(`address:user:${userId}:address:${id}`);
   }
 }
 

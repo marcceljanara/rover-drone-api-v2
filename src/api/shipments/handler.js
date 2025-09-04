@@ -1,24 +1,12 @@
+import autoBind from 'auto-bind';
+
 class ShipmentsHandler {
   constructor({ shipmentsService, rabbitmqService, validator }) {
     this._shipmentsService = shipmentsService;
     this._rabbitmqService = rabbitmqService;
     this._validator = validator;
 
-    this.getShipmentByRentalIdHandler = this.getShipmentByRentalIdHandler.bind(this);
-    this.putShippingInfoHandler = this.putShippingInfoHandler.bind(this);
-    this.patchShippingStatusHandler = this.patchShippingStatusHandler.bind(this);
-    this.patchConfirmActualShippingHandler = this.patchConfirmActualShippingHandler.bind(this);
-    this.patchConfirmDeliveryHandler = this.patchConfirmDeliveryHandler.bind(this);
-    this.getAllShipmentsHandler = this.getAllShipmentsHandler.bind(this);
-    this.uploadDeliveryProofHandler = this.uploadDeliveryProofHandler.bind(this);
-    this.getDeliveryProofHandler = this.getDeliveryProofHandler.bind(this);
-
-    this.getReturnByRentalIdHandler = this.getReturnByRentalIdHandler.bind(this);
-    this.patchReturnAddressHandler = this.patchReturnAddressHandler.bind(this);
-    this.patchReturnStatusHandler = this.patchReturnStatusHandler.bind(this);
-    this.patchReturnNoteHandler = this.patchReturnNoteHandler.bind(this);
-    this.getAllReturnsHandler = this.getAllReturnsHandler.bind(this);
-    this.putReturnShippingInfoHandler = this.putReturnShippingInfoHandler.bind(this);
+    autoBind(this);
   }
 
   // Shipments Handlers

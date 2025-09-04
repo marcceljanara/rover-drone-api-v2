@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 import express from 'express';
 import verifyToken from '../../middleware/verifyToken.js';
+import validateContentType from '../../middleware/validateContentType.js';
 
 const userRoutes = (handler) => {
   const router = express.Router();
@@ -77,7 +78,7 @@ const userRoutes = (handler) => {
    *                   example: \"username\" atau Gagal menambahkan user, atau Email atau username..
 
    */
-  router.post('/register', handler.postRegisterUserHandler);
+  router.post('/register', validateContentType('application/json'), handler.postRegisterUserHandler);
 
   /**
    * @swagger
@@ -142,7 +143,7 @@ const userRoutes = (handler) => {
    *                   type: string
    *                   example: Email tidak ditemukan
    */
-  router.post('/verify-otp', handler.postVerifyOtpHandler);
+  router.post('/verify-otp', validateContentType('application/json'), handler.postVerifyOtpHandler);
 
   /**
    * @swagger
@@ -190,7 +191,7 @@ const userRoutes = (handler) => {
    *                   type: string
    *                   example: Email tidak ditemukan atau akun telah terverifikasi
    */
-  router.post('/resend-otp', handler.postResendOtpHandler);
+  router.post('/resend-otp', validateContentType('application/json'), handler.postResendOtpHandler);
 
   /**
  * @swagger
@@ -294,7 +295,7 @@ const userRoutes = (handler) => {
  *                   example: "Terjadi kesalahan pada server"
  */
 
-  router.post('/addresses', verifyToken, handler.postAddressHandler);
+  router.post('/addresses', verifyToken, validateContentType('application/json'), handler.postAddressHandler);
 
   /**
  * @swagger
@@ -578,7 +579,7 @@ const userRoutes = (handler) => {
  *                   example: Terjadi kesalahan pada server
  */
 
-  router.put('/addresses/:id', verifyToken, handler.putAddressHandler);
+  router.put('/addresses/:id', verifyToken, validateContentType('application/json'), handler.putAddressHandler);
 
   /**
  * @swagger

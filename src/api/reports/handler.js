@@ -1,13 +1,11 @@
+import autoBind from 'auto-bind';
+
 class ReportsHandler {
   constructor({ reportsService, validator }) {
     this._reportsService = reportsService;
     this._validator = validator;
 
-    this.postReportHandler = this.postReportHandler.bind(this);
-    this.getAllReportHandler = this.getAllReportHandler.bind(this);
-    this.getDetailReportHandler = this.getDetailReportHandler.bind(this);
-    this.getDownloadReportHandler = this.getDownloadReportHandler.bind(this);
-    this.deleteReportHandler = this.deleteReportHandler.bind(this);
+    autoBind(this);
   }
 
   async postReportHandler(req, res, next) {

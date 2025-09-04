@@ -29,6 +29,7 @@ import PublisherService from '../services/mqtt/PublisherServiceMqtt.js';
 import ReportsService from '../services/postgres/ReportsService.js';
 import ShipmentsService from '../services/postgres/ShipmentsService.js';
 import LlmService from '../services/llm/LlmService.js';
+import CacheService from '../services/redis/CacheService.js';
 
 // validator
 import UsersValidator from '../validator/users/index.js';
@@ -62,7 +63,7 @@ function createServer() {
     credentials: true, // ⬅️ aktifkan kalau pakai cookie / token JWT dengan Auth header
   }));
 
-  app.options('*', cors()); // ⬅️ Wajib biar preflight dijawab
+  // app.options('*', cors()); // ⬅️ Wajib biar preflight dijawab
   app.use(express.json());
   app.use(helmet.hidePoweredBy());
   app.use(helmet.noSniff()); // Mencegah MIME-sniffing
@@ -71,13 +72,14 @@ function createServer() {
   app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
   // Dependency Injection
-  const userService = new UserService();
+  const cacheService = new CacheService();
+  const userService = new UserService(cacheService);
   const authenticationsService = new AuthenticationsService();
-  const adminsService = new AdminsService();
-  const rentalsService = new RentalsService();
+  const adminsService = new AdminsService(cacheService);
+  const rentalsService = new RentalsService(cacheService);
   const devicesService = new DevicesService();
-  const paymentsService = new PaymentsService();
-  const reportsService = new ReportsService();
+  const paymentsService = new PaymentsService(cacheService);
+  const reportsService = new ReportsService(cacheService);
   const shipmentsService = new ShipmentsService();
   const oauthManager = new OauthManager();
 

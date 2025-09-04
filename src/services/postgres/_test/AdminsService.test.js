@@ -6,10 +6,23 @@ import AuthenticationsTableTestHelper from '../../../../tests/AuthenticationTabl
 import UsersTableTestHelper from '../../../../tests/UserTableHelper.js';
 import AdminsService from '../AdminsService.js';
 import pool from '../../../config/postgres/pool.js';
+import CacheService from '../../redis/CacheService.js';
 
 dotenv.config();
 
+jest.mock('redis', () => ({
+  createClient: jest.fn(() => ({
+    connect: jest.fn().mockResolvedValue(),
+    disconnect: jest.fn().mockResolvedValue(),
+    on: jest.fn(),
+    set: jest.fn().mockResolvedValue('OK'),
+    get: jest.fn().mockResolvedValue(null),
+    del: jest.fn().mockResolvedValue(1),
+  })),
+}));
+
 describe('Admins Service', () => {
+  const cacheService = new CacheService();
   afterAll(async () => {
     await pool.end();
   });
@@ -26,7 +39,7 @@ describe('Admins Service', () => {
         fullname: 'User Keren',
         email: 'userr@gmail.com',
       };
-      const adminsService = new AdminsService();
+      const adminsService = new AdminsService(cacheService);
 
       // Actions
       const users = await adminsService.registerUser(payload);
@@ -46,7 +59,7 @@ describe('Admins Service', () => {
       await UsersTableTestHelper.addUser({ id: 'user-123', username: 'user123', email: 'user123@gmail.com' });
       await UsersTableTestHelper.addUser({ id: 'user-456', username: 'halo', email: 'hehe@gmail.com' });
       await UsersTableTestHelper.addAdmin({ id: 'admin-123' });
-      const adminsService = new AdminsService();
+      const adminsService = new AdminsService(cacheService);
       const limit = 10;
       const page = 1;
       const offset = (page - 1) * limit;
@@ -64,7 +77,7 @@ describe('Admins Service', () => {
       await UsersTableTestHelper.addUser({ id: 'user-123', username: 'user123', email: 'user123@gmail.com' });
       await UsersTableTestHelper.addUser({ id: 'user-456', username: 'halo', email: 'hehe@gmail.com' });
       await UsersTableTestHelper.addAdmin({ id: 'admin-123' });
-      const adminsService = new AdminsService();
+      const adminsService = new AdminsService(cacheService);
       const search = 'halo';
 
       // Action
@@ -77,7 +90,7 @@ describe('Admins Service', () => {
   describe('getDetailUser function', () => {
     it('should get detail user correctly', async () => {
       // Arrange
-      const adminsService = new AdminsService();
+      const adminsService = new AdminsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
 
       // Actions
@@ -89,7 +102,7 @@ describe('Admins Service', () => {
     });
     it('should throw Not Found Error when user not found', async () => {
       // Arrange
-      const adminsService = new AdminsService();
+      const adminsService = new AdminsService(cacheService);
 
       // Action and Assert
       await expect(adminsService.getDetailUser('user-123')).rejects.toThrow(NotFoundError);
@@ -99,14 +112,14 @@ describe('Admins Service', () => {
     it('should throw Authorization Error for illegal action', async () => {
       // Arrange
       const admin = await UsersTableTestHelper.addAdmin({ id: 'admin-123' });
-      const adminService = new AdminsService();
+      const adminService = new AdminsService(cacheService);
 
       // Action and Assert
       await expect(adminService.checkIsAdmin(admin)).rejects.toThrow(AuthorizationError);
     });
     it('should throw error if user not found', async () => {
       // Arrange
-      const adminService = new AdminsService();
+      const adminService = new AdminsService(cacheService);
 
       // Action and assert
       await expect(adminService.checkIsAdmin('user-123')).rejects.toThrow(NotFoundError);
@@ -116,7 +129,7 @@ describe('Admins Service', () => {
     it('should delete user correctly', async () => {
       // Arrange
       const userId = await UsersTableTestHelper.addUser({ id: 'user-123' });
-      const adminsService = new AdminsService();
+      const adminsService = new AdminsService(cacheService);
 
       // Action
       await adminsService.deleteUser(userId);
@@ -134,7 +147,7 @@ describe('Admins Service', () => {
         password: 'superpassword',
       };
       await UsersTableTestHelper.addUser(payload);
-      const adminsService = new AdminsService();
+      const adminsService = new AdminsService(cacheService);
 
       // Action and Assert
       await expect(adminsService.changePasswordUser(payload.id, 'testpwd', 'testpwd')).resolves.not.toThrow();
@@ -146,7 +159,7 @@ describe('Admins Service', () => {
         password: 'superpassword',
       };
       await UsersTableTestHelper.addUser(payload);
-      const adminsService = new AdminsService();
+      const adminsService = new AdminsService(cacheService);
 
       // Action and assert
       await expect(adminsService.changePasswordUser(payload.id, 'passwordku', 'passworddia')).rejects.toThrow(InvariantError);

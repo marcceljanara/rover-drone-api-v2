@@ -8,10 +8,23 @@ import DevicesTableTestHelper from '../../../../tests/DevicesTableTestHelper.js'
 import RentalsTableTestHelper from '../../../../tests/RentalsTableTestHelper.js';
 import pool from '../../../config/postgres/pool.js';
 import InvariantError from '../../../exceptions/InvariantError.js';
+import CacheService from '../../redis/CacheService.js';
 
 dotenv.config();
 
+jest.mock('redis', () => ({
+  createClient: jest.fn(() => ({
+    connect: jest.fn().mockResolvedValue(),
+    disconnect: jest.fn().mockResolvedValue(),
+    on: jest.fn(),
+    set: jest.fn().mockResolvedValue('OK'),
+    get: jest.fn().mockResolvedValue(null),
+    del: jest.fn().mockResolvedValue(1),
+  })),
+}));
+
 describe('DevicesService', () => {
+  const cacheService = new CacheService();
   afterAll(async () => {
     await pool.end();
   });
@@ -172,7 +185,7 @@ describe('DevicesService', () => {
     it('should return device details correctly by user authenticated', async () => {
       // Arrange
       const devicesService = new DevicesService();
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-1234567', username: 'otng123', email: 'totonggg@gmail.com' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
@@ -225,7 +238,7 @@ describe('DevicesService', () => {
     it('should return all devices by user autheticated', async () => {
       // Arrange
       const devicesService = new DevicesService();
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
@@ -256,7 +269,7 @@ describe('DevicesService', () => {
       await devicesService.addDevice();
 
       // Menambahkan perangkat yang sedang disewa (memiliki rental_id)
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
@@ -323,7 +336,7 @@ describe('DevicesService', () => {
     it('should control device on correctly by user', async () => {
       // Arrange
       const devicesService = new DevicesService();
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-111', username: 'user111', email: 'user111@gmail.com' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
@@ -347,7 +360,7 @@ describe('DevicesService', () => {
     it('should control device off correctly by user', async () => {
       // Arrange
       const devicesService = new DevicesService();
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-000', username: 'user000', email: 'user000@gmail.com' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
@@ -390,7 +403,7 @@ describe('DevicesService', () => {
     it('return all sensor data by admin based timestamp', async () => {
       // Arrange
       const devicesService = new DevicesService();
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
@@ -413,7 +426,7 @@ describe('DevicesService', () => {
     it('return all sensor data by user based timestamp', async () => {
       // Arrange
       const devicesService = new DevicesService();
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
@@ -446,7 +459,7 @@ describe('DevicesService', () => {
     it('return all sensor data by admin based limit', async () => {
       // Arrange
       const devicesService = new DevicesService();
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
@@ -474,7 +487,7 @@ describe('DevicesService', () => {
     it('return all sensor data by user based timestamp', async () => {
       // Arrange
       const devicesService = new DevicesService();
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
@@ -512,7 +525,7 @@ describe('DevicesService', () => {
     it('return all sensor data download by admin based timestamp', async () => {
       // Arrange
       const devicesService = new DevicesService();
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
@@ -535,7 +548,7 @@ describe('DevicesService', () => {
     it('return all sensor data download by user based timestamp', async () => {
       // Arrange
       const devicesService = new DevicesService();
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
@@ -558,7 +571,7 @@ describe('DevicesService', () => {
     it('should throw Data Not Found error', async () => {
       // Arrange
       const devicesService = new DevicesService();
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await devicesService.addDevice();
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });

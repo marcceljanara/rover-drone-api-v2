@@ -5,6 +5,18 @@ import InvariantError from '../../../exceptions/InvariantError.js';
 import AuthenticationError from '../../../exceptions/AuthenticationError.js';
 import NotFoundError from '../../../exceptions/NotFoundError.js';
 import pool from '../../../config/postgres/pool.js';
+import CacheService from '../../redis/CacheService.js';
+
+jest.mock('redis', () => ({
+  createClient: jest.fn(() => ({
+    connect: jest.fn().mockResolvedValue(),
+    disconnect: jest.fn().mockResolvedValue(),
+    on: jest.fn(),
+    set: jest.fn().mockResolvedValue('OK'),
+    get: jest.fn().mockResolvedValue(null),
+    del: jest.fn().mockResolvedValue(1),
+  })),
+}));
 
 // Mocking pg.Pool dan bcrypt
 jest.mock('pg', () => {
@@ -17,9 +29,10 @@ jest.mock('bcrypt');
 
 describe('UserService', () => {
   let userService;
+  const cacheService = new CacheService();
 
   beforeEach(() => {
-    userService = new UserService();
+    userService = new UserService(cacheService);
   });
 
   afterEach(async () => {

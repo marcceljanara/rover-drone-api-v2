@@ -10,8 +10,20 @@ import DevicesTableTestHelper from '../../../../tests/DevicesTableTestHelper.js'
 import UsersTableTestHelper from '../../../../tests/UserTableHelper.js';
 import PaymentsTableTestHelper from '../../../../tests/PaymentTableTestHelper.js';
 import ReportsTableTestHelper from '../../../../tests/ReportTableTestHelper.js';
+import CacheService from '../../redis/CacheService.js';
 
 dotenv.config();
+
+jest.mock('redis', () => ({
+  createClient: jest.fn(() => ({
+    connect: jest.fn().mockResolvedValue(),
+    disconnect: jest.fn().mockResolvedValue(),
+    on: jest.fn(),
+    set: jest.fn().mockResolvedValue('OK'),
+    get: jest.fn().mockResolvedValue(null),
+    del: jest.fn().mockResolvedValue(1),
+  })),
+}));
 
 const { Pool } = pkg;
 const pool = new Pool();
@@ -19,6 +31,7 @@ const pool = new Pool();
 describe('ReportsService', () => {
   let admin;
   let mockResponse;
+  const cacheService = new CacheService();
   afterAll(async () => {
     await pool.end();
     await UsersTableTestHelper.cleanTable();
@@ -39,8 +52,8 @@ describe('ReportsService', () => {
       end: jest.fn(),
     };
     admin = await UsersTableTestHelper.addAdmin({ id: 'admin-123' });
-    const rentalsService = new RentalsService();
-    const paymentsService = new PaymentsService();
+    const rentalsService = new RentalsService(cacheService);
+    const paymentsService = new PaymentsService(cacheService);
     const user1 = await UsersTableTestHelper.addUser({ id: 'user-123', username: 'user123', email: 'user123@gmail.com' });
     const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'user456', email: 'user456@gmail.com' });
     await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -74,7 +87,7 @@ describe('ReportsService', () => {
   describe('addReport Function', () => {
     it('should add report correctly', async () => {
       // Arrange
-      const reportsService = new ReportsService();
+      const reportsService = new ReportsService(cacheService);
 
       // Action
       const id = await reportsService.addReport(admin, '2025-01-30 00:00:00', '2025-02-01 00:00:00');
@@ -87,7 +100,7 @@ describe('ReportsService', () => {
     });
     it('should throw invariant error when startDate morethan endDate', async () => {
       // Arrange
-      const reportsService = new ReportsService();
+      const reportsService = new ReportsService(cacheService);
 
       // Action and Assert
       await expect(reportsService.addReport(admin, '2025-02-08 00:00:00', '2025-02-05 00:00:00')).rejects.toThrow(InvariantError);
@@ -97,7 +110,7 @@ describe('ReportsService', () => {
   describe('getAllReport function', () => {
     it('should get all report correctly', async () => {
       // Arrange
-      const reportsService = new ReportsService();
+      const reportsService = new ReportsService(cacheService);
       await reportsService.addReport(admin, '2025-01-30 00:00:00', '2025-02-01 00:00:00');
       await reportsService.addReport(admin, '2025-02-05 00:00:00', '2025-02-08 00:00:00');
 
@@ -112,7 +125,7 @@ describe('ReportsService', () => {
   describe('getReport function', () => {
     it('should get detail report correctly', async () => {
       // Arrange
-      const reportsService = new ReportsService();
+      const reportsService = new ReportsService(cacheService);
       const reportId = await reportsService.addReport(admin, '2025-01-30 00:00:00', '2025-02-01 00:00:00');
 
       // Action
@@ -125,7 +138,7 @@ describe('ReportsService', () => {
     });
     it('should throw not found error when report not exist', async () => {
       // Arrange
-      const reportsService = new ReportsService();
+      const reportsService = new ReportsService(cacheService);
       const reportId = 'notfound';
 
       // Action and Assert
@@ -136,7 +149,7 @@ describe('ReportsService', () => {
   describe('deleteReport function', () => {
     it('should delete report by id correctly', async () => {
       // Arrange
-      const reportsService = new ReportsService();
+      const reportsService = new ReportsService(cacheService);
       const reportId = await reportsService.addReport(admin, '2025-01-30 00:00:00', '2025-02-01 00:00:00');
 
       // Action
@@ -148,7 +161,7 @@ describe('ReportsService', () => {
     });
     it('should throw not found error when report not found', async () => {
       // Arrange
-      const reportsService = new ReportsService();
+      const reportsService = new ReportsService(cacheService);
       const reportId = 'notfound';
 
       // Action and Assert

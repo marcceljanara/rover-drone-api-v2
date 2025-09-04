@@ -1,3 +1,5 @@
+import autoBind from 'auto-bind';
+
 class PaymentsHandler {
   constructor({
     paymentsService, rentalsService, rabbitmqService, validator,
@@ -7,10 +9,7 @@ class PaymentsHandler {
     this._validator = validator;
     this._rabbitmqService = rabbitmqService;
 
-    this.getAllPaymentsHandler = this.getAllPaymentsHandler.bind(this);
-    this.getDetailPaymentHandler = this.getDetailPaymentHandler.bind(this);
-    this.putVerificationPaymentHandler = this.putVerificationPaymentHandler.bind(this);
-    this.deletePaymentHandler = this.deletePaymentHandler.bind(this);
+    autoBind(this);
   }
 
   async getAllPaymentsHandler(req, res) {

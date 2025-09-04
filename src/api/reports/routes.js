@@ -2,6 +2,7 @@
 import express from 'express';
 import verifyToken from '../../middleware/verifyToken.js';
 import verifyAdmin from '../../middleware/verifyAdmin.js';
+import validateContentType from '../../middleware/validateContentType.js';
 
 const reportRoutes = (handler) => {
   const router = express.Router();
@@ -103,7 +104,7 @@ const reportRoutes = (handler) => {
  *                   example: "Terjadi kesalahan pada server"
  */
 
-  router.post('/v1/reports', verifyToken, verifyAdmin, handler.postReportHandler);
+  router.post('/v1/reports', verifyToken, verifyAdmin, validateContentType('application/json'), handler.postReportHandler);
   /**
  * @swagger
  * /v1/reports:

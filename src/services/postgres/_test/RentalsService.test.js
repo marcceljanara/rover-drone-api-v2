@@ -7,10 +7,23 @@ import UsersTableTestHelper from '../../../../tests/UserTableHelper.js';
 import InvariantError from '../../../exceptions/InvariantError.js';
 import AuthorizationError from '../../../exceptions/AuthorizationError.js';
 import pool from '../../../config/postgres/pool.js';
+import CacheService from '../../redis/CacheService.js';
 
 dotenv.config();
 
+jest.mock('redis', () => ({
+  createClient: jest.fn(() => ({
+    connect: jest.fn().mockResolvedValue(),
+    disconnect: jest.fn().mockResolvedValue(),
+    on: jest.fn(),
+    set: jest.fn().mockResolvedValue('OK'),
+    get: jest.fn().mockResolvedValue(null),
+    del: jest.fn().mockResolvedValue(1),
+  })),
+}));
+
 describe('RentalsService', () => {
+  const cacheService = new CacheService();
   afterAll(async () => {
     await pool.end();
   });
@@ -24,7 +37,7 @@ describe('RentalsService', () => {
   describe('changeStatusRental function', () => {
     it('should change status rental active and add rental_id to table devices correctly', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
@@ -51,7 +64,7 @@ describe('RentalsService', () => {
 
     it('should change status rental completed and clear rental_id to table devices correctly when rental_status pending', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
 
@@ -78,7 +91,7 @@ describe('RentalsService', () => {
     });
     it('should throw error when try completed rental while rental_status active', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
 
@@ -103,7 +116,7 @@ describe('RentalsService', () => {
 
     it('should throw error if device not available', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const deviceId = await DevicesTableTestHelper.addDevice({ id: 'device-123' });
 
@@ -127,7 +140,7 @@ describe('RentalsService', () => {
     });
     it('should throw error if rental not found', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const id = 'notfoundrental';
 
@@ -145,7 +158,7 @@ describe('RentalsService', () => {
   describe('deleteRental function', () => {
     it('should delete rental corretly', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
 
@@ -168,7 +181,7 @@ describe('RentalsService', () => {
 
     it('should throw error if rental not found', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const id = 'notfoundrental';
 
@@ -179,7 +192,7 @@ describe('RentalsService', () => {
 
     it('should throw error if rental_status is active', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
 
@@ -205,7 +218,7 @@ describe('RentalsService', () => {
   describe('addRental function', () => {
     it('should add rental correctly with 0 sensor', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
@@ -228,7 +241,7 @@ describe('RentalsService', () => {
     });
     it('should add rental correctly with 2 sensors', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
@@ -252,7 +265,7 @@ describe('RentalsService', () => {
 
     it('should throw error when role admin adding rental', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const payloadRental = {
@@ -267,7 +280,7 @@ describe('RentalsService', () => {
 
     it('should throw error when device not available', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
       const payloadRental = {
@@ -283,7 +296,7 @@ describe('RentalsService', () => {
   describe('getAllRental function', () => {
     it('should return all rental by role admin', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -308,7 +321,7 @@ describe('RentalsService', () => {
 
     it('should return all rental by spesific userId', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -335,7 +348,7 @@ describe('RentalsService', () => {
   describe('getDetailRental function', () => {
     it('should detail rental by admin', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -360,7 +373,7 @@ describe('RentalsService', () => {
     });
     it('should throw error when role admin not found rental', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
       const id = 'notfound';
@@ -371,7 +384,7 @@ describe('RentalsService', () => {
 
     it('should detail rental by userid', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -397,7 +410,7 @@ describe('RentalsService', () => {
 
     it('should throw error when role userid not found rental', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -421,7 +434,7 @@ describe('RentalsService', () => {
   describe('cancelRental function', () => {
     it('should cancel rental by user correctly', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
@@ -448,7 +461,7 @@ describe('RentalsService', () => {
 
     it('should throw authorization error when admin try to cancel rental', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress(user1, { id: 'address-123' });
@@ -471,7 +484,7 @@ describe('RentalsService', () => {
 
     it('should throw not found error when rental not found', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const id = 'notfound';
@@ -489,7 +502,7 @@ describe('RentalsService', () => {
   describe('getAllSensors function', () => {
     it('should get all sensors id and cost', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
 
       // Action
       const choice = await rentalsService.getAllSensors();
@@ -501,7 +514,7 @@ describe('RentalsService', () => {
   describe('extensionRental funuction', () => {
     it('should extend rental correctly', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
@@ -526,7 +539,7 @@ describe('RentalsService', () => {
     });
     it('should throw error when rental not found', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const id = 'notfound';
       const payload = {
         id,
@@ -539,7 +552,7 @@ describe('RentalsService', () => {
     });
     it('should throw AuthorizationError when admin try to extend rental', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
@@ -564,7 +577,7 @@ describe('RentalsService', () => {
   describe('completeExtension function', () => {
     it('should complete extension rental correctly', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
@@ -591,7 +604,7 @@ describe('RentalsService', () => {
 
     it('should throw error when extension not found', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const id = 'notfound';
 
       // Action and Assert
@@ -601,7 +614,7 @@ describe('RentalsService', () => {
   describe('getAllRentalExtentions function', () => {
     it('should get all rental extensions by admin', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
@@ -628,7 +641,7 @@ describe('RentalsService', () => {
     });
     it('should get all rental extensions by user', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
@@ -657,7 +670,7 @@ describe('RentalsService', () => {
   describe('getRentalExtension function', () => {
     it('should get rental extension by id role user', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
@@ -683,7 +696,7 @@ describe('RentalsService', () => {
     });
     it('should get rental extension by id role admin', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
@@ -710,7 +723,7 @@ describe('RentalsService', () => {
 
     it('should throw error when rental extension not found', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
+      const rentalsService = new RentalsService(cacheService);
       const id = 'notfound';
 
       // Action and Assert

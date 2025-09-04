@@ -55,6 +55,7 @@
     "@types/jest": "^29.5.14",
     "@vitalets/google-translate-api": "^9.2.1",
     "amqplib": "^0.10.5",
+    "auto-bind": "^5.0.1",
     "axios": "^1.9.0",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.3",
@@ -78,6 +79,7 @@
     "pdfkit": "^0.16.0",
     "pg": "^8.13.1",
     "readable-stream": "^4.7.0",
+    "redis": "^5.8.2",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   }

@@ -8,10 +8,23 @@ import PaymentsTableTestHelper from '../../../../tests/PaymentTableTestHelper';
 import InvariantError from '../../../exceptions/InvariantError.js';
 import NotFoundError from '../../../exceptions/NotFoundError.js';
 import pool from '../../../config/postgres/pool.js';
+import CacheService from '../../redis/CacheService.js';
 
 dotenv.config();
 
+jest.mock('redis', () => ({
+  createClient: jest.fn(() => ({
+    connect: jest.fn().mockResolvedValue(),
+    disconnect: jest.fn().mockResolvedValue(),
+    on: jest.fn(),
+    set: jest.fn().mockResolvedValue('OK'),
+    get: jest.fn().mockResolvedValue(null),
+    del: jest.fn().mockResolvedValue(1),
+  })),
+}));
+
 describe('PaymentsService', () => {
+  const cacheService = new CacheService();
   afterAll(async () => {
     await pool.end();
   });
@@ -26,8 +39,8 @@ describe('PaymentsService', () => {
   describe('getUserByPaymentId function', () => {
     it('should return user data when payment exists', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
-      const paymentsService = new PaymentsService();
+      const rentalsService = new RentalsService(cacheService);
+      const paymentsService = new PaymentsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123000', email: 'user@example.com', fullname: 'John Doe' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
@@ -51,7 +64,7 @@ describe('PaymentsService', () => {
 
     it('should throw NotFoundError when payment not found', async () => {
       // Arrange
-      const paymentsService = new PaymentsService();
+      const paymentsService = new PaymentsService(cacheService);
       const nonExistingPaymentId = 'non-existing-payment-id';
 
       // Action & Assert
@@ -63,8 +76,8 @@ describe('PaymentsService', () => {
   describe('getAllPayments function', () => {
     it('should return all payments', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
-      const paymentsService = new PaymentsService();
+      const rentalsService = new RentalsService(cacheService);
+      const paymentsService = new PaymentsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -90,8 +103,8 @@ describe('PaymentsService', () => {
   describe('getDetailPayment function', () => {
     it('should get detail payment', async () => {
       // Arrange
-      const rentalsService = new RentalsService();
-      const paymentsService = new PaymentsService();
+      const rentalsService = new RentalsService(cacheService);
+      const paymentsService = new PaymentsService(cacheService);
       const user1 = await UsersTableTestHelper.addUser({ id: 'user-123' });
       const user2 = await UsersTableTestHelper.addUser({ id: 'user-456', username: 'userkeren', email: 'userkeren@gmail.com' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
@@ -116,7 +129,7 @@ describe('PaymentsService', () => {
 
     it('should throw error when payment not found', async () => {
       // Arrange
-      const paymentsService = new PaymentsService();
+      const paymentsService = new PaymentsService(cacheService);
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-456' });
       const id = 'notfound';
@@ -128,8 +141,8 @@ describe('PaymentsService', () => {
   describe('verificationPayment function', () => {
     it('should verify payment and update payment details', async () => {
       // Arrange
-      const paymentsService = new PaymentsService();
-      const rentalsService = new RentalsService();
+      const paymentsService = new PaymentsService(cacheService);
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
@@ -158,7 +171,7 @@ describe('PaymentsService', () => {
 
     it('should throw error if payment not found', async () => {
       // Arrange
-      const paymentsService = new PaymentsService();
+      const paymentsService = new PaymentsService(cacheService);
       const payload = {
         id: 'notfound',
         paymentStatus: 'completed',
@@ -171,8 +184,8 @@ describe('PaymentsService', () => {
     });
     it('should throw InvariantError when updating payment fails', async () => {
       // Arrange
-      const paymentsService = new PaymentsService();
-      const rentalsService = new RentalsService();
+      const paymentsService = new PaymentsService(cacheService);
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
@@ -211,8 +224,8 @@ describe('PaymentsService', () => {
   describe('deletePayment function', () => {
     it('should delete payment by marking it as deleted', async () => {
       // Arrange
-      const paymentsService = new PaymentsService();
-      const rentalsService = new RentalsService();
+      const paymentsService = new PaymentsService(cacheService);
+      const rentalsService = new RentalsService(cacheService);
       const user = await UsersTableTestHelper.addUser({ id: 'user-123' });
       await DevicesTableTestHelper.addDevice({ id: 'device-123' });
       const addressId = await UsersTableTestHelper.addAddress(user, { id: 'address-123' });
@@ -237,7 +250,7 @@ describe('PaymentsService', () => {
 
     it('should throw error if payment not found', async () => {
       // Arrange
-      const paymentsService = new PaymentsService();
+      const paymentsService = new PaymentsService(cacheService);
       const id = 'notfound';
 
       // Action & Assert
@@ -246,7 +259,7 @@ describe('PaymentsService', () => {
   });
   describe('transaction function', () => {
     it('should commit the transaction successfully', async () => {
-      const paymentsService = new PaymentsService();
+      const paymentsService = new PaymentsService(cacheService);
       const mockCallback = jest.fn().mockResolvedValue('Transaction Completed');
 
       const result = await paymentsService.transaction(mockCallback);
@@ -256,7 +269,7 @@ describe('PaymentsService', () => {
     });
 
     it('should rollback the transaction when an error occurs', async () => {
-      const paymentsService = new PaymentsService();
+      const paymentsService = new PaymentsService(cacheService);
       const mockCallback = jest.fn().mockRejectedValue(new Error('Transaction Failed'));
 
       await expect(paymentsService.transaction(mockCallback)).rejects.toThrow('Transaction Failed');
