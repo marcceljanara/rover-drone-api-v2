@@ -17,7 +17,8 @@ class AdminHandler {
       const {
         username, password, fullname, email,
       } = req.body;
-      await this._userService.checkExistingUser({ email, username });
+      await this._userService.checkExistingEmail({ email });
+      await this._userService.checkExistingUsername({ username });
 
       const userId = await this._adminsService.registerUser({
         username,

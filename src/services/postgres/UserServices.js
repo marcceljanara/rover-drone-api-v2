@@ -1,6 +1,7 @@
 /* eslint-disable no-useless-escape */
 import { nanoid } from 'nanoid';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import InvariantError from '../../exceptions/InvariantError.js';
 import AuthenticationError from '../../exceptions/AuthenticationError.js';
 import NotFoundError from '../../exceptions/NotFoundError.js';
@@ -134,15 +135,27 @@ class UserService {
     }
   }
 
-  async checkExistingUser({ email, username }) {
+  async checkExistingEmail({ email }) {
     const query = {
-      text: 'SELECT username, email FROM users WHERE username = $1 OR email = $2',
-      values: [username, email],
+      text: 'SELECT email FROM users WHERE email = $1',
+      values: [email],
     };
 
     const result = await this._pool.query(query);
     if (result.rows.length > 0) {
-      throw new InvariantError('Email atau username sudah terdaftar. Silakan gunakan email atau username lain.');
+      throw new InvariantError('Email sudah terdaftar. Silakan gunakan email lain.');
+    }
+  }
+
+  async checkExistingUsername({ username }) {
+    const query = {
+      text: 'SELECT username FROM users WHERE username = $1',
+      values: [username],
+    };
+
+    const result = await this._pool.query(query);
+    if (result.rows.length > 0) {
+      throw new InvariantError('Username sudah terdaftar. Silakan gunakan username lain.');
     }
   }
 
@@ -222,6 +235,29 @@ class UserService {
       client.release();
     }
   }
+
+  // Forgot Password
+  async changePassword(email, newPassword, confPassword) {
+    if (newPassword !== confPassword) {
+      throw new InvariantError('Password dan Konfirmasi Password Tidak Cocok');
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashNewPassword = await bcrypt.hash(newPassword, salt);
+    const query = {
+      text: `UPDATE auth_providers ap
+      SET password = $1
+      FROM users u
+      WHERE u.email = $2 AND ap.user_id = u.id and ap.provider = 'local'
+      RETURNING ap.user_id`,
+      values: [hashNewPassword, email],
+    };
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new NotFoundError('Email tidak ditemukan atau akun bukan lokal');
+    }
+  }
+
+  // async generateTokenResetPassword(email) {}
 
   async addAddress(userId, {
     namaPenerima, noHp, alamatLengkap,

@@ -16,7 +16,8 @@ class UserHandler {
       const {
         username, password, fullname, email,
       } = req.body;
-      await this._userService.checkExistingUser({ email, username });
+      await this._userService.checkExistingUsername({ username });
+      await this._userService.checkExistingEmail({ email });
 
       const userId = await this._userService.registerUser({
         username,
@@ -82,6 +83,10 @@ class UserHandler {
       return next(error);
     }
   }
+
+  // async postForgotPasswordHandler(req, res, next) {
+
+  // }
 
   async postAddressHandler(req, res, next) {
     try {
