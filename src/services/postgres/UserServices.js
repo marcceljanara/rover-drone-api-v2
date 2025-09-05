@@ -6,6 +6,16 @@ import AuthenticationError from '../../exceptions/AuthenticationError.js';
 import NotFoundError from '../../exceptions/NotFoundError.js';
 import pool from '../../config/postgres/pool.js';
 
+function generateUsernameFromEmail(email) {
+  const [localPart] = email.split('@'); // ambil bagian sebelum @
+  const base = localPart.slice(0, 12); // ambil maksimal 12 char
+  const randomNum = Math.floor(Math.random() * 1_000_000) // 0–999
+    .toString()
+    .padStart(6, '0'); // selalu 6 digit
+
+  return base + randomNum;
+}
+
 class UserService {
   constructor(cacheService) {
     this._pool = pool;
@@ -64,6 +74,8 @@ class UserService {
     try {
       await client.query('BEGIN');
 
+      const existingUser = await this.findByEmail(email);
+
       // Cek apakah sudah ada user dengan email ini
       if (aud !== process.env.GOOGLE_CLIENT_ID) {
         throw new AuthenticationError('Akun Google tidak valid');
@@ -72,7 +84,7 @@ class UserService {
       // Cek apakah sudah ada auth_providers dengan provider_id Google
       const checkQuery = {
         text: `SELECT u.id, u.role, u.is_verified 
-             FROM users u 
+        FROM users u 
              JOIN auth_providers ap ON ap.user_id = u.id 
              WHERE ap.provider = $1 AND ap.provider_id = $2`,
         values: ['google', googleId],
@@ -83,11 +95,26 @@ class UserService {
         return existing.rows[0]; // Sudah ada user, langsung return
       }
 
+      // Kalau email sudah ada → link ke akun lokal
+      if (existingUser) {
+        await client.query(
+          `INSERT INTO auth_providers (id, user_id, provider, provider_id) 
+     VALUES ($1, $2, $3, $4)`,
+          [authId, existingUser.id, 'google', googleId],
+        );
+        await client.query('COMMIT');
+        return {
+          id: existingUser.id,
+        };
+      }
+
+      const username = generateUsernameFromEmail(email);
+
       // Insert ke users
       await client.query(
-        `INSERT INTO users (id, fullname, email, is_verified) 
-       VALUES ($1, $2, $3, $4)`,
-        [userId, fullname, email, true],
+        `INSERT INTO users (id, username, fullname, email, is_verified) 
+       VALUES ($1, $2, $3, $4, $5)`,
+        [userId, username, fullname, email, true],
       );
 
       // Insert ke auth_providers
@@ -117,6 +144,15 @@ class UserService {
     if (result.rows.length > 0) {
       throw new InvariantError('Email atau username sudah terdaftar. Silakan gunakan email atau username lain.');
     }
+  }
+
+  async findByEmail(email) {
+    const query = {
+      text: 'SELECT id from users WHERE email = $1',
+      values: [email],
+    };
+    const result = await this._pool.query(query);
+    return result.rows[0];
   }
 
   async generateOtp(email) {
