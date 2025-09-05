@@ -237,19 +237,18 @@ class UserService {
   }
 
   // Forgot Password
-  async changePassword(email, newPassword, confPassword) {
+  async changePassword(userId, newPassword, confPassword) {
     if (newPassword !== confPassword) {
       throw new InvariantError('Password dan Konfirmasi Password Tidak Cocok');
     }
     const salt = await bcrypt.genSalt(10);
     const hashNewPassword = await bcrypt.hash(newPassword, salt);
     const query = {
-      text: `UPDATE auth_providers ap
+      text: `UPDATE auth_providers
       SET password = $1
-      FROM users u
-      WHERE u.email = $2 AND ap.user_id = u.id and ap.provider = 'local'
-      RETURNING ap.user_id`,
-      values: [hashNewPassword, email],
+      WHERE user_id = $2 AND provider = 'local'
+      RETURNING user_id`,
+      values: [hashNewPassword, userId],
     };
     const result = await this._pool.query(query);
     if (!result.rowCount) {
@@ -257,7 +256,56 @@ class UserService {
     }
   }
 
-  // async generateTokenResetPassword(email) {}
+  async generateTokenResetPassword(userId) {
+    const token = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    await this._pool.query({
+      text: 'DELETE FROM password_resets WHERE user_id = $1 and used = $2',
+      values: [userId, false],
+    });
+
+    const query = {
+      text: 'INSERT INTO password_resets (user_id, hashed_token, expires_at) VALUES ($1, $2, NOW() + INTERVAL \'1 hour\')',
+      values: [userId, hashedToken],
+    };
+    await this._pool.query(query);
+    return `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+  }
+
+  async verifyResetToken(token) {
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const query = {
+      text: 'SELECT id FROM password_resets WHERE hashed_token = $1 AND expires_at > NOW() AND used = $2 LIMIT 1',
+      values: [hashedToken, false],
+    };
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new AuthenticationError('Token invalid atau sudah tidak berlaku');
+    }
+    return result.rows[0].id;
+  }
+
+  async verifySession(sessionId) {
+    const query = {
+      text: 'SELECT user_id FROM password_resets WHERE id = $1 AND expires_at > NOW() AND used = $2',
+      values: [sessionId, false],
+    };
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new AuthenticationError('Token invalid atau sudah tidak berlaku');
+    }
+    return result.rows[0].user_id;
+  }
+
+  async flagSession(sessionId) {
+    const query = {
+      text: 'UPDATE password_resets SET used = $1 WHERE id = $2',
+      values: [true, sessionId],
+    };
+    await this._pool.query(query);
+  }
 
   async addAddress(userId, {
     namaPenerima, noHp, alamatLengkap,
