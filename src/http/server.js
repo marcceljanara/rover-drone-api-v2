@@ -31,6 +31,7 @@ import ReportsService from '../services/postgres/ReportsService.js';
 import ShipmentsService from '../services/postgres/ShipmentsService.js';
 import LlmService from '../services/llm/LlmService.js';
 import CacheService from '../services/redis/CacheService.js';
+import S3Service from '../services/storage/storageService.js';
 
 // validator
 import UsersValidator from '../validator/users/index.js';
@@ -97,6 +98,7 @@ function createServer() {
   const reportsService = new ReportsService(cacheService);
   const shipmentsService = new ShipmentsService();
   const oauthManager = new OauthManager(cacheService);
+  const storageService = new S3Service(process.env.R2_BUCKET_NAME);
 
   // Register plugins
   usersPlugin({
@@ -155,6 +157,7 @@ function createServer() {
     app,
     shipmentsService,
     rabbitmqService: ProducerService,
+    storageService,
     validator: ShipmentsValidator,
   });
 
