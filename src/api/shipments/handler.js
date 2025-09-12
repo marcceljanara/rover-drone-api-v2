@@ -1,9 +1,12 @@
 import autoBind from 'auto-bind';
 
 class ShipmentsHandler {
-  constructor({ shipmentsService, rabbitmqService, validator }) {
+  constructor({
+    shipmentsService, rabbitmqService, storageService, validator,
+  }) {
     this._shipmentsService = shipmentsService;
     this._rabbitmqService = rabbitmqService;
+    this._storageService = storageService;
     this._validator = validator;
 
     autoBind(this);
@@ -133,7 +136,7 @@ class ShipmentsHandler {
         });
       }
 
-      const photoUrl = `/uploads/delivery-proofs/${req.file.filename}`;
+      const photoUrl = req.uploadedFile.key;
       await this._shipmentsService.addDeliveryProof(shipmentId, photoUrl);
 
       return res.status(201).json({
@@ -152,10 +155,11 @@ class ShipmentsHandler {
       const { id: shipmentId } = req.params;
 
       const deliveryProofUrl = await this._shipmentsService.getDeliveryProofUrl(shipmentId);
+      const url = await this._storageService.getSignedUrl(deliveryProofUrl);
 
       return res.status(200).json({
         status: 'success',
-        data: { deliveryProofUrl },
+        data: { url },
       });
     } catch (error) {
       return next(error);

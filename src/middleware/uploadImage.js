@@ -1,29 +1,16 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
+import S3Service from '../services/storage/storageService.js';
 import InvariantError from '../exceptions/InvariantError.js';
 
-const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
-    const uploadDir = path.resolve('./uploads/delivery-proofs');
-    try {
-      await fs.promises.mkdir(uploadDir, { recursive: true });
-      cb(null, uploadDir);
-    } catch (err) {
-      cb(err);
-    }
-  },
-  filename: (req, file, cb) => {
-    const safeName = path.basename(file.originalname);
-    const uniqueName = `${Date.now()}-${safeName}`;
-    cb(null, uniqueName);
-  },
-});
+const storage = multer.memoryStorage(); // ✅ langsung di memory, bukan ke disk
+const s3 = new S3Service(process.env.R2_BUCKET_NAME);
 
+// middleware multer
 const upload = multer({
   storage,
-  limits: { fileSize: 3 * 1024 * 1024 }, // ✅ Maksimal 5 MB
+  limits: { fileSize: 3 * 1024 * 1024 }, // ✅ 3 MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png/;
     const isValidExt = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -32,18 +19,40 @@ const upload = multer({
     if (isValidExt && isValidMime) {
       cb(null, true);
     } else {
-      // ✅ Gunakan MulterError dengan kode khusus untuk identifikasi
       cb(new InvariantError('File harus berupa gambar (jpeg, jpg, png)'));
     }
   },
 });
 
 const uploadSingleImage = (req, res, next) => {
-  upload.single('photo')(req, res, (err) => {
+  upload.single('photo')(req, res, async (err) => {
     if (err) {
-      req.uploadError = err.message; // tandai error secara manual
+      req.uploadError = err.message;
+      return next();
     }
-    return next(); // lanjut ke handler apapun kondisinya
+
+    if (!req.file) {
+      req.uploadError = 'Tidak ada file yang diupload';
+      return next();
+    }
+
+    try {
+      // generate unique name
+      const uniqueName = `${Date.now()}-${path.basename(req.file.originalname)}`;
+
+      // upload ke R2
+      await s3.uploadObject(`delivery-proofs/${uniqueName}`, req.file.buffer, req.file.mimetype);
+
+      // simpan informasi ke req untuk dipakai di handler berikutnya
+      req.uploadedFile = {
+        key: `delivery-proofs/${uniqueName}`,
+        url: `https://${process.env.R2_BUCKET_NAME}.${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.dev/delivery-proofs/${uniqueName}`,
+      };
+    } catch (uploadErr) {
+      req.uploadError = uploadErr.message;
+    }
+
+    return next();
   });
 };
 

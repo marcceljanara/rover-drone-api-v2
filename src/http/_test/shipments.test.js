@@ -1,7 +1,5 @@
 import request from 'supertest';
 import dotenv from 'dotenv';
-import path from 'path';
-import fs from 'fs';
 import UsersTableTestHelper from '../../../tests/UserTableHelper.js';
 import AuthenticationsTableTestHelper from '../../../tests/AuthenticationTableHelper.js';
 import RentalsTableTestHelper from '../../../tests/RentalsTableTestHelper.js';
@@ -22,6 +20,17 @@ jest.mock('redis', () => ({
     del: jest.fn().mockResolvedValue(1),
   })),
 }));
+
+jest.mock('../../services/storage/storageService.js', () => jest.fn().mockImplementation(() => ({
+  uploadObject: jest.fn().mockResolvedValue({
+    key: 'delivery-proofs/fake-proof.jpg',
+    url: 'https://fake-r2-url.com/delivery-proofs/fake-proof.jpg',
+  }),
+  getSignedUrl: jest.fn().mockResolvedValue({
+    url: 'https://fake-r2-url.com/delivery-proofs/fake-proof.jpg',
+  }), // kalau dipakai di code lain
+  getUploadUrl: jest.fn(), // kalau dipakai di code lain
+})));
 
 const registerAndLoginAdmin = async (server) => {
   const payload = {
@@ -134,8 +143,6 @@ describe('/v1/shipments endpoints', () => {
     });
   });
   describe('(User) GET /v1/shipments/:id/delivery-proof', () => {
-    let uploadedFilePath;
-
     const setupRentalAndShipment = async (deviceId, addressId) => {
       await DevicesTableTestHelper.addDevice({ id: deviceId });
       const realAddressId = await UsersTableTestHelper.addAddress('user-12345', { id: addressId });
@@ -173,31 +180,7 @@ describe('/v1/shipments endpoints', () => {
 
       expect(response.statusCode).toBe(200);
       expect(response.body.status).toBe('success');
-      expect(response.body.data.deliveryProofUrl).toMatch(/^\/uploads\/delivery-proofs\/.+\.jpg$/);
-
-      // Simpan path absolut untuk cleanup
-      uploadedFilePath = path.resolve(
-        __dirname,
-        '..',
-        'uploads',
-        'delivery-proofs',
-        path.basename(response.body.data.deliveryProofUrl),
-      );
-    });
-
-    afterAll(() => {
-      if (uploadedFilePath) {
-        try {
-          if (fs.existsSync(uploadedFilePath)) {
-            fs.unlinkSync(uploadedFilePath);
-            console.log('✅ File berhasil dihapus:', uploadedFilePath);
-          } else {
-            console.warn('⚠️ File tidak ditemukan untuk dihapus:', uploadedFilePath);
-          }
-        } catch (err) {
-          console.error('❌ Gagal menghapus file:', err);
-        }
-      }
+      expect(response.body.data.url).toBeDefined();
     });
   });
   describe('GET /v1/shipments', () => {
@@ -432,8 +415,6 @@ describe('/v1/shipments endpoints', () => {
     });
   });
   describe('POST /v1/shipments/:id/delivery-proof', () => {
-    let uploadedFilePath;
-
     const setupRentalAndShipment = async (deviceId, addressId) => {
       await DevicesTableTestHelper.addDevice({ id: deviceId });
       const realAddressId = await UsersTableTestHelper.addAddress('user-12345', { id: addressId });
@@ -467,36 +448,10 @@ describe('/v1/shipments endpoints', () => {
 
       expect(response.statusCode).toBe(201);
       expect(response.body.status).toBe('success');
-      expect(response.body.data.photoUrl).toMatch(/^\/uploads\/delivery-proofs\/.+\.jpg$/);
-
-      // Simpan path absolut untuk cleanup
-      uploadedFilePath = path.resolve(
-        __dirname,
-        '..',
-        'uploads',
-        'delivery-proofs',
-        path.basename(response.body.data.photoUrl),
-      );
-    });
-
-    afterAll(() => {
-      if (uploadedFilePath) {
-        try {
-          if (fs.existsSync(uploadedFilePath)) {
-            fs.unlinkSync(uploadedFilePath);
-            console.log('✅ File berhasil dihapus:', uploadedFilePath);
-          } else {
-            console.warn('⚠️ File tidak ditemukan untuk dihapus:', uploadedFilePath);
-          }
-        } catch (err) {
-          console.error('❌ Gagal menghapus file:', err);
-        }
-      }
+      expect(response.body.data.photoUrl).toBeDefined();
     });
   });
   describe('GET /v1/shipments/:id/delivery-proof', () => {
-    let uploadedFilePath;
-
     const setupRentalAndShipment = async (deviceId, addressId) => {
       await DevicesTableTestHelper.addDevice({ id: deviceId });
       const realAddressId = await UsersTableTestHelper.addAddress('user-12345', { id: addressId });
@@ -534,31 +489,7 @@ describe('/v1/shipments endpoints', () => {
 
       expect(response.statusCode).toBe(200);
       expect(response.body.status).toBe('success');
-      expect(response.body.data.deliveryProofUrl).toMatch(/^\/uploads\/delivery-proofs\/.+\.jpg$/);
-
-      // Simpan path absolut untuk cleanup
-      uploadedFilePath = path.resolve(
-        __dirname,
-        '..',
-        'uploads',
-        'delivery-proofs',
-        path.basename(response.body.data.deliveryProofUrl),
-      );
-    });
-
-    afterAll(() => {
-      if (uploadedFilePath) {
-        try {
-          if (fs.existsSync(uploadedFilePath)) {
-            fs.unlinkSync(uploadedFilePath);
-            console.log('✅ File berhasil dihapus:', uploadedFilePath);
-          } else {
-            console.warn('⚠️ File tidak ditemukan untuk dihapus:', uploadedFilePath);
-          }
-        } catch (err) {
-          console.error('❌ Gagal menghapus file:', err);
-        }
-      }
+      expect(response.body.data.url).toBeDefined();
     });
   });
   describe('(Admin) GET /v1/shipments/:id', () => {
