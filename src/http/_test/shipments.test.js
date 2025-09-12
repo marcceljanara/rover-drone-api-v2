@@ -21,6 +21,17 @@ jest.mock('redis', () => ({
   })),
 }));
 
+jest.mock('../../services/storage/storageService.js', () => jest.fn().mockImplementation(() => ({
+  uploadObject: jest.fn().mockResolvedValue({
+    key: 'delivery-proofs/fake-proof.jpg',
+    url: 'https://fake-r2-url.com/delivery-proofs/fake-proof.jpg',
+  }),
+  getSignedUrl: jest.fn().mockResolvedValue({
+    url: 'https://fake-r2-url.com/delivery-proofs/fake-proof.jpg',
+  }), // kalau dipakai di code lain
+  getUploadUrl: jest.fn(), // kalau dipakai di code lain
+})));
+
 const registerAndLoginAdmin = async (server) => {
   const payload = {
     id: 'admin-12345',
