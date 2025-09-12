@@ -194,6 +194,10 @@ const userRoutes = (handler) => {
    */
   router.post('/resend-otp', rateLimiter(15, 5), validateContentType('application/json'), handler.postResendOtpHandler);
 
+  router.post('/forgot-password', rateLimiter(30, 5), validateContentType('application/json'), handler.postForgotPasswordHandler);
+  router.post('/validate-reset-token', rateLimiter(30, 5), validateContentType('application/json'), handler.postValidateResetTokenHandler);
+  router.post('/reset-password', rateLimiter(30, 5), validateContentType('application/json'), handler.postResetPasswordHandler);
+
   /**
  * @swagger
  * /v1/users/addresses:

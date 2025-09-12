@@ -125,27 +125,51 @@ describe('UserService', () => {
     });
   });
 
-  describe('checkExistingUser', () => {
-    it('should throw InvariantError when email or username already exists', async () => {
+  describe('checkExistingUsername', () => {
+    it('should throw InvariantError when username already exists', async () => {
       // Arrange
-      pool.query.mockResolvedValueOnce({ rows: [{ username: 'testuser', email: 'test@example.com' }] });
+      pool.query.mockResolvedValueOnce({ rows: [{ username: 'testuser' }] });
 
       // Act & Assert
-      await expect(userService.checkExistingUser({ email: 'test@example.com', username: 'testuser' }))
+      await expect(userService.checkExistingUsername({ username: 'testuser' }))
         .rejects.toThrow(InvariantError);
 
       expect(pool.query).toHaveBeenCalledWith({
-        text: 'SELECT username, email FROM users WHERE username = $1 OR email = $2',
-        values: ['testuser', 'test@example.com'],
+        text: 'SELECT username FROM users WHERE username = $1',
+        values: ['testuser'],
       });
     });
 
-    it('should not throw an error when email and username are not registered', async () => {
+    it('should not throw an error when username are not registered', async () => {
       // Arrange
       pool.query.mockResolvedValueOnce({ rows: [] });
 
       // Act & Assert
-      await expect(userService.checkExistingUser({ email: 'new@example.com', username: 'newuser' }))
+      await expect(userService.checkExistingUsername({ username: 'newuser' }))
+        .resolves.not.toThrow();
+    });
+  });
+  describe('checkExistingEmail', () => {
+    it('should throw InvariantError when email already exists', async () => {
+      // Arrange
+      pool.query.mockResolvedValueOnce({ rows: [{ email: 'test@example.com' }] });
+
+      // Act & Assert
+      await expect(userService.checkExistingEmail({ email: 'test@example.com' }))
+        .rejects.toThrow(InvariantError);
+
+      expect(pool.query).toHaveBeenCalledWith({
+        text: 'SELECT email FROM users WHERE email = $1',
+        values: ['test@example.com'],
+      });
+    });
+
+    it('should not throw an error when email are not registered', async () => {
+      // Arrange
+      pool.query.mockResolvedValueOnce({ rows: [] });
+
+      // Act & Assert
+      await expect(userService.checkExistingEmail({ email: 'new@example.com' }))
         .resolves.not.toThrow();
     });
   });

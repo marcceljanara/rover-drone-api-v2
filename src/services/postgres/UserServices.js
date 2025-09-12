@@ -1,10 +1,21 @@
 /* eslint-disable no-useless-escape */
 import { nanoid } from 'nanoid';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import InvariantError from '../../exceptions/InvariantError.js';
 import AuthenticationError from '../../exceptions/AuthenticationError.js';
 import NotFoundError from '../../exceptions/NotFoundError.js';
 import pool from '../../config/postgres/pool.js';
+
+function generateUsernameFromEmail(email) {
+  const [localPart] = email.split('@'); // ambil bagian sebelum @
+  const base = localPart.slice(0, 12); // ambil maksimal 12 char
+  const randomNum = Math.floor(Math.random() * 1_000_000) // 0–999
+    .toString()
+    .padStart(6, '0'); // selalu 6 digit
+
+  return base + randomNum;
+}
 
 class UserService {
   constructor(cacheService) {
@@ -64,6 +75,8 @@ class UserService {
     try {
       await client.query('BEGIN');
 
+      const existingUser = await this.findByEmail(email);
+
       // Cek apakah sudah ada user dengan email ini
       if (aud !== process.env.GOOGLE_CLIENT_ID) {
         throw new AuthenticationError('Akun Google tidak valid');
@@ -72,7 +85,7 @@ class UserService {
       // Cek apakah sudah ada auth_providers dengan provider_id Google
       const checkQuery = {
         text: `SELECT u.id, u.role, u.is_verified 
-             FROM users u 
+        FROM users u 
              JOIN auth_providers ap ON ap.user_id = u.id 
              WHERE ap.provider = $1 AND ap.provider_id = $2`,
         values: ['google', googleId],
@@ -83,11 +96,26 @@ class UserService {
         return existing.rows[0]; // Sudah ada user, langsung return
       }
 
+      // Kalau email sudah ada → link ke akun lokal
+      if (existingUser) {
+        await client.query(
+          `INSERT INTO auth_providers (id, user_id, provider, provider_id) 
+     VALUES ($1, $2, $3, $4)`,
+          [authId, existingUser.id, 'google', googleId],
+        );
+        await client.query('COMMIT');
+        return {
+          id: existingUser.id,
+        };
+      }
+
+      const username = generateUsernameFromEmail(email);
+
       // Insert ke users
       await client.query(
-        `INSERT INTO users (id, fullname, email, is_verified) 
-       VALUES ($1, $2, $3, $4)`,
-        [userId, fullname, email, true],
+        `INSERT INTO users (id, username, fullname, email, is_verified) 
+       VALUES ($1, $2, $3, $4, $5)`,
+        [userId, username, fullname, email, true],
       );
 
       // Insert ke auth_providers
@@ -107,16 +135,37 @@ class UserService {
     }
   }
 
-  async checkExistingUser({ email, username }) {
+  async checkExistingEmail({ email }) {
     const query = {
-      text: 'SELECT username, email FROM users WHERE username = $1 OR email = $2',
-      values: [username, email],
+      text: 'SELECT email FROM users WHERE email = $1',
+      values: [email],
     };
 
     const result = await this._pool.query(query);
     if (result.rows.length > 0) {
-      throw new InvariantError('Email atau username sudah terdaftar. Silakan gunakan email atau username lain.');
+      throw new InvariantError('Email sudah terdaftar. Silakan gunakan email lain.');
     }
+  }
+
+  async checkExistingUsername({ username }) {
+    const query = {
+      text: 'SELECT username FROM users WHERE username = $1',
+      values: [username],
+    };
+
+    const result = await this._pool.query(query);
+    if (result.rows.length > 0) {
+      throw new InvariantError('Username sudah terdaftar. Silakan gunakan username lain.');
+    }
+  }
+
+  async findByEmail(email) {
+    const query = {
+      text: 'SELECT id from users WHERE email = $1',
+      values: [email],
+    };
+    const result = await this._pool.query(query);
+    return result.rows[0];
   }
 
   async generateOtp(email) {
@@ -185,6 +234,77 @@ class UserService {
     } finally {
       client.release();
     }
+  }
+
+  // Forgot Password
+  async changePassword(userId, newPassword, confPassword) {
+    if (newPassword !== confPassword) {
+      throw new InvariantError('Password dan Konfirmasi Password Tidak Cocok');
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashNewPassword = await bcrypt.hash(newPassword, salt);
+    const query = {
+      text: `UPDATE auth_providers
+      SET password = $1
+      WHERE user_id = $2 AND provider = 'local'
+      RETURNING user_id`,
+      values: [hashNewPassword, userId],
+    };
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new NotFoundError('Email tidak ditemukan atau akun bukan lokal');
+    }
+  }
+
+  async generateTokenResetPassword(userId) {
+    const token = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    await this._pool.query({
+      text: 'DELETE FROM password_resets WHERE user_id = $1 and used = $2',
+      values: [userId, false],
+    });
+
+    const query = {
+      text: 'INSERT INTO password_resets (user_id, hashed_token, expires_at) VALUES ($1, $2, NOW() + INTERVAL \'1 hour\')',
+      values: [userId, hashedToken],
+    };
+    await this._pool.query(query);
+    return `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+  }
+
+  async verifyResetToken(token) {
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const query = {
+      text: 'SELECT id FROM password_resets WHERE hashed_token = $1 AND expires_at > NOW() AND used = $2 LIMIT 1',
+      values: [hashedToken, false],
+    };
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new AuthenticationError('Token invalid atau sudah tidak berlaku');
+    }
+    return result.rows[0].id;
+  }
+
+  async verifySession(sessionId) {
+    const query = {
+      text: 'SELECT user_id FROM password_resets WHERE id = $1 AND expires_at > NOW() AND used = $2',
+      values: [sessionId, false],
+    };
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new AuthenticationError('Token invalid atau sudah tidak berlaku');
+    }
+    return result.rows[0].user_id;
+  }
+
+  async flagSession(sessionId) {
+    const query = {
+      text: 'UPDATE password_resets SET used = $1 WHERE id = $2',
+      values: [true, sessionId],
+    };
+    await this._pool.query(query);
   }
 
   async addAddress(userId, {

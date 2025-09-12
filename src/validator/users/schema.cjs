@@ -17,6 +17,19 @@ const UserSchema = {
     email: Joi.string().email().required(),
   }),
 
+  emailPayload: Joi.object({
+    email: Joi.string().email().required(),
+  }),
+
+  tokenPayload: Joi.object({
+    token: Joi.string().length(64).hex().required(),
+  }),
+
+  changePasswordPayload: Joi.object({
+    newPassword: Joi.string().required(),
+    confirmPassword: Joi.string().required(),
+  }),
+
   addressPayload: Joi.object({
     namaPenerima: Joi.string()
       .max(100)

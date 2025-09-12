@@ -16,7 +16,8 @@ class UserHandler {
       const {
         username, password, fullname, email,
       } = req.body;
-      await this._userService.checkExistingUser({ email, username });
+      await this._userService.checkExistingUsername({ username });
+      await this._userService.checkExistingEmail({ email });
 
       const userId = await this._userService.registerUser({
         username,
@@ -77,6 +78,81 @@ class UserHandler {
       return res.status(200).json({
         status: 'success',
         message: 'Kode OTP telah dikirim ulang ke email Anda.',
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async postForgotPasswordHandler(req, res, next) {
+    try {
+      this._validator.validateEmailPayload(req.body);
+      const { email } = req.body;
+      const { id } = await this._userService.findByEmail(email);
+      const token = await this._userService.generateTokenResetPassword(id);
+      const message = {
+        userId: id,
+        token,
+        email,
+      };
+      await this._rabbitmqService.sendMessage('auth.reset_password', JSON.stringify(message));
+      return res.status(200).json({
+        status: 'success',
+        message: 'Permintaan reset password berhasil. Silahkan cek email Anda.',
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async postValidateResetTokenHandler(req, res, next) {
+    try {
+      this._validator.validateTokenPayload(req.body);
+      const { token } = req.body;
+
+      const sessionId = await this._userService.verifyResetToken(token);
+
+      res.cookie('prst', sessionId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 15 * 60 * 1000, // 15 menit
+      });
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'Token valid, silakan ganti password',
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async postResetPasswordHandler(req, res, next) {
+    try {
+      this._validator.validateChangePasswordPayload(req.body);
+      const { newPassword, confirmPassword } = req.body;
+      if (!req.cookies.prst) {
+        return res.status(401).json({
+          status: 'fail',
+          message: 'Reset session tidak ditemukan',
+        });
+      }
+      const sessionId = req.cookies.prst;
+      const userId = await this._userService.verifySession(sessionId);
+
+      // Change Password
+      await this._userService.changePassword(userId, newPassword, confirmPassword);
+
+      // Flag Session
+      await this._userService.flagSession(sessionId);
+
+      // Delete Cookie
+      res.clearCookie('prst');
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'Password berhasil direset, silakan login kembali',
       });
     } catch (error) {
       return next(error);
