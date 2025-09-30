@@ -89,8 +89,8 @@ Backend API to support the **Rover Drone** system with IoT device rental, MQTT c
 
 1. Clone repository  
    ```bash
-   git clone https://github.com/marcceljanara/rover-drone-api.git
-   cd rover-drone-api
+   git clone https://github.com/marcceljanara/rover-drone-api-v2.git
+   cd rover-drone-api-v2
 2. Install dependencies
    ```bash
    npm install
@@ -195,7 +195,8 @@ Contributions are welcome.
 
 ## 📫 Contact
 Created by: I Nengah Marccel JBC
-- Repo: https://github.com/marcceljanara/rover-drone-api
-- Issues: https://github.com/marcceljanara/rover-drone-api/issues
+- Repo: https://github.com/marcceljanara/rover-drone-api-v2
+- Issues: https://github.com/marcceljanara/rover-drone-api-v2/issues
+
 
 
