@@ -59,6 +59,10 @@ Backend API to support the **Rover Drone** system with IoT device rental, MQTT c
 - List of available sensors.
 - Calculate shipping costs to destination (integrated with Komerce).
 
+### Chat Bot
+- An interactive chatbot that can discuss the needs of oil palm plantations
+- AI analysis based on air temperature, air humidity and sunlight intensity sensor data within a selected time range.
+
 ## 🛠️ Tech Stack
 
 - **Backend:** Node.js, Express.js  
@@ -193,4 +197,5 @@ Contributions are welcome.
 Created by: I Nengah Marccel JBC
 - Repo: https://github.com/marcceljanara/rover-drone-api
 - Issues: https://github.com/marcceljanara/rover-drone-api/issues
+
 
