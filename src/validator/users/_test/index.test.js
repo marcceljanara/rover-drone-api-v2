@@ -154,6 +154,43 @@ describe('User Schema', () => {
         .not.toThrowError(InvariantError);
     });
   });
+
+  describe('Email payload', () => {
+    it('should throw error when payload did not contain needed property', () => {
+      // arrange
+      const payload = {};
+
+      // Actions and assert
+      expect(() => UsersValidator.validateEmailPayload(payload)).toThrow(InvariantError);
+    });
+    it('should throw error when payload did not meet data type specifications', () => {
+      // arrange
+      const payload = {
+        email: 12345,
+      };
+
+      // Actions and assert
+      expect(() => UsersValidator.validateEmailPayload(payload)).toThrow(InvariantError);
+    });
+    it('should throw error when input not email', () => {
+      // arrange
+      const payload = {
+        email: 'kucinggmail.com',
+      };
+
+      // Action and assert
+      expect(() => UsersValidator.validateEmailPayload(payload)).toThrow(InvariantError);
+    });
+    it('should not throw error because pass validation', () => {
+      // arrange
+      const payload = {
+        email: 'email@gmail.com',
+      };
+
+      // Action and assert
+      expect(() => UsersValidator.validateEmailPayload(payload)).not.toThrow(InvariantError);
+    });
+  });
   describe('Address Payload', () => {
     it('should throw error when payload did not contain needed property', () => {
       // arrange
