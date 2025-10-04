@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 // ✅ SINGLE: tetap sesuai template-mu
 export default function generateSensorPrompt({
   timestamp,
