@@ -106,7 +106,7 @@ class AuthenticationsService {
     };
     const result = await this._pool.query(query);
     if (!result.rowCount) {
-      throw NotFoundError('User tidak ditemukan');
+      throw new NotFoundError('User tidak ditemukan');
     }
     return result.rows[0];
   }

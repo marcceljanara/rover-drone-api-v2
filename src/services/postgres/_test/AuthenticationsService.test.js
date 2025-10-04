@@ -146,4 +146,37 @@ describe('Authentication Service', () => {
         .resolves.not.toThrow();
     });
   });
+  describe('checkLoginStatus', () => {
+    it('should return user data when user exists', async () => {
+      // Arrange
+      const authenticationsService = new AuthenticationsService();
+      const userData = {
+        id: 'user-123',
+        email: 'email@gmail.com',
+        password: 'superpassword',
+        fullname: 'John Doe',
+        role: 'user',
+      };
+      await UsersTableTestHelper.addUser(userData);
+
+      // Action
+      const result = await authenticationsService.checkLoginStatus(userData.id);
+
+      // Assert
+      expect(result).toHaveProperty('id', userData.id);
+      expect(result).toHaveProperty('email', userData.email);
+      expect(result).toHaveProperty('fullname', userData.fullname);
+      expect(result).toHaveProperty('role', userData.role);
+    });
+
+    it('should throw NotFoundError when user does not exist', async () => {
+      // Arrange
+      const authenticationsService = new AuthenticationsService();
+      const nonExistentUserId = 'user-999';
+
+      // Action & Assert
+      await expect(authenticationsService.checkLoginStatus(nonExistentUserId))
+        .rejects.toThrow(NotFoundError);
+    });
+  });
 });
