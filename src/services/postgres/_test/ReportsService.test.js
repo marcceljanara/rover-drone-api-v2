@@ -82,6 +82,11 @@ describe('ReportsService', () => {
     };
     await paymentsService.verificationPayment(payload1);
     await paymentsService.verificationPayment(payload2);
+
+    // Mock cacheService.get agar mengembalikan null (memaksa query DB)
+    // cacheService.get.mockResolvedValue(null);
+    // cacheService.set.mockResolvedValue('OK');
+    // cacheService.delete.mockResolvedValue(1);
   });
 
   describe('addReport Function', () => {
@@ -108,25 +113,44 @@ describe('ReportsService', () => {
   });
 
   describe('getAllReport function', () => {
-    it('should get all report correctly', async () => {
-      // Arrange
+    it('should return reports from DB when cache miss', async () => {
+      jest.spyOn(cacheService, 'get').mockImplementation(() => { throw new Error('Cache miss'); });
+
       const reportsService = new ReportsService(cacheService);
       await reportsService.addReport(admin, '2025-01-30 00:00:00', '2025-02-01 00:00:00');
       await reportsService.addReport(admin, '2025-02-05 00:00:00', '2025-02-08 00:00:00');
 
-      // Action
       const reports = await reportsService.getAllReport();
+      expect(reports).toHaveLength(2);
+    });
 
-      // Assert
+    it('should return reports from cache when cache hit', async () => {
+      const cachedReports = [
+        {
+          id: 'report-1', total_transactions: 1, total_amount: 1000, start_date: '2025-01-30', end_date: '2025-02-01', report_date: '2025-02-01',
+        },
+        {
+          id: 'report-2', total_transactions: 2, total_amount: 2000, start_date: '2025-02-05', end_date: '2025-02-08', report_date: '2025-02-08',
+        },
+      ];
+      jest.spyOn(cacheService, 'get').mockResolvedValue(JSON.stringify(cachedReports));
+
+      const reportsService = new ReportsService(cacheService);
+      const reports = await reportsService.getAllReport();
       expect(reports).toHaveLength(2);
     });
   });
 
   describe('getReport function', () => {
-    it('should get detail report correctly', async () => {
-      // Arrange
+    it('should get detail report correctly when cache miss', async () => {
+    // Arrange
       const reportsService = new ReportsService(cacheService);
       const reportId = await reportsService.addReport(admin, '2025-01-30 00:00:00', '2025-02-01 00:00:00');
+
+      // Spy cacheService.get agar throw error → memaksa ambil dari DB
+      jest.spyOn(cacheService, 'get').mockImplementation(() => {
+        throw new Error('Cache miss');
+      });
 
       // Action
       const report = await reportsService.getReport(reportId);
@@ -135,11 +159,46 @@ describe('ReportsService', () => {
       expect(report).toBeDefined();
       expect(report.user_id).toBe(admin);
       expect(report.id).toBe(reportId);
+      expect(report.payments).toBeDefined();
     });
+
+    it('should get detail report correctly when cache hit', async () => {
+    // Arrange
+      const reportsService = new ReportsService(cacheService);
+      const reportId = await reportsService.addReport(admin, '2025-01-30 00:00:00', '2025-02-01 00:00:00');
+
+      // Siapkan data cache (harus berupa JSON string)
+      const cachedReport = {
+        id: reportId,
+        user_id: admin,
+        report_interval: 'Laporan 2025-01-30 - 2025-02-01',
+        total_transactions: 1,
+        total_amount: 5000,
+        report_date: '2025-02-01',
+        payments: [],
+      };
+
+      jest.spyOn(cacheService, 'get').mockResolvedValue(JSON.stringify(cachedReport));
+
+      // Action
+      const report = await reportsService.getReport(reportId);
+
+      // Assert
+      expect(report).toBeDefined();
+      expect(report.user_id).toBe(admin);
+      expect(report.id).toBe(reportId);
+      expect(report.payments).toHaveLength(0);
+    });
+
     it('should throw not found error when report not exist', async () => {
-      // Arrange
+    // Arrange
       const reportsService = new ReportsService(cacheService);
       const reportId = 'notfound';
+
+      // Spy cacheService.get agar throw error → masuk ke DB
+      jest.spyOn(cacheService, 'get').mockImplementation(() => {
+        throw new Error('Cache miss');
+      });
 
       // Action and Assert
       await expect(reportsService.getReport(reportId)).rejects.toThrow(NotFoundError);
