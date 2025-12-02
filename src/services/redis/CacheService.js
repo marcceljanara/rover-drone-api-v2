@@ -5,9 +5,7 @@ class CacheService {
   constructor() {
     console.log('Redis URL:', process.env.REDIS_URL); // ← debug dulu
     this._client = createClient({
-      socket: {
-        url: process.env.REDIS_URL,
-      },
+      url: process.env.REDIS_URL,
     });
     this._client.on('error', (err) => console.log('Redis Client Error', err));
     this._client.connect();
