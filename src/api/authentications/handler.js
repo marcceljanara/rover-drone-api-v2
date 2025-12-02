@@ -1,6 +1,7 @@
 import autoBind from 'auto-bind';
+import 'dotenv/config';
 
-const FRONTEND_URL = 'http://localhost:3000';
+const { FRONTEND_URL } = process.env;
 
 class AuthenticationHandler {
   constructor({
