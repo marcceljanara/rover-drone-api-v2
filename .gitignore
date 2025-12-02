@@ -5,6 +5,6 @@ package-lock.json
 .idea
 config/database/test.json
 coverage
-src/utils/generateAdmin.js
+# src/utils/generateAdmin.js
 test-results.json
 uploads
