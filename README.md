@@ -130,7 +130,7 @@ Backend API to support the **Rover Drone** system with IoT device rental, MQTT c
    GOOGLE_CLIENT_ID = 271xxxx.apps.googleusercontent.com
    GOOGLE_CLIENT_SECRET = GOCxxx-xxxxx
    # REDIS 
-   REDIS_SERVER=localhost
+   REDIS_URL=localhost
 4. Run database migration
    ```bash
    npm run migrate
