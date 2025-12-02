@@ -5,7 +5,7 @@ class CacheService {
   constructor() {
     this._client = createClient({
       socket: {
-        host: process.env.REDIS_URL,
+        url: process.env.REDIS_URL,
       },
     });
     this._client.on('error', (err) => console.log('Redis Client Error', err));
