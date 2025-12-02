@@ -3,6 +3,7 @@ import { createClient } from 'redis';
 
 class CacheService {
   constructor() {
+    console.log('Redis URL:', process.env.REDIS_URL); // ← debug dulu
     this._client = createClient({
       socket: {
         url: process.env.REDIS_URL,
