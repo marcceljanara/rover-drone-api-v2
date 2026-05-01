@@ -8,7 +8,9 @@ const ProducerService = {
     await channel.assertQueue(queue, {
       durable: true,
     });
-    await channel.sendToQueue(queue, Buffer.from(messsage));
+    await channel.sendToQueue(queue, Buffer.from(messsage), {
+      persistent: true,
+    });
 
     setTimeout(() => {
       connection.close();

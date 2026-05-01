@@ -16,7 +16,8 @@ const dbConfig = {
 
 const generateAdmin = async () => {
   const client = new Client(dbConfig);
-  await client.connect();
+  let connected = false;
+  let transactionStarted = false;
 
   const adminId = `user-${nanoid(16)}`;
   const providerId = `auth-${nanoid(16)}`;
@@ -27,7 +28,10 @@ const generateAdmin = async () => {
   const role = 'admin'; // kalau tabel users Anda memang punya kolom role
 
   try {
+    await client.connect();
+    connected = true;
     await client.query('BEGIN');
+    transactionStarted = true;
 
     // Hash password
     const salt = await bcrypt.genSalt(10);
@@ -46,6 +50,7 @@ const generateAdmin = async () => {
     if (!userResult.rows.length) {
       console.log('Admin sudah ada, tidak dibuat ulang.');
       await client.query('ROLLBACK');
+      transactionStarted = false;
       return;
     }
 
@@ -58,6 +63,7 @@ const generateAdmin = async () => {
     await client.query(authQuery);
 
     await client.query('COMMIT');
+    transactionStarted = false;
 
     console.log(`Admin created successfully:
       ID: ${adminId}
@@ -66,12 +72,23 @@ const generateAdmin = async () => {
       Role: ${role}
     `);
   } catch (error) {
-    await client.query('ROLLBACK');
+    if (transactionStarted) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Error rolling back admin creation:', rollbackError);
+      }
+    }
     console.error('Error creating admin:', error);
+    throw error;
   } finally {
-    await client.end();
+    if (connected) {
+      await client.end();
+    }
   }
 };
 
 // Jalankan fungsi
-generateAdmin();
+generateAdmin().catch(() => {
+  process.exitCode = 1;
+});

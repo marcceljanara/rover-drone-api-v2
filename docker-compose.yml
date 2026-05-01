@@ -1,67 +1,214 @@
-version: "3.9"
-
 services:
   app:
-    build: .
+    build:
+      context: .
+      target: runtime
     container_name: rover_app
-    ports:
-      - "5000:5000"
+    restart: unless-stopped
     env_file: .env
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=256
+      HOST: 0.0.0.0
+      PORT: ${PORT:-5000}
+      PGHOST: db
+      PGPORT: 5432
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_SERVER: amqp://rabbitmq:5672
+      MQTT_URL: mqtt://mqtt:1883
+    ports:
+      - "${PORT:-5000}:5000"
     depends_on:
-      - db
-      - redis
-      - rabbitmq
-      - mqtt
-    volumes:
-      - .:/app
-      - /app/node_modules
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mqtt:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      seed-admin:
+        condition: service_completed_successfully
+    networks:
+      - rover_backend
+    mem_limit: 384m
+    cpus: "0.75"
+
+  worker:
+    build:
+      context: .
+      target: runtime
+    container_name: rover_worker
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=192
+      PGHOST: db
+      PGPORT: 5432
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_SERVER: amqp://rabbitmq:5672
+      MQTT_URL: mqtt://mqtt:1883
+    command: ["npm", "run", "worker"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mqtt:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      seed-admin:
+        condition: service_completed_successfully
+    networks:
+      - rover_backend
+    mem_limit: 256m
+    cpus: "0.50"
+
+  migrate:
+    build:
+      context: .
+      target: runtime
+    container_name: rover_migrate
+    restart: "no"
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=256
+      PGHOST: db
+      PGPORT: 5432
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_SERVER: amqp://rabbitmq:5672
+      MQTT_URL: mqtt://mqtt:1883
+    command: ["npm", "run", "migrate", "--", "up"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - rover_backend
+    mem_limit: 256m
+    cpus: "0.50"
+
+  seed-admin:
+    build:
+      context: .
+      target: runtime
+    container_name: rover_seed_admin
+    restart: "no"
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=256
+      PGHOST: db
+      PGPORT: 5432
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_SERVER: amqp://rabbitmq:5672
+      MQTT_URL: mqtt://mqtt:1883
+    command: ["npm", "run", "generate-admin"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - rover_backend
+    mem_limit: 256m
+    cpus: "0.50"
 
   db:
     image: postgres:17
     container_name: rover_db
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgresPWD@123
-      POSTGRES_DB: roverdrone
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${PGUSER:-postgres}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-postgres}
+      POSTGRES_DB: ${PGDATABASE:-roverdrone}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - max_connections=30
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - rover_backend
+    mem_limit: 512m
+    cpus: "0.75"
 
   redis:
-    image: redis:8
+    image: redis:8-alpine
     container_name: rover_redis
-    restart: always
-    ports:
-      - "6379:6379"
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "96mb", "--maxmemory-policy", "allkeys-lru"]
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rover_backend
+    mem_limit: 128m
+    cpus: "0.25"
 
   rabbitmq:
-    image: rabbitmq:4-management
+    image: rabbitmq:4-management-alpine
     container_name: rover_rabbitmq
-    restart: always
-    ports:
-      - "5672:5672"
-      - "15672:15672" # web management
+    restart: unless-stopped
     volumes:
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
       - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - rover_backend
+    mem_limit: 384m
+    cpus: "0.50"
 
   mqtt:
     image: eclipse-mosquitto:2
     container_name: rover_mqtt
-    restart: always
+    restart: unless-stopped
     ports:
       - "1883:1883"
     volumes:
-      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
-      - ./mosquitto_data:/mosquitto/data
-      - ./mosquitto_config:/mosquitto/config
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto_data:/mosquitto/data
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 1883"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - rover_backend
+    mem_limit: 64m
+    cpus: "0.25"
+
+networks:
+  rover_backend:
+    name: rover_backend
+    driver: bridge
 
 volumes:
   db_data:
   redis_data:
   rabbitmq_data:
   mosquitto_data:
-  mosquitto_config:
