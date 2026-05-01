@@ -84,6 +84,123 @@ Backend API to support the **Rover Drone** system with IoT device rental, MQTT c
 - (Optional) SMTP server for email
 - `git` for repository cloning
 - Redis
+- Docker and Docker Compose
+
+## Docker Production Runbook
+
+This repository includes a production-oriented Docker Compose setup for a small VPS, including an API container, a background worker, PostgreSQL, Redis, RabbitMQ, and Mosquitto MQTT.
+
+### Container layout
+
+| Service | Purpose | Public port |
+|----------------|------------------------------------------------|-------------|
+| `app` | Express HTTP API only | `5000` |
+| `worker` | MQTT sensor subscriber and cron jobs | none |
+| `migrate` | One-shot database migration job | none |
+| `seed-admin` | One-shot default admin seed job | none |
+| `db` | PostgreSQL data store | none |
+| `redis` | Cache/session support | none |
+| `rabbitmq` | Internal message broker | none |
+| `mqtt` | Mosquitto broker for devices | `1883` |
+
+PostgreSQL, Redis, and RabbitMQ are only reachable inside the Docker network. Only the API and MQTT broker are published to the host.
+
+### 1. Prepare environment variables
+
+Copy the example file and fill in real values:
+
+```bash
+cp .env.example .env
+```
+
+For Docker, these values must use service hostnames:
+
+```bash
+HOST=0.0.0.0
+PORT=5000
+
+PGHOST=db
+PGPORT=5432
+
+REDIS_URL=redis://redis:6379
+RABBITMQ_SERVER=amqp://rabbitmq:5672
+MQTT_URL=mqtt://mqtt:1883
+```
+
+Do not commit `.env`. Rotate production secrets if a local `.env` has ever been shared or logged.
+
+### 2. Build and pull images
+
+```bash
+docker compose build app worker migrate seed-admin
+docker compose pull db redis rabbitmq mqtt
+```
+
+### 3. Start infrastructure services
+
+```bash
+docker compose up -d db redis rabbitmq mqtt
+docker compose ps
+```
+
+Wait until `db`, `redis`, `rabbitmq`, and `mqtt` show `healthy`.
+
+### 4. Run migration and seed jobs
+
+```bash
+docker compose run --rm migrate
+docker compose run --rm seed-admin
+```
+
+Both commands must exit successfully before starting the API.
+
+### 5. Start API and worker
+
+```bash
+docker compose up -d app worker
+docker compose ps
+```
+
+Smoke test:
+
+```bash
+curl http://localhost:5000/v1/api-docs
+```
+
+### 6. Operational commands
+
+Check logs:
+
+```bash
+docker compose logs -f app worker
+docker compose logs --tail=100 db redis rabbitmq mqtt
+```
+
+Check resource usage:
+
+```bash
+docker stats rover_app rover_worker rover_db rover_redis rover_rabbitmq rover_mqtt
+```
+
+Stop containers without deleting data:
+
+```bash
+docker compose down
+```
+
+Delete containers and all persistent data:
+
+```bash
+docker compose down -v
+```
+
+Use `down -v` only when you intentionally want a fresh database, Redis data, RabbitMQ data, and Mosquitto data.
+
+### Existing PostgreSQL volume notes
+
+If an old PostgreSQL volume already exists, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` are not re-applied automatically by the image. In that case, either keep the old credentials in `.env`, migrate the data manually, or recreate the volume with `docker compose down -v`.
+
+The Compose file uses `postgres:17` instead of `postgres:17-alpine` because switching an existing PostgreSQL data volume between Debian-based and Alpine-based images can cause collation/template compatibility issues.
 
 ## 📥 Installation
 

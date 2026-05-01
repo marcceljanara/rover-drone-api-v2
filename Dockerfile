@@ -1,20 +1,27 @@
-FROM node:24-slim
+FROM node:24-alpine AS deps
 
 WORKDIR /app
 
-# Install utilitas: netcat (nc) dan bash
-RUN apt-get update && apt-get install -y \
-    netcat-openbsd \
-    bash \
-  && rm -rf /var/lib/apt/lists/*
-
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN apk add --no-cache --virtual .build-deps python3 make g++
+RUN npm ci --omit=dev
 
-COPY . .
+FROM node:24-alpine AS runtime
+
+ENV NODE_ENV=production
+WORKDIR /app
+
+RUN apk add --no-cache libstdc++
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY package*.json ./
+COPY src ./src
+COPY migrations ./migrations
+
+RUN chown -R node:node /app
+
+USER node
 
 EXPOSE 5000
 
-ENTRYPOINT ["sh", "./docker/entrypoint.sh"]
-
-# CMD ["npm", "start"]
+CMD ["node", "src/app.js"]
