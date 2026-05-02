@@ -5,8 +5,8 @@ import generateSensorPrompt, { generateBatchSensorPrompt } from '../../utils/pro
 
 // 🔧 Konfigurasi Ollama (OpenAI-compatible)
 const openai = new OpenAI({
-  baseURL: 'http://127.0.0.1:11434/v1',
-  apiKey: 'ollama-local', // tetap diperlukan meskipun dummy
+  baseURL: process.env.LLM_BASE_URL || 'http://localhost:11434', // URL Ollama
+  apiKey: process.env.LLM_API_KEY || 'ollama', // tetap diperlukan meskipun dummy
 });
 
 // 🔍 Hapus tag <think>...</think> jika ada
@@ -55,7 +55,7 @@ Use this tone:
     ];
 
     const completion = await openai.chat.completions.create({
-      model: 'deepseek-r1:1.5b',
+      model: process.env.LLM_MODEL || 'deepseek-r1:1.5b',
       messages: fullMessages,
       temperature: 0.3,
     });
@@ -113,7 +113,7 @@ Your job is to:
       ];
 
       const completion = await openai.chat.completions.create({
-        model: 'deepseek-r1:1.5b',
+        model: process.env.LLM_MODEL || 'deepseek-r1:1.5b',
         messages,
         temperature: 0.3,
       });
@@ -162,7 +162,7 @@ Your job is to:
     ];
 
     const completion = await openai.chat.completions.create({
-      model: 'deepseek-r1:1.5b',
+      model: process.env.LLM_MODEL || 'deepseek-r1:1.5b',
       messages,
       temperature: 0.3,
     });
